@@ -509,7 +509,7 @@ function populateRanks(selectId,unit,currentRank){
 function updateOffRanks(){populateRanks('of-rank',document.getElementById('of-unit').value,null)}
 function updateUsrRanks(){populateRanks('uf-rank',document.getElementById('uf-unit').value,null)}
 
-const DATA_VERSION='v15';
+const DATA_VERSION='v16';
 if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_users');
   localStorage.removeItem('lspd_officers');
@@ -526,6 +526,7 @@ let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
 function persist(){
   localStorage.setItem('lspd_users',JSON.stringify(DB.users));
   localStorage.setItem('lspd_officers',JSON.stringify(DB.officers));
+  if(window.firebasePersist) window.firebasePersist();
 }
 
 function doLogin(){
@@ -1016,5 +1017,73 @@ document.getElementById('confirm-ok').onclick=function(){
 };
 </script>
 
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyOPpROUQmaaPTlG8FlnZ7aSA_znZ-Y64oU",
+  authDomain: "lspd-roster-7a536.firebaseapp.com",
+  projectId: "lspd-roster-7a536",
+  storageBucket: "lspd-roster-7a536.firebasestorage.app",
+  messagingSenderId: "640506910831",
+  appId: "1:640506910831:web:b605ad0e2a1df69ec3959a",
+  measurementId: "G-EP8672V8Q1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Override persist to save to Firestore
+window.firebasePersist = async function() {
+  try {
+    await setDoc(doc(db, 'lspd', 'users'), { data: JSON.stringify(DB.users) });
+    await setDoc(doc(db, 'lspd', 'officers'), { data: JSON.stringify(DB.officers) });
+  } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
+};
+
+// Load from Firestore on startup
+window.firebaseLoad = async function() {
+  try {
+    const uSnap = await getDoc(doc(db, 'lspd', 'users'));
+    const oSnap = await getDoc(doc(db, 'lspd', 'officers'));
+    if(uSnap.exists()) DB.users = JSON.parse(uSnap.data().data);
+    if(oSnap.exists()) DB.officers = JSON.parse(oSnap.data().data);
+    // Save to localStorage as backup
+    localStorage.setItem('lspd_users', JSON.stringify(DB.users));
+    localStorage.setItem('lspd_officers', JSON.stringify(DB.officers));
+    console.log('Loaded from Firebase:', DB.users.length, 'users,', DB.officers.length, 'officers');
+  } catch(e) { console.warn('Firebase load failed, using localStorage', e); }
+};
+
+// Real-time sync: listen for changes from other users
+onSnapshot(doc(db, 'lspd', 'officers'), (snap) => {
+  if(snap.exists()) {
+    const fresh = JSON.parse(snap.data().data);
+    // Only update if different (avoid loop)
+    if(JSON.stringify(fresh) !== JSON.stringify(DB.officers)) {
+      DB.officers = fresh;
+      localStorage.setItem('lspd_officers', JSON.stringify(DB.officers));
+      if(document.getElementById('roster-body')) renderRoster();
+    }
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'users'), (snap) => {
+  if(snap.exists()) {
+    const fresh = JSON.parse(snap.data().data);
+    if(JSON.stringify(fresh) !== JSON.stringify(DB.users)) {
+      DB.users = fresh;
+      localStorage.setItem('lspd_users', JSON.stringify(DB.users));
+      if(document.getElementById('cmd-body') && document.getElementById('pg-command').classList.contains('on')) renderCommand();
+    }
+  }
+});
+
+// Load on startup
+window.firebaseLoad();
+</script>
 </body>
 </html>
