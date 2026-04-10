@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSPD Roster</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;width:100%}
+body{font-family:'Heebo',sans-serif;background:#0b1120;color:#e8edf5;min-height:100vh;width:100%;
+  background-image:linear-gradient(rgba(74,158,255,0.055) 1px,transparent 1px),linear-gradient(90deg,rgba(74,158,255,0.055) 1px,transparent 1px);
+  background-size:38px 38px;
+  cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 2L19 12L12 13.5L9 21Z' fill='%231a6fff' stroke='%2360aaff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 4 2,auto}
+button,select,input,label,[onclick]{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 2L19 12L12 13.5L9 21Z' fill='%232d80ff' stroke='%2380c0ff' stroke-width='1.2' stroke-linejoin='round'/%3E%3Ccircle cx='19' cy='5' r='3' fill='%2380c0ff' opacity='0.7'/%3E%3C/svg%3E") 4 2,pointer}
+.glow{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(74,158,255,0.06) 0%,transparent 70%);top:-200px;left:50%;transform:translateX(-50%);pointer-events:none;z-index:0}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 40px;border-bottom:1px solid rgba(74,158,255,0.12);position:sticky;top:0;z-index:50;background:rgba(11,17,32,0.92);backdrop-filter:blur(8px)}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-badge{width:40px;height:40px;border-radius:50%;background:rgba(74,158,255,0.12);border:1.5px solid rgba(74,158,255,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hdr h1{font-size:13px;font-weight:700;letter-spacing:2.5px;color:#fff;text-transform:uppercase}
+.hdr p{font-size:10px;color:rgba(74,158,255,0.6);letter-spacing:1px;margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-name{font-size:13px;color:#fff;font-weight:600}
+.role-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.pill-command{background:rgba(245,196,113,0.15);border:1px solid rgba(245,196,113,0.3);color:#f5c471}
+.pill-officer{background:rgba(74,158,255,0.13);border:1px solid rgba(74,158,255,0.28);color:#7ac3ff}
+.logout-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.4);padding:6px 14px;border-radius:7px;font-size:12px;transition:.2s}
+.logout-btn:hover{color:#fff;border-color:rgba(255,255,255,0.25)}
+.page{display:none;padding:40px;position:relative;z-index:2;min-height:calc(100vh - 67px)}
+.page.on{display:block}
+.home-center{text-align:center;margin-bottom:50px;padding-top:60px}
+.home-sub{font-size:11px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.home-title{font-size:36px;font-weight:900;font-style:italic;color:#fff}
+.home-title span{color:#f5c842}
+.home-line{width:40px;height:2px;background:rgba(255,255,255,0.12);margin:14px auto 0}
+.cards-row{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:44px 52px;text-align:center;transition:all .22s;min-width:200px}
+.card:hover{background:rgba(74,158,255,0.09);border-color:rgba(74,158,255,0.35);transform:translateY(-5px)}
+.card:active{transform:scale(0.97)}
+.card-icon{font-size:44px;display:block;margin-bottom:16px}
+.card-lbl{font-size:17px;font-weight:700;letter-spacing:1px;color:#fff}
+.card-sub{font-size:12px;color:rgba(255,255,255,0.28);margin-top:6px}
+.sec-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.sec-left{display:flex;align-items:center;gap:14px}
+.ptitle{font-size:18px;font-weight:700;color:#fff}
+.back-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);padding:8px 16px;border-radius:8px;font-size:12px;transition:.2s}
+.back-btn:hover{color:#fff;background:rgba(255,255,255,0.09)}
+.add-btn{background:rgba(74,158,255,0.14);border:1px solid rgba(74,158,255,0.38);color:#7ac3ff;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;transition:.2s}
+.add-btn:hover{background:rgba(74,158,255,0.25)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filters select{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Heebo',sans-serif}
+.filters select:focus{outline:none;border-color:rgba(74,158,255,0.45)}
+.filters option{background:#141d30}
+.clr-btn{background:transparent;border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);padding:8px 14px;border-radius:8px;font-size:12px;transition:.2s}
+.clr-btn:hover{color:#fff;border-color:rgba(255,255,255,0.25)}
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.07)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:rgba(255,255,255,0.035)}
+th{padding:12px 16px;text-align:left;color:rgba(255,255,255,0.35);font-weight:500;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;font-size:11px;letter-spacing:.8px;text-transform:uppercase}
+td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(74,158,255,0.04)}
+.empty td{text-align:center;color:rgba(255,255,255,0.18);padding:40px;font-size:13px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;margin:1px 2px;letter-spacing:.3px}
+.bu-PATROL{background:rgba(74,158,255,0.14);color:#7ac3ff;border:1px solid rgba(74,158,255,0.28)}
+.bu-METRO{background:rgba(93,202,165,0.14);color:#5dcaa5;border:1px solid rgba(93,202,165,0.28)}
+.bu-SWAT{background:rgba(232,100,100,0.14);color:#e88080;border:1px solid rgba(232,100,100,0.28)}
+.bu-DETECTIVE{background:rgba(245,196,113,0.14);color:#f5c471;border:1px solid rgba(245,196,113,0.28)}
+.bu-PURSUIT{background:rgba(180,100,240,0.14);color:#c07aee;border:1px solid rgba(180,100,240,0.28)}
+.bu-RED-COMMAND{background:rgba(220,50,50,0.2);color:#ff8888;border:1px solid rgba(220,50,50,0.45)}
+.bk-rank{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.65);border:1px solid rgba(255,255,255,0.1)}
+.bk-lw{background:rgba(122,232,122,0.11);color:#80e880;border:1px solid rgba(122,232,122,0.22)}
+.bk-hw{background:rgba(232,100,100,0.11);color:#e87a7a;border:1px solid rgba(232,100,100,0.22)}
+.bk-int{background:rgba(180,100,240,0.11);color:#c07aee;border:1px solid rgba(180,100,240,0.22)}
+.bk-heli{background:rgba(74,200,255,0.11);color:#4ac8ff;border:1px solid rgba(74,200,255,0.22)}
+.bk-moto{background:rgba(255,180,50,0.11);color:#ffb432;border:1px solid rgba(255,180,50,0.22)}
+.bk-cmd{background:rgba(245,196,113,0.15);color:#f5c471;border:1px solid rgba(245,196,113,0.28)}
+.bk-off{background:rgba(74,158,255,0.12);color:#7ac3ff;border:1px solid rgba(74,158,255,0.25)}
+.act-btn{background:none;border:none;color:rgba(255,255,255,0.22);font-size:14px;padding:4px 8px;border-radius:5px;transition:.15s}
+.act-btn:hover{background:rgba(255,255,255,0.08);color:#fff}
+.del-btn{color:rgba(255,80,80,0.35)}
+.del-btn:hover{background:rgba(255,60,60,0.1)!important;color:#ff6464!important}
+.overlay{display:none;position:fixed;inset:0;background:rgba(7,12,24,0.88);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.overlay.on{display:flex}
+.modal{background:#111927;border:1px solid rgba(255,255,255,0.1);border-radius:22px;padding:44px 38px;width:100%;max-width:400px;text-align:center}
+.modal-icon{font-size:46px;margin-bottom:20px}
+.modal h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.modal .desc{font-size:12px;color:rgba(255,255,255,0.32);margin-bottom:28px}
+.modal input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(74,158,255,0.25);color:#fff;padding:14px 16px;border-radius:10px;font-size:14px;font-family:'Heebo',sans-serif;margin-bottom:10px;transition:.2s}
+.modal input:focus{outline:none;border-color:rgba(74,158,255,0.65);background:rgba(74,158,255,0.07)}
+.modal input::placeholder{color:rgba(255,255,255,0.2)}
+.modal-err{font-size:12px;color:#ff6b6b;height:18px;margin-bottom:12px;text-align:left}
+.btn-primary{width:100%;background:linear-gradient(135deg,#3a5fff,#6a5fff);color:#fff;border:none;padding:15px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Heebo',sans-serif;transition:opacity .2s}
+.btn-primary:hover{opacity:.87}
+.form-overlay{display:none;position:fixed;inset:0;background:rgba(7,12,24,0.88);z-index:200;align-items:flex-start;justify-content:center;padding:30px;backdrop-filter:blur(6px);overflow-y:auto}
+.form-overlay.on{display:flex}
+.form-box{background:#111927;border:1px solid rgba(255,255,255,0.09);border-radius:20px;padding:30px;width:100%;max-width:520px;margin-top:30px}
+.form-box h3{font-size:16px;font-weight:700;margin-bottom:22px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:.8px;text-transform:uppercase}
+.field input,.field select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;transition:.2s}
+.field input:focus,.field select:focus{outline:none;border-color:rgba(74,158,255,0.5);background:rgba(74,158,255,0.06)}
+.field select option{background:#141d30}
+.req{color:#ff6b6b;margin-right:2px}
+.chk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.chk-item{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,0.6);padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);transition:.15s}
+.chk-item:hover{border-color:rgba(74,158,255,0.3);background:rgba(74,158,255,0.07)}
+.chk-item input{accent-color:#4a9eff;width:auto}
+.form-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:22px}
+.fsave{background:linear-gradient(135deg,#3a5fff,#6a5fff);color:#fff;border:none;padding:11px 28px;border-radius:9px;font-size:13px;font-weight:700;font-family:'Heebo',sans-serif;transition:opacity .2s}
+.fsave:hover{opacity:.85}
+.fcancel{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.4);padding:11px 18px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;transition:.2s}
+.fcancel:hover{color:#fff}
+.pin-input{text-align:center;letter-spacing:10px;font-size:22px!important;font-weight:700}
+.unit-img{font-size:48px;margin-bottom:12px;display:block}
+.home-search-result{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);margin-bottom:6px;transition:.2s}
+.home-search-result:hover{background:rgba(74,158,255,0.1);border-color:rgba(74,158,255,0.3)}
+.hsr-name{font-weight:600;font-size:13px;color:#fff}
+.hsr-meta{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
+.hsr-badge{font-size:11px;color:#7ac3ff;font-weight:700}
+.rank-divider td{background:rgba(74,158,255,0.06);padding:6px 16px;border-bottom:1px solid rgba(74,158,255,0.15)!important}
+.rank-divider span{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(74,158,255,0.7)}
+.srch-wrap{position:relative;flex:2;min-width:200px;display:flex;align-items:center}
+.srch-wrap input{width:100%;padding-right:28px}
+.srch-x{position:absolute;right:8px;background:none;border:none;color:rgba(255,255,255,0.3);font-size:14px;padding:0;line-height:1}
+.srch-x:hover{color:rgba(255,255,255,0.7)}
+.bulk-bar{display:none;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.18);border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.bulk-bar.on{display:flex}
+.bulk-count{font-size:12px;color:#7ac3ff;font-weight:600}
+.bulk-sep{width:1px;height:18px;background:rgba(255,255,255,0.1)}
+.bulk-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:6px 10px;border-radius:7px;font-size:12px;font-family:inherit}
+.bulk-apply{background:rgba(74,158,255,0.18);border:1px solid rgba(74,158,255,0.38);color:#7ac3ff;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;transition:.2s}
+.bulk-apply:hover{background:rgba(74,158,255,0.32)}
+.bulk-cancel{background:transparent;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);padding:6px 12px;border-radius:7px;font-size:12px;font-family:inherit;transition:.2s}
+.bulk-cancel:hover{color:#fff;border-color:rgba(255,255,255,0.2)}
+.sel-mode-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.45);padding:7px 14px;border-radius:8px;font-size:12px;font-family:inherit;transition:.2s}
+.sel-mode-btn:hover{color:#fff;border-color:rgba(255,255,255,0.25)}
+.sel-mode-btn.on{background:rgba(74,158,255,0.15);border-color:rgba(74,158,255,0.35);color:#7ac3ff}
+.bulk-chip{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;font-family:inherit;border:1px solid;transition:.15s;letter-spacing:.3px}
+.bulk-chip:hover{opacity:.8;transform:translateY(-1px)}
+.bulk-chip.active{box-shadow:0 0 0 2px rgba(255,255,255,0.3)}
+.bulk-chip.add{background:rgba(122,232,122,0.1);border-color:rgba(122,232,122,0.3);color:#80e880}
+.bulk-chip.add.active{background:rgba(122,232,122,0.25);border-color:#80e880}
+.bulk-chip.rm{background:rgba(232,100,100,0.1);border-color:rgba(232,100,100,0.3);color:#e87a7a}
+.bulk-chip.rm.active{background:rgba(232,100,100,0.25);border-color:#e87a7a}
+.bulk-chip.unit{background:rgba(74,158,255,0.1);border-color:rgba(74,158,255,0.25);color:#7ac3ff}
+.bulk-chip.unit.active{background:rgba(74,158,255,0.25);border-color:#7ac3ff}
+.bulk-chip.danger{background:rgba(232,60,60,0.1);border-color:rgba(232,60,60,0.3);color:#ff6b6b}
+.bulk-chip.danger.active{background:rgba(232,60,60,0.25);border-color:#ff6b6b}
+tr.selected td{background:rgba(74,158,255,0.1)!important}
+.row-cb{accent-color:#4a9eff;width:14px;height:14px}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-badge">🛡️</div>
+    <div>
+      <h1>Los Santos Police Department</h1>
+      <p>ROSTER MANAGEMENT SYSTEM</p>
+    </div>
+  </div>
+  <div class="hdr-right" id="hdr-right" style="display:none">
+    <span class="hdr-name" id="hdr-name"></span>
+    <span class="role-pill" id="hdr-role"></span>
+    <button class="logout-btn" onclick="logout()">Log Out</button>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="pg-home" class="page on">
+  <div class="home-center">
+    <div class="home-sub">Welcome to the Training Center</div>
+    <div class="home-title">Select your <span>Category</span></div>
+    <div class="home-line"></div>
+  </div>
+  <div class="cards-row">
+    <div class="card" onclick="goUnitPicker()">
+      <span class="card-icon">🛡️</span>
+      <div class="card-lbl">ROSTER</div>
+      <div class="card-sub">All Officers</div>
+    </div>
+    <div class="card" id="card-command" style="display:none" onclick="goCommand()">
+      <span class="card-icon">⭐</span>
+      <div class="card-lbl">COMMAND</div>
+      <div class="card-sub">User Management</div>
+    </div>
+  </div>
+  <div style="max-width:400px;margin:28px auto 0">
+    <div class="srch-wrap">
+      <input id="home-search" placeholder="Quick search: name or badge #..." oninput="homeSearch(this.value)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#ccd6f0;padding:10px 32px 10px 14px;border-radius:10px;font-size:13px;font-family:inherit;width:100%">
+      <button class="srch-x" onclick="document.getElementById('home-search').value='';document.getElementById('home-search-results').innerHTML=''">✕</button>
+    </div>
+    <div id="home-search-results" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- UNIT PICKER -->
+<div id="pg-unit-picker" class="page">
+  <div style="text-align:center;margin-bottom:32px;padding-top:20px">
+    <div class="home-sub">Officer Roster</div>
+    <div class="home-title">Select <span>Unit</span></div>
+    <div class="home-line"></div>
+  </div>
+  <div class="cards-row">
+    <div class="card" onclick="goRosterUnit('ALL')">
+      <div class="unit-img">🛡️</div>
+      <div class="card-lbl">ALL</div>
+      <div class="card-sub">Full Roster</div>
+    </div>
+    <div class="card" onclick="goRosterUnit('PATROL')">
+      <div class="unit-img">🚔</div>
+      <div class="card-lbl">PATROL</div>
+      <div class="card-sub">Patrol Division</div>
+    </div>
+    <div class="card" onclick="showMetroPicker()">
+      <div class="unit-img">🚁</div>
+      <div class="card-lbl">METRO</div>
+      <div class="card-sub">Metro Division</div>
+    </div>
+    <div class="card" onclick="goRosterUnit('RED COMMAND')">
+      <div class="unit-img">⭐</div>
+      <div class="card-lbl">RED COMMAND</div>
+      <div class="card-sub">Top Command</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <button class="back-btn" onclick="goHome()">← Back</button>
+  </div>
+</div>
+
+<!-- METRO SUB-PICKER -->
+<div id="pg-metro-picker" class="page">
+  <div style="text-align:center;margin-bottom:32px;padding-top:20px">
+    <div class="home-sub">Metro Division</div>
+    <div class="home-title">Select <span>Sub-Unit</span></div>
+    <div class="home-line"></div>
+  </div>
+  <div class="cards-row">
+    <div class="card" onclick="goRosterUnit('METRO')">
+      <div class="unit-img">🚁</div>
+      <div class="card-lbl">ALL</div>
+      <div class="card-sub">All Metro</div>
+    </div>
+    <div class="card" onclick="goRosterUnit('DETECTIVE')">
+      <div class="unit-img">🔍</div>
+      <div class="card-lbl">DETECTIVE</div>
+      <div class="card-sub">Investigations</div>
+    </div>
+    <div class="card" onclick="goRosterUnit('SWAT')">
+      <div class="unit-img">⚔️</div>
+      <div class="card-lbl">SWAT</div>
+      <div class="card-sub">Special Forces</div>
+    </div>
+    <div class="card" onclick="goRosterUnit('PURSUIT')">
+      <div class="unit-img">🏎️</div>
+      <div class="card-lbl">M.OFFICER</div>
+      <div class="card-sub">Pursuit Unit</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <button class="back-btn" onclick="showPage('pg-unit-picker')">← Back</button>
+  </div>
+</div>
+
+<!-- ROSTER -->
+<div id="pg-roster" class="page">
+  <div class="sec-top">
+    <div class="sec-left">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <span class="ptitle">🛡️ Officer Roster</span>
+      <span id="officer-count" style="background:rgba(74,158,255,0.15);border:1px solid rgba(74,158,255,0.3);color:#7ac3ff;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700"></span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="sel-mode-btn" id="sel-mode-btn" onclick="toggleSelMode()">☑ Select</button>
+      <button class="add-btn" id="btn-add-off" style="display:none" onclick="openOffForm(-1)">+ Add Officer</button>
+    </div>
+  </div>
+  <div class="filters">
+    <div class="srch-wrap">
+      <input id="f-search" placeholder="Search name, badge, Discord..." oninput="renderRoster()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:inherit;width:100%">
+      <button class="srch-x" onclick="document.getElementById('f-search').value='';renderRoster()">✕</button>
+    </div>
+    <select id="f-unit" onchange="renderRoster()">
+      <option value="">All Units</option>
+      <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
+    </select>
+    <select id="f-rank" onchange="renderRoster()">
+      <option value="">All Ranks</option>
+      <option>Cadet</option><option>Officer</option><option>Sr. Officer</option><option>Corporal</option><option>Sergeant</option><option>Lieutenant</option><option>Captain</option>
+      <option>COP</option><option>A.COP</option><option>Deputy Chief</option>
+    </select>
+    <select id="f-cert" onchange="renderRoster()">
+      <option value="">All Clearances</option>
+      <option>Light Weapon</option><option>Heavy Weapon</option><option>Interceptor Vehicle</option><option>Helicopter</option><option>Motorcycle</option>
+    </select>
+    <button class="clr-btn" onclick="clearFilters()">Clear</button>
+  </div>
+  <div class="bulk-bar" id="bulk-bar">
+    <span class="bulk-count" id="bulk-count">0 selected</span>
+    <div class="bulk-sep"></div>
+    <button onclick="selectAllVisible()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:5px 10px;border-radius:6px;font-size:11px;font-family:inherit">Select All</button>
+    <button onclick="clearSelection()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:5px 10px;border-radius:6px;font-size:11px;font-family:inherit">Clear</button>
+    <div class="bulk-sep"></div>
+    <input type="hidden" id="bulk-action" value="">
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <span style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-left:2px">Clearances</span>
+      <button class="bulk-chip add" onclick="setBulkAction('cert-add-Light Weapon',this)">+LW</button>
+      <button class="bulk-chip add" onclick="setBulkAction('cert-add-Heavy Weapon',this)">+HW</button>
+      <button class="bulk-chip add" onclick="setBulkAction('cert-add-Interceptor Vehicle',this)">+INT</button>
+      <button class="bulk-chip add" onclick="setBulkAction('cert-add-Helicopter',this)">+HELI</button>
+      <button class="bulk-chip add" onclick="setBulkAction('cert-add-Motorcycle',this)">+MOTO</button>
+      <button class="bulk-chip rm" onclick="setBulkAction('cert-rm-Light Weapon',this)">−LW</button>
+      <button class="bulk-chip rm" onclick="setBulkAction('cert-rm-Heavy Weapon',this)">−HW</button>
+      <button class="bulk-chip rm" onclick="setBulkAction('cert-rm-Interceptor Vehicle',this)">−INT</button>
+      <button class="bulk-chip rm" onclick="setBulkAction('cert-rm-Helicopter',this)">−HELI</button>
+      <button class="bulk-chip rm" onclick="setBulkAction('cert-rm-Motorcycle',this)">−MOTO</button>
+      <div style="width:1px;height:18px;background:rgba(255,255,255,0.1)"></div>
+      <span style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase">Unit</span>
+      <button class="bulk-chip unit" onclick="setBulkAction('unit-PATROL',this)">PATROL</button>
+      <button class="bulk-chip unit" onclick="setBulkAction('unit-METRO',this)">METRO</button>
+      <button class="bulk-chip unit" onclick="setBulkAction('unit-SWAT',this)">SWAT</button>
+      <button class="bulk-chip unit" onclick="setBulkAction('unit-DETECTIVE',this)">DET</button>
+      <button class="bulk-chip unit" onclick="setBulkAction('unit-PURSUIT',this)">PURSUIT</button>
+      <button class="bulk-chip unit" onclick="setBulkAction('unit-RED COMMAND',this)">CMD</button>
+      <div style="width:1px;height:18px;background:rgba(255,255,255,0.1)"></div>
+      <button class="bulk-chip danger" onclick="setBulkAction('delete',this)">✕ Remove</button>
+      <button class="bulk-apply" id="bulk-apply-btn" onclick="applyBulk()" style="display:none">Apply</button>
+    </div>
+    <button class="bulk-cancel" onclick="toggleSelMode()">Cancel</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th id="th-cb" style="display:none;width:32px"><input type="checkbox" class="row-cb" id="cb-all" onchange="toggleAllCb(this.checked)"></th>
+        <th>First Name</th><th>Last Name</th><th>Rank</th><th>Unit</th><th>Badge</th><th>Join Date</th><th>Discord ID</th><th>Clearances</th><th></th>
+      </tr></thead>
+      <tbody id="roster-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- COMMAND -->
+<div id="pg-command" class="page">
+  <div class="sec-top">
+    <div class="sec-left">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <span class="ptitle">⭐ Command — User Management</span>
+      <span id="cmd-count" style="background:rgba(245,196,113,0.15);border:1px solid rgba(245,196,113,0.3);color:#f5c471;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700"></span>
+    </div>
+    <button class="add-btn" onclick="openUserForm(-1)">+ Add User</button>
+  </div>
+  <div class="filters">
+    <div class="srch-wrap">
+      <input id="cmd-search" placeholder="Search name, badge, Discord..." oninput="renderCommand()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:inherit;width:100%">
+      <button class="srch-x" onclick="document.getElementById('cmd-search').value='';renderCommand()">✕</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Full Name</th><th>Role</th><th>Rank</th><th>Unit</th><th>Badge</th><th>Join Date</th><th>Discord ID</th><th></th>
+      </tr></thead>
+      <tbody id="cmd-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-overlay" class="overlay on">
+  <div class="modal">
+    <div class="modal-icon">🔐</div>
+    <h3>LSPD Access Portal</h3>
+    <p class="desc">Enter your badge number and PIN</p>
+    <input id="li-ident" placeholder="Badge # (e.g. 210)" autocomplete="off" maxlength="3" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()" style="text-align:center;letter-spacing:4px;font-size:18px">
+    <input id="li-pass" type="password" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;letter-spacing:8px;font-size:20px">
+    <div class="modal-err" id="li-err"></div>
+    <button class="btn-primary" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD (first login) -->
+<div id="chpw-overlay" class="overlay">
+  <div class="modal">
+    <div class="modal-icon">🔑</div>
+    <h3>Set Your Password</h3>
+    <p class="desc">First login detected. Choose a new 4-digit PIN password.</p>
+    <input id="chpw-new" type="password" placeholder="New PIN" maxlength="4" class="pin-input" onkeydown="if(event.key==='Enter')document.getElementById('chpw-confirm').focus()">
+    <input id="chpw-confirm" type="password" placeholder="Confirm PIN" maxlength="4" class="pin-input" onkeydown="if(event.key==='Enter')doSetPassword()">
+    <div class="modal-err" id="chpw-err"></div>
+    <button class="btn-primary" onclick="doSetPassword()">Set Password & Enter</button>
+  </div>
+</div>
+
+<!-- OFFICER FORM -->
+<div id="off-form-ov" class="form-overlay">
+  <div class="form-box">
+    <h3 id="off-form-title">Add Officer</h3>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>First Name</label><input id="of-fn" placeholder="Jeffrey"></div>
+      <div class="field"><label><span class="req">*</span>Last Name</label><input id="of-ln" placeholder="Bundy"></div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>Unit</label>
+        <select id="of-unit" onchange="updateOffRanks()">
+          <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
+        </select>
+      </div>
+      <div class="field"><label><span class="req">*</span>Rank</label><select id="of-rank"></select></div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label>Badge #</label><input id="of-badge" placeholder="123" maxlength="3"></div>
+      <div class="field"><label><span class="req">*</span>Discord ID</label><input id="of-discord" placeholder="123456789012345678"></div>
+    </div>
+    <div class="field"><label>Join Date</label><input id="of-join" type="date"></div>
+    <div class="field"><label>Clearances</label>
+      <div class="chk-grid">
+        <label class="chk-item"><input type="checkbox" id="oc-lw"> Light Weapon</label>
+        <label class="chk-item"><input type="checkbox" id="oc-hw"> Heavy Weapon</label>
+        <label class="chk-item"><input type="checkbox" id="oc-int"> Interceptor Vehicle</label>
+        <label class="chk-item"><input type="checkbox" id="oc-heli"> Helicopter</label>
+        <label class="chk-item"><input type="checkbox" id="oc-moto"> Motorcycle</label>
+      </div>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeOffForm()">Cancel</button>
+      <button class="fsave" onclick="saveOfficer()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER FORM -->
+<div id="usr-form-ov" class="form-overlay">
+  <div class="form-box">
+    <h3 id="usr-form-title">Add User</h3>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>First Name</label><input id="uf-fn" placeholder="Jeffrey"></div>
+      <div class="field"><label><span class="req">*</span>Last Name</label><input id="uf-ln" placeholder="Bundy"></div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>Initial Password</label><input id="uf-pass" type="text" placeholder="4-digit PIN" maxlength="4"></div>
+      <div class="field"><label><span class="req">*</span>Role</label>
+        <select id="uf-role"><option value="officer">Officer</option><option value="command">Command</option></select>
+      </div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>Unit</label>
+        <select id="uf-unit" onchange="updateUsrRanks()">
+          <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
+        </select>
+      </div>
+      <div class="field"><label><span class="req">*</span>Rank</label><select id="uf-rank"></select></div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label>Badge #</label><input id="uf-badge" placeholder="123" maxlength="3"></div>
+      <div class="field"><label><span class="req">*</span>Discord ID</label><input id="uf-discord" placeholder="123456789012345678"></div>
+    </div>
+    <div class="field"><label>Join Date</label><input id="uf-join" type="date"></div>
+    <div class="field"><label>Clearances</label>
+      <div class="chk-grid">
+        <label class="chk-item"><input type="checkbox" id="uc-lw"> Light Weapon</label>
+        <label class="chk-item"><input type="checkbox" id="uc-hw"> Heavy Weapon</label>
+        <label class="chk-item"><input type="checkbox" id="uc-int"> Interceptor Vehicle</label>
+        <label class="chk-item"><input type="checkbox" id="uc-heli"> Helicopter</label>
+        <label class="chk-item"><input type="checkbox" id="uc-moto"> Motorcycle</label>
+      </div>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeUserForm()">Cancel</button>
+      <button class="fsave" onclick="saveUser()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const RANKS_BY_UNIT={
+  'PATROL':['Cadet','Officer','Sr. Officer','Corporal','Sergeant','Lieutenant','Captain'],
+  'METRO':['Cadet','Officer','Sr. Officer','Corporal','Sergeant','Lieutenant','Captain'],
+  'SWAT':['Cadet','Officer','Sr. Officer','Corporal','Sergeant','Lieutenant','Captain'],
+  'DETECTIVE':['Cadet','Officer','Sr. Officer','Corporal','Sergeant','Lieutenant','Captain'],
+  'PURSUIT':['Cadet','Officer','Sr. Officer','Corporal','Sergeant','Lieutenant','Captain'],
+  'RED COMMAND':['COP','A.COP','Deputy Chief']
+};
+const CERTCLS={'Light Weapon':'bk-lw','Heavy Weapon':'bk-hw','Interceptor Vehicle':'bk-int','Helicopter':'bk-heli','Motorcycle':'bk-moto'};
+const UNITCLS={'PATROL':'bu-PATROL','METRO':'bu-METRO','SWAT':'bu-SWAT','DETECTIVE':'bu-DETECTIVE','PURSUIT':'bu-PURSUIT','RED COMMAND':'bu-RED-COMMAND'};
+
+function clickSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='sine';
+    o.frequency.setValueAtTime(660,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(920,ctx.currentTime+0.07);
+    g.gain.setValueAtTime(0.13,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.14);
+    o.start();o.stop(ctx.currentTime+0.14);
+  }catch(e){}
+}
+
+function populateRanks(selectId,unit,currentRank){
+  const sel=document.getElementById(selectId);
+  const ranks=RANKS_BY_UNIT[unit]||RANKS_BY_UNIT['PATROL'];
+  sel.innerHTML=ranks.map(r=>'<option'+(r===currentRank?' selected':'')+'>'+r+'</option>').join('');
+}
+function updateOffRanks(){populateRanks('of-rank',document.getElementById('of-unit').value,null)}
+function updateUsrRanks(){populateRanks('uf-rank',document.getElementById('uf-unit').value,null)}
+
+const DATA_VERSION='v15';
+if(localStorage.getItem('lspd_version')!==DATA_VERSION){
+  localStorage.removeItem('lspd_users');
+  localStorage.removeItem('lspd_officers');
+  localStorage.setItem('lspd_version',DATA_VERSION);
+}
+const DEFAULT_OFFICERS=[{"id":2,"fname":"Alex","lname":"Cross","rank":"Lieutenant","unit":"PATROL","badge":"210","discord":"1031228503850500237","certs":[],"join":"2026-10-03"},{"id":3,"fname":"Tommy","lname":"Rell","rank":"Lieutenant","unit":"PATROL","badge":"211","discord":"1074621128796016741","certs":[],"join":"2026-10-03"},{"id":4,"fname":"Hans","lname":"Miller","rank":"Sergeant","unit":"PATROL","badge":"212","discord":"1167844385510150196","certs":[],"join":"2026-10-03"},{"id":5,"fname":"Marcus","lname":"Steele","rank":"Sergeant","unit":"PATROL","badge":"213","discord":"1056695830322626580","certs":[],"join":"2026-10-03"},{"id":6,"fname":"Masson","lname":"BlackWood","rank":"Sergeant","unit":"PATROL","badge":"214","discord":"946840497849270402","certs":[],"join":"2026-10-03"},{"id":7,"fname":"Daniel","lname":"Foster","rank":"Sergeant","unit":"PATROL","badge":"215","discord":"1432451387459113152","certs":[],"join":"2026-10-03"},{"id":8,"fname":"Arthur","lname":"Ray","rank":"Corporal","unit":"PATROL","badge":"216","discord":"492412013633470475","certs":[],"join":"2026-10-03"},{"id":9,"fname":"Leo","lname":"Cross","rank":"Corporal","unit":"PATROL","badge":"217","discord":"833725571216965694","certs":[],"join":"2026-10-03"},{"id":10,"fname":"Eizo","lname":"Mikorashi","rank":"Corporal","unit":"PATROL","badge":"218","discord":"960916258562400286","certs":[],"join":"2026-10-03"},{"id":11,"fname":"Kai","lname":"Carter","rank":"Sr. Officer","unit":"PATROL","badge":"220","discord":"1087006319468363816","certs":[],"join":"2026-10-03"},{"id":12,"fname":"Jack","lname":"Pain","rank":"Sr. Officer","unit":"PATROL","badge":"221","discord":"844611136028016670","certs":[],"join":"2026-10-03"},{"id":13,"fname":"Bob","lname":"Marley","rank":"Sr. Officer","unit":"PATROL","badge":"222","discord":"820296458535698432","certs":[],"join":"2026-10-03"},{"id":14,"fname":"Ted","lname":"Bennett","rank":"Sr. Officer","unit":"PATROL","badge":"223","discord":"380774474619813900","certs":[],"join":"2026-10-03"},{"id":15,"fname":"Karl","lname":"Blake","rank":"Sr. Officer","unit":"PATROL","badge":"224","discord":"1415035857274011700","certs":[],"join":"2026-10-03"},{"id":16,"fname":"Theo","lname":"Ross","rank":"Sr. Officer","unit":"PATROL","badge":"225","discord":"1143633166796587130","certs":[],"join":"2026-10-03"},{"id":17,"fname":"Judd","lname":"Ross","rank":"Sr. Officer","unit":"PATROL","badge":"226","discord":"321996387631890435","certs":[],"join":"2026-10-03"},{"id":18,"fname":"Wade","lname":"Gray","rank":"Sr. Officer","unit":"PATROL","badge":"227","discord":"970691548452900924","certs":[],"join":"2026-10-03"},{"id":19,"fname":"Shmuel","lname":"Grinberg","rank":"Sr. Officer","unit":"PATROL","badge":"228","discord":"1087006319468363816","certs":[],"join":"2026-10-03"},{"id":20,"fname":"Jebediah","lname":"Longnuts","rank":"Sr. Officer","unit":"PATROL","badge":"229","discord":"1397606595747254440","certs":[],"join":"2026-10-03"},{"id":21,"fname":"Ryan","lname":"Levy","rank":"Sr. Officer","unit":"PATROL","badge":"230","discord":"1325129725487616081","certs":[],"join":"2026-10-03"},{"id":22,"fname":"James","lname":"Walker","rank":"Sr. Officer","unit":"PATROL","badge":"231","discord":"1207720713847574551","certs":[],"join":"2026-10-03"},{"id":23,"fname":"Rafael","lname":"Dukan","rank":"Sr. Officer","unit":"PATROL","badge":"232","discord":"1365115333245009970","certs":[],"join":"2026-10-03"},{"id":24,"fname":"Alexander","lname":"Moshon","rank":"Sr. Officer","unit":"PATROL","badge":"233","discord":"910546315509899315","certs":[],"join":"2026-10-03"},{"id":25,"fname":"Tuvia","lname":"Boshkaldo","rank":"Sr. Officer","unit":"PATROL","badge":"234","discord":"818857511117127701","certs":[],"join":"2026-10-03"},{"id":26,"fname":"Takashi","lname":"Llue","rank":"Sr. Officer","unit":"PATROL","badge":"235","discord":"412622468172218368","certs":[],"join":"2026-10-03"},{"id":27,"fname":"Jäger","lname":"Meister","rank":"Sr. Officer","unit":"PATROL","badge":"236","discord":"505677711507980289","certs":[],"join":"2026-10-03"},{"id":28,"fname":"Ace","lname":"King","rank":"Sr. Officer","unit":"PATROL","badge":"237","discord":"1001043640119984169","certs":[],"join":"2026-10-03"},{"id":29,"fname":"Dmitri","lname":"Sokolov","rank":"Sr. Officer","unit":"PATROL","badge":"238","discord":"1330604642664714310","certs":[],"join":"2026-10-03"},{"id":30,"fname":"Tom","lname":"Wilson","rank":"Sr. Officer","unit":"PATROL","badge":"239","discord":"1397903222018015282","certs":[],"join":"2026-10-03"},{"id":31,"fname":"Munson","lname":"Ross","rank":"Officer","unit":"PATROL","badge":"241","discord":"503218719896633348","certs":[],"join":"2026-10-03"},{"id":32,"fname":"Carl","lname":"Johnson","rank":"Officer","unit":"PATROL","badge":"242","discord":"1123109933529964616","certs":[],"join":"2026-10-03"},{"id":33,"fname":"Ryan","lname":"Cooper","rank":"Officer","unit":"PATROL","badge":"243","discord":"966669227266293812","certs":[],"join":"2026-10-03"},{"id":34,"fname":"Pera","lname":"Aukko","rank":"Officer","unit":"PATROL","badge":"244","discord":"788742220659556372","certs":[],"join":"2026-10-03"},{"id":35,"fname":"Ori","lname":"Harush","rank":"Officer","unit":"PATROL","badge":"245","discord":"1192274938183303189","certs":[],"join":"2026-10-03"},{"id":36,"fname":"Avrham","lname":"Cooper","rank":"Officer","unit":"PATROL","badge":"246","discord":"1276651454333059154","certs":[],"join":"2026-10-03"},{"id":37,"fname":"Lior","lname":"Hazan","rank":"Officer","unit":"PATROL","badge":"247","discord":"1183001216607846435","certs":[],"join":"2026-10-03"},{"id":38,"fname":"Elias","lname":"Frost","rank":"Officer","unit":"PATROL","badge":"248","discord":"656928813732855838","certs":[],"join":"2026-10-03"},{"id":39,"fname":"Eliran","lname":"Cohen","rank":"Officer","unit":"PATROL","badge":"249","discord":"1063967775296585768","certs":[],"join":"2026-10-03"},{"id":40,"fname":"Franswa","lname":"Silvouple","rank":"Officer","unit":"PATROL","badge":"250","discord":"1406340139210244167","certs":[],"join":"2026-10-03"},{"id":41,"fname":"Grey","lname":"Goose","rank":"Officer","unit":"PATROL","badge":"251","discord":"951911507267039292","certs":[],"join":"2026-10-03"},{"id":42,"fname":"Randy","lname":"Smiles","rank":"Officer","unit":"PATROL","badge":"252","discord":"1205917017538961502","certs":[],"join":"2026-10-03"},{"id":43,"fname":"Ethan","lname":"Blake","rank":"Officer","unit":"PATROL","badge":"253","discord":"803525613071237120","certs":[],"join":"2026-10-03"},{"id":44,"fname":"Moshiko","lname":"Shimoni","rank":"Officer","unit":"PATROL","badge":"254","discord":"313269912925896716","certs":[],"join":"2026-10-03"},{"id":45,"fname":"Eitan","lname":"Kooper","rank":"Officer","unit":"PATROL","badge":"255","discord":"1267899916248682506","certs":[],"join":"2026-10-03"},{"id":46,"fname":"Sanit","lname":"Sossa","rank":"Officer","unit":"PATROL","badge":"256","discord":"771677974843359233","certs":[],"join":"2026-10-03"},{"id":47,"fname":"Ruslan","lname":"Maxim","rank":"Officer","unit":"PATROL","badge":"257","discord":"791914621035872286","certs":[],"join":"2026-10-03"},{"id":48,"fname":"Dani","lname":"Whiteman","rank":"Officer","unit":"PATROL","badge":"258","discord":"990500938915643392","certs":[],"join":"2026-10-03"},{"id":49,"fname":"John","lname":"Wilson","rank":"Officer","unit":"PATROL","badge":"259","discord":"789119287776116737","certs":[],"join":"2026-10-03"},{"id":50,"fname":"Shimon","lname":"Rexy","rank":"Officer","unit":"PATROL","badge":"260","discord":"1248206085626789892","certs":[],"join":"2026-10-03"},{"id":51,"fname":"Dom","lname":"Fel","rank":"Officer","unit":"PATROL","badge":"261","discord":"868973071267151893","certs":[],"join":"2026-10-03"},{"id":52,"fname":"Marcelo","lname":"Silve","rank":"Officer","unit":"PATROL","badge":"262","discord":"778248136694562834","certs":[],"join":"2026-10-03"},{"id":53,"fname":"Ricardo","lname":"Martinez","rank":"Officer","unit":"PATROL","badge":"263","discord":"483320532989902878","certs":[],"join":"2026-10-03"},{"id":54,"fname":"Richard","lname":"Weed","rank":"Officer","unit":"PATROL","badge":"264","discord":"1047136452900831253","certs":[],"join":"2026-10-03"},{"id":55,"fname":"Viktor","lname":"Vivi","rank":"Officer","unit":"PATROL","badge":"265","discord":"819657060434182175","certs":[],"join":"2026-10-03"},{"id":56,"fname":"Pablo","lname":"Gonzales","rank":"Officer","unit":"PATROL","badge":"266","discord":"763725650674450432","certs":[],"join":"2026-10-03"},{"id":57,"fname":"Nico","lname":"Pahima","rank":"Officer","unit":"PATROL","badge":"267","discord":"744948462063190057","certs":[],"join":"2026-10-03"},{"id":58,"fname":"Ryan","lname":"Gonzales","rank":"Officer","unit":"PATROL","badge":"268","discord":"1009529143735627887","certs":[],"join":"2026-10-03"},{"id":59,"fname":"Kipod","lname":"Brocway","rank":"Officer","unit":"PATROL","badge":"269","discord":"1213056217102942219","certs":[],"join":"2026-10-03"},{"id":60,"fname":"Stefan","lname":"Johnson","rank":"Officer","unit":"PATROL","badge":"270","discord":"523838379553587210","certs":[],"join":"2026-10-03"},{"id":61,"fname":"Ido","lname":"Sabag","rank":"Officer","unit":"PATROL","badge":"271","discord":"1100345574965919846","certs":[],"join":"2026-10-03"},{"id":62,"fname":"James","lname":"Heisenberg","rank":"Officer","unit":"PATROL","badge":"272","discord":"1163798986264674314","certs":[],"join":"2026-10-03"},{"id":63,"fname":"Ramsey","lname":"Shoshan","rank":"Officer","unit":"PATROL","badge":"273","discord":"1269675202074378241","certs":[],"join":"2026-10-03"},{"id":64,"fname":"Tomer","lname":"Malka","rank":"Officer","unit":"PATROL","badge":"274","discord":"1375085965818990604","certs":[],"join":"2026-10-03"},{"id":65,"fname":"Nitzan","lname":"Malka","rank":"Officer","unit":"PATROL","badge":"275","discord":"1171902695645397133","certs":[],"join":"2026-10-03"},{"id":66,"fname":"Paddy","lname":"Pimblert","rank":"Officer","unit":"PATROL","badge":"276","discord":"1399011487770607616","certs":[],"join":"2026-10-03"},{"id":67,"fname":"Abdul","lname":"Jabbar","rank":"Officer","unit":"PATROL","badge":"277","discord":"613814567210057738","certs":[],"join":"2026-10-03"},{"id":68,"fname":"Harry","lname":"Florence","rank":"Officer","unit":"PATROL","badge":"278","discord":"312809616155082752","certs":[],"join":"2026-10-03"},{"id":69,"fname":"Avi","lname":"Yeffet","rank":"Officer","unit":"PATROL","badge":"279","discord":"832533902882373652","certs":[],"join":"2026-10-03"},{"id":70,"fname":"Benjamin","lname":"White","rank":"Officer","unit":"PATROL","badge":"280","discord":"1205171700237598835","certs":[],"join":"2026-10-03"},{"id":71,"fname":"Ryan","lname":"Stone","rank":"Officer","unit":"PATROL","badge":"281","discord":"1406230768035954779","certs":[],"join":"2026-10-03"},{"id":72,"fname":"Abraham","lname":"White","rank":"Officer","unit":"PATROL","badge":"282","discord":"1182994095170396211","certs":[],"join":"2026-10-03"},{"id":73,"fname":"Tomer","lname":"Malka","rank":"Officer","unit":"PATROL","badge":"283","discord":"","certs":[],"join":"2026-10-03"},{"id":74,"fname":"Dani","lname":"Levi","rank":"Officer","unit":"PATROL","badge":"284","discord":"","certs":[],"join":"2026-10-03"}];
+const DEFAULT_USERS=[{"id":1,"fname":"Jeffrey","lname":"Bundy","password":"0000","mustChangePassword":false,"role":"command","rank":"Lieutenant","unit":"PATROL","badge":"201","discord":"","certs":[]},{"id":2,"fname":"Alex","lname":"Cross","password":"0000","mustChangePassword":false,"role":"officer","rank":"Lieutenant","unit":"PATROL","badge":"210","discord":"1031228503850500237","join":"2026-10-03","certs":[]},{"id":3,"fname":"Tommy","lname":"Rell","password":"0000","mustChangePassword":false,"role":"officer","rank":"Lieutenant","unit":"PATROL","badge":"211","discord":"1074621128796016741","join":"2026-10-03","certs":[]},{"id":4,"fname":"Hans","lname":"Miller","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"212","discord":"1167844385510150196","join":"2026-10-03","certs":[]},{"id":5,"fname":"Marcus","lname":"Steele","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"213","discord":"1056695830322626580","join":"2026-10-03","certs":[]},{"id":6,"fname":"Masson","lname":"BlackWood","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"214","discord":"946840497849270402","join":"2026-10-03","certs":[]},{"id":7,"fname":"Daniel","lname":"Foster","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"215","discord":"1432451387459113152","join":"2026-10-03","certs":[]},{"id":8,"fname":"Arthur","lname":"Ray","password":"0000","mustChangePassword":false,"role":"officer","rank":"Corporal","unit":"PATROL","badge":"216","discord":"492412013633470475","join":"2026-10-03","certs":[]},{"id":9,"fname":"Leo","lname":"Cross","password":"0000","mustChangePassword":false,"role":"officer","rank":"Corporal","unit":"PATROL","badge":"217","discord":"833725571216965694","join":"2026-10-03","certs":[]},{"id":10,"fname":"Eizo","lname":"Mikorashi","password":"0000","mustChangePassword":false,"role":"officer","rank":"Corporal","unit":"PATROL","badge":"218","discord":"960916258562400286","join":"2026-10-03","certs":[]},{"id":11,"fname":"Kai","lname":"Carter","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"220","discord":"1087006319468363816","join":"2026-10-03","certs":[]},{"id":12,"fname":"Jack","lname":"Pain","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"221","discord":"844611136028016670","join":"2026-10-03","certs":[]},{"id":13,"fname":"Bob","lname":"Marley","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"222","discord":"820296458535698432","join":"2026-10-03","certs":[]},{"id":14,"fname":"Ted","lname":"Bennett","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"223","discord":"380774474619813900","join":"2026-10-03","certs":[]},{"id":15,"fname":"Karl","lname":"Blake","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"224","discord":"1415035857274011700","join":"2026-10-03","certs":[]},{"id":16,"fname":"Theo","lname":"Ross","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"225","discord":"1143633166796587130","join":"2026-10-03","certs":[]},{"id":17,"fname":"Judd","lname":"Ross","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"226","discord":"321996387631890435","join":"2026-10-03","certs":[]},{"id":18,"fname":"Wade","lname":"Gray","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"227","discord":"970691548452900924","join":"2026-10-03","certs":[]},{"id":19,"fname":"Shmuel","lname":"Grinberg","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"228","discord":"1087006319468363816","join":"2026-10-03","certs":[]},{"id":20,"fname":"Jebediah","lname":"Longnuts","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"229","discord":"1397606595747254440","join":"2026-10-03","certs":[]},{"id":21,"fname":"Ryan","lname":"Levy","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"230","discord":"1325129725487616081","join":"2026-10-03","certs":[]},{"id":22,"fname":"James","lname":"Walker","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"231","discord":"1207720713847574551","join":"2026-10-03","certs":[]},{"id":23,"fname":"Rafael","lname":"Dukan","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"232","discord":"1365115333245009970","join":"2026-10-03","certs":[]},{"id":24,"fname":"Alexander","lname":"Moshon","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"233","discord":"910546315509899315","join":"2026-10-03","certs":[]},{"id":25,"fname":"Tuvia","lname":"Boshkaldo","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"234","discord":"818857511117127701","join":"2026-10-03","certs":[]},{"id":26,"fname":"Takashi","lname":"Llue","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"235","discord":"412622468172218368","join":"2026-10-03","certs":[]},{"id":27,"fname":"Jäger","lname":"Meister","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"236","discord":"505677711507980289","join":"2026-10-03","certs":[]},{"id":28,"fname":"Ace","lname":"King","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"237","discord":"1001043640119984169","join":"2026-10-03","certs":[]},{"id":29,"fname":"Dmitri","lname":"Sokolov","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"238","discord":"1330604642664714310","join":"2026-10-03","certs":[]},{"id":30,"fname":"Tom","lname":"Wilson","password":"0000","mustChangePassword":false,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"239","discord":"1397903222018015282","join":"2026-10-03","certs":[]},{"id":31,"fname":"Munson","lname":"Ross","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"241","discord":"503218719896633348","join":"2026-10-03","certs":[]},{"id":32,"fname":"Carl","lname":"Johnson","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"242","discord":"1123109933529964616","join":"2026-10-03","certs":[]},{"id":33,"fname":"Ryan","lname":"Cooper","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"243","discord":"966669227266293812","join":"2026-10-03","certs":[]},{"id":34,"fname":"Pera","lname":"Aukko","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"244","discord":"788742220659556372","join":"2026-10-03","certs":[]},{"id":35,"fname":"Ori","lname":"Harush","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"245","discord":"1192274938183303189","join":"2026-10-03","certs":[]},{"id":36,"fname":"Avrham","lname":"Cooper","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"246","discord":"1276651454333059154","join":"2026-10-03","certs":[]},{"id":37,"fname":"Lior","lname":"Hazan","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"247","discord":"1183001216607846435","join":"2026-10-03","certs":[]},{"id":38,"fname":"Elias","lname":"Frost","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"248","discord":"656928813732855838","join":"2026-10-03","certs":[]},{"id":39,"fname":"Eliran","lname":"Cohen","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"249","discord":"1063967775296585768","join":"2026-10-03","certs":[]},{"id":40,"fname":"Franswa","lname":"Silvouple","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"250","discord":"1406340139210244167","join":"2026-10-03","certs":[]},{"id":41,"fname":"Grey","lname":"Goose","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"251","discord":"951911507267039292","join":"2026-10-03","certs":[]},{"id":42,"fname":"Randy","lname":"Smiles","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"252","discord":"1205917017538961502","join":"2026-10-03","certs":[]},{"id":43,"fname":"Ethan","lname":"Blake","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"253","discord":"803525613071237120","join":"2026-10-03","certs":[]},{"id":44,"fname":"Moshiko","lname":"Shimoni","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"254","discord":"313269912925896716","join":"2026-10-03","certs":[]},{"id":45,"fname":"Eitan","lname":"Kooper","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"255","discord":"1267899916248682506","join":"2026-10-03","certs":[]},{"id":46,"fname":"Sanit","lname":"Sossa","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"256","discord":"771677974843359233","join":"2026-10-03","certs":[]},{"id":47,"fname":"Ruslan","lname":"Maxim","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"257","discord":"791914621035872286","join":"2026-10-03","certs":[]},{"id":48,"fname":"Dani","lname":"Whiteman","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"258","discord":"990500938915643392","join":"2026-10-03","certs":[]},{"id":49,"fname":"John","lname":"Wilson","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"259","discord":"789119287776116737","join":"2026-10-03","certs":[]},{"id":50,"fname":"Shimon","lname":"Rexy","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"260","discord":"1248206085626789892","join":"2026-10-03","certs":[]},{"id":51,"fname":"Dom","lname":"Fel","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"261","discord":"868973071267151893","join":"2026-10-03","certs":[]},{"id":52,"fname":"Marcelo","lname":"Silve","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"262","discord":"778248136694562834","join":"2026-10-03","certs":[]},{"id":53,"fname":"Ricardo","lname":"Martinez","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"263","discord":"483320532989902878","join":"2026-10-03","certs":[]},{"id":54,"fname":"Richard","lname":"Weed","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"264","discord":"1047136452900831253","join":"2026-10-03","certs":[]},{"id":55,"fname":"Viktor","lname":"Vivi","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"265","discord":"819657060434182175","join":"2026-10-03","certs":[]},{"id":56,"fname":"Pablo","lname":"Gonzales","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"266","discord":"763725650674450432","join":"2026-10-03","certs":[]},{"id":57,"fname":"Nico","lname":"Pahima","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"267","discord":"744948462063190057","join":"2026-10-03","certs":[]},{"id":58,"fname":"Ryan","lname":"Gonzales","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"268","discord":"1009529143735627887","join":"2026-10-03","certs":[]},{"id":59,"fname":"Kipod","lname":"Brocway","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"269","discord":"1213056217102942219","join":"2026-10-03","certs":[]},{"id":60,"fname":"Stefan","lname":"Johnson","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"270","discord":"523838379553587210","join":"2026-10-03","certs":[]},{"id":61,"fname":"Ido","lname":"Sabag","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"271","discord":"1100345574965919846","join":"2026-10-03","certs":[]},{"id":62,"fname":"James","lname":"Heisenberg","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"272","discord":"1163798986264674314","join":"2026-10-03","certs":[]},{"id":63,"fname":"Ramsey","lname":"Shoshan","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"273","discord":"1269675202074378241","join":"2026-10-03","certs":[]},{"id":64,"fname":"Tomer","lname":"Malka","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"274","discord":"1375085965818990604","join":"2026-10-03","certs":[]},{"id":65,"fname":"Nitzan","lname":"Malka","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"275","discord":"1171902695645397133","join":"2026-10-03","certs":[]},{"id":66,"fname":"Paddy","lname":"Pimblert","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"276","discord":"1399011487770607616","join":"2026-10-03","certs":[]},{"id":67,"fname":"Abdul","lname":"Jabbar","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"277","discord":"613814567210057738","join":"2026-10-03","certs":[]},{"id":68,"fname":"Harry","lname":"Florence","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"278","discord":"312809616155082752","join":"2026-10-03","certs":[]},{"id":69,"fname":"Avi","lname":"Yeffet","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"279","discord":"832533902882373652","join":"2026-10-03","certs":[]},{"id":70,"fname":"Benjamin","lname":"White","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"280","discord":"1205171700237598835","join":"2026-10-03","certs":[]},{"id":71,"fname":"Ryan","lname":"Stone","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"281","discord":"1406230768035954779","join":"2026-10-03","certs":[]},{"id":72,"fname":"Abraham","lname":"White","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"282","discord":"1182994095170396211","join":"2026-10-03","certs":[]},{"id":73,"fname":"Tomer","lname":"Malka","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"283","discord":"","join":"2026-10-03","certs":[]},{"id":74,"fname":"Dani","lname":"Levi","password":"0000","mustChangePassword":false,"role":"officer","rank":"Officer","unit":"PATROL","badge":"284","discord":"","join":"2026-10-03","certs":[]}];
+let DB={
+  users:JSON.parse(localStorage.getItem('lspd_users')||'null')||DEFAULT_USERS,
+  officers:JSON.parse(localStorage.getItem('lspd_officers')||'null')||DEFAULT_OFFICERS
+};
+let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
+
+function persist(){
+  localStorage.setItem('lspd_users',JSON.stringify(DB.users));
+  localStorage.setItem('lspd_officers',JSON.stringify(DB.officers));
+}
+
+function doLogin(){
+  const ident=document.getElementById('li-ident').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  const u=DB.users.find(x=>x.badge&&x.badge===ident&&x.password===pass);
+  if(u){
+    currentUser=u;
+    document.getElementById('login-overlay').classList.remove('on');
+    if(u.mustChangePassword){
+      document.getElementById('chpw-new').value='';
+      document.getElementById('chpw-confirm').value='';
+      document.getElementById('chpw-err').textContent='';
+      document.getElementById('chpw-overlay').classList.add('on');
+      setTimeout(()=>document.getElementById('chpw-new').focus(),100);
+      return;
+    }
+    finishLogin(u);
+  } else {
+    document.getElementById('li-err').textContent='Invalid badge number or PIN.';
+    document.getElementById('li-pass').value='';
+  }
+}
+
+function doSetPassword(){
+  const np=document.getElementById('chpw-new').value;
+  const cp=document.getElementById('chpw-confirm').value;
+  if(!/^\d{4}$/.test(np)){document.getElementById('chpw-err').textContent='Must be exactly 4 digits.';return}
+  if(np!==cp){document.getElementById('chpw-err').textContent='Passwords do not match.';return}
+  const ui=DB.users.findIndex(u=>u.id===currentUser.id);
+  DB.users[ui].password=np;
+  DB.users[ui].mustChangePassword=false;
+  currentUser=DB.users[ui];
+  persist();
+  document.getElementById('chpw-overlay').classList.remove('on');
+  finishLogin(currentUser);
+}
+
+function finishLogin(u){
+  document.getElementById('hdr-right').style.display='flex';
+  document.getElementById('hdr-name').textContent=u.fname+' '+u.lname;
+  const rp=document.getElementById('hdr-role');
+  rp.textContent=u.role==='command'?'Command':'Officer';
+  rp.className='role-pill '+(u.role==='command'?'pill-command':'pill-officer');
+  document.getElementById('card-command').style.display=u.role==='command'?'block':'none';
+  document.getElementById('btn-add-off').style.display=u.role==='command'?'':'none';
+  clickSound();
+}
+
+function logout(){
+  currentUser=null;
+  document.getElementById('hdr-right').style.display='none';
+  document.getElementById('card-command').style.display='none';
+  goHome();
+  ['li-ident','li-pass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('li-err').textContent='';
+  document.getElementById('login-overlay').classList.add('on');
+  setTimeout(()=>document.getElementById('li-ident').focus(),200);
+}
+
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));document.getElementById(id).classList.add('on')}
+function goUnitPicker(){clickSound();showPage('pg-unit-picker')}
+function showMetroPicker(){clickSound();showPage('pg-metro-picker')}
+function goRosterUnit(unit){
+  clickSound();
+  const fu=document.getElementById('f-unit');
+  if(unit==='ALL')fu.value='';
+  else if(unit==='METRO')fu.value='';
+  else fu.value=unit;
+  // For METRO sub-units keep unit as-is
+  document.getElementById('f-rank').value='';
+  document.getElementById('f-cert').value='';
+  document.getElementById('f-search').value='';
+  showPage('pg-roster');
+  renderRoster();
+}
+function homeSearch(q){
+  const el=document.getElementById('home-search-results');
+  if(!q.trim()){el.innerHTML='';return}
+  const lq=q.trim().toLowerCase();
+  const results=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(lq)||(o.badge||'').toLowerCase()===lq).slice(0,6);
+  if(!results.length){el.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;padding:8px">No officers found</div>';return}
+  el.innerHTML=results.map(o=>{
+    const ub='<span class="badge '+(UNITCLS[o.unit]||'')+'" style="font-size:9px;padding:1px 6px">'+o.unit+'</span>';
+    return '<div class="home-search-result" onclick="jumpToOfficer('+o.id+')" style="cursor:pointer"><div style="flex:1"><div class="hsr-name">'+o.fname+' '+o.lname+'</div><div class="hsr-meta">'+o.rank+' · '+ub+'</div></div><div class="hsr-badge">#'+(o.badge||'—')+'</div></div>';
+  }).join('');
+}
+function jumpToOfficer(id){
+  document.getElementById('home-search').value='';
+  document.getElementById('home-search-results').innerHTML='';
+  document.getElementById('f-unit').value='';
+  document.getElementById('f-rank').value='';
+  document.getElementById('f-cert').value='';
+  const o=DB.officers.find(x=>x.id===id);
+  if(o)document.getElementById('f-search').value=o.fname+' '+o.lname;
+  showPage('pg-roster');
+  renderRoster();
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('#roster-body tr:not(.rank-divider)');
+    if(rows.length)rows[0].scrollIntoView({behavior:'smooth',block:'center'});
+  },100);
+}
+function goHome(){showPage('pg-home')}
+function goRoster(){clickSound();showPage('pg-roster');renderRoster()}
+function goCommand(){if(!currentUser||currentUser.role!=='command')return;clickSound();showPage('pg-command');renderCommand()}
+
+const RANK_ORDER=['Deputy Chief','A.COP','COP','Captain','Lieutenant','Sergeant','Corporal','Sr. Officer','Officer','Cadet'];
+function rankGroup(rank){const i=RANK_ORDER.indexOf(rank);return i>=0?i:99;}
+
+function renderRoster(){
+  const fu=document.getElementById('f-unit').value;
+  const fr=document.getElementById('f-rank').value;
+  const fc=document.getElementById('f-cert').value;
+  const fs=document.getElementById('f-search').value.trim().toLowerCase();
+  const canEdit=currentUser&&currentUser.role==='command';
+  let rows=DB.officers.filter(o=>{
+    if(fu&&o.unit!==fu)return false;
+    if(fr&&o.rank!==fr)return false;
+    if(fc&&!(o.certs||[]).includes(fc))return false;
+    if(fs){
+      const hay=(o.fname+' '+o.lname+' '+(o.badge||'')+' '+(o.discord||'')).toLowerCase();
+      if(!hay.includes(fs))return false;
+    }
+    return true;
+  });
+  rows.sort((a,b)=>{
+    const rd=rankGroup(a.rank)-rankGroup(b.rank);
+    if(rd!==0)return rd;
+    return (parseInt(a.badge)||0)-(parseInt(b.badge)||0);
+  });
+  const tb=document.getElementById('roster-body');
+  if(!rows.length){tb.innerHTML='<tr class="empty"><td colspan="'+(selMode?10:9)+'">No officers found.</td></tr>';return}
+  let out='';
+  let lastRank='';
+  const cols=selMode?10:9;
+  rows.forEach(o=>{
+    if(o.rank!==lastRank){
+      lastRank=o.rank;
+      out+='<tr class="rank-divider"><td colspan="'+cols+'"><span>'+o.rank+'</span></td></tr>';
+    }
+    const ub='<span class="badge '+(UNITCLS[o.unit]||'')+'">'+o.unit+'</span>';
+    const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join('')||'—';
+    const acts=canEdit?'<button class="act-btn" onclick="openOffFormById('+o.id+')">✏</button><button class="act-btn del-btn" onclick="delOfficerById('+o.id+')">✕</button>':'';
+    const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    const checked=selectedIds.has(o.id)?'checked':'';
+    const cbCell=selMode?'<td><input type="checkbox" class="row-cb" '+checked+' onchange="toggleRowSel('+o.id+',this.checked)"></td>':'';
+    const selCls=selectedIds.has(o.id)?' class="selected"':'';
+    out+='<tr'+selCls+'>'+cbCell+'<td style="font-weight:600">'+o.fname+'</td><td style="color:rgba(255,255,255,0.75)">'+o.lname+'</td><td><span class="badge bk-rank">'+o.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(o.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(o.discord||'—')+'</td><td>'+cb+'</td><td style="display:flex;gap:4px">'+acts+'</td></tr>';
+  });
+  tb.innerHTML=out;
+  updateBulkCount();
+  const countEl=document.getElementById('officer-count');
+  if(countEl){
+    const total=rows.length;
+    const label=fu?fu+': '+total+(total===1?' officer':' officers'):'Total: '+total+(total===1?' officer':' officers');
+    countEl.textContent=label;
+  }
+}
+
+function clearFilters(){['f-unit','f-rank','f-cert','f-search'].forEach(id=>document.getElementById(id).value='');renderRoster()}
+
+function openOffFormById(id){openOffForm(DB.officers.findIndex(o=>o.id===id))}
+function delOfficerById(id){
+  const o=DB.officers.find(x=>x.id===id);
+  if(!o)return;
+  showConfirm(
+    'Remove Officer',
+    'Are you sure you want to remove <strong>'+o.fname+' '+o.lname+'</strong> from the roster?',
+    function(){
+      const idx=DB.officers.findIndex(x=>x.id===id);
+      if(idx>=0)DB.officers.splice(idx,1);
+      persist();renderRoster();
+    }
+  );
+}
+
+function openOffForm(idx){
+  editOffIdx=idx;
+  if(idx===-1){
+    document.getElementById('off-form-title').textContent='Add Officer';
+    ['of-fn','of-ln','of-badge','of-discord'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('of-join').value=new Date().toISOString().split('T')[0];
+    document.getElementById('of-unit').value='PATROL';
+    updateOffRanks();
+    ['oc-lw','oc-hw','oc-int','oc-heli','oc-moto'].forEach(id=>document.getElementById(id).checked=false);
+  } else {
+    const o=DB.officers[idx];
+    document.getElementById('off-form-title').textContent='Edit Officer';
+    document.getElementById('of-fn').value=o.fname;
+    document.getElementById('of-ln').value=o.lname;
+    document.getElementById('of-badge').value=o.badge||'';
+    document.getElementById('of-discord').value=o.discord||'';
+    document.getElementById('of-unit').value=o.unit;
+    populateRanks('of-rank',o.unit,o.rank);
+    document.getElementById('of-join').value=o.join||'';
+    document.getElementById('oc-lw').checked=(o.certs||[]).includes('Light Weapon');
+    document.getElementById('oc-hw').checked=(o.certs||[]).includes('Heavy Weapon');
+    document.getElementById('oc-int').checked=(o.certs||[]).includes('Interceptor Vehicle');
+    document.getElementById('oc-heli').checked=(o.certs||[]).includes('Helicopter');
+    document.getElementById('oc-moto').checked=(o.certs||[]).includes('Motorcycle');
+  }
+  document.getElementById('off-form-ov').classList.add('on');
+}
+function closeOffForm(){document.getElementById('off-form-ov').classList.remove('on')}
+
+function saveOfficer(){
+  const fn=document.getElementById('of-fn').value.trim();
+  const ln=document.getElementById('of-ln').value.trim();
+  const discord=document.getElementById('of-discord').value.trim();
+  if(!fn||!ln||!discord){alert('Please fill in all required fields including Discord ID.');return}
+  const certs=[];
+  if(document.getElementById('oc-lw').checked)certs.push('Light Weapon');
+  if(document.getElementById('oc-hw').checked)certs.push('Heavy Weapon');
+  if(document.getElementById('oc-int').checked)certs.push('Interceptor Vehicle');
+  if(document.getElementById('oc-heli').checked)certs.push('Helicopter');
+  if(document.getElementById('oc-moto').checked)certs.push('Motorcycle');
+  const rank=document.getElementById('of-rank').value;
+  const unit=document.getElementById('of-unit').value;
+  const badge=document.getElementById('of-badge').value;
+  const oid=editOffIdx>=0?DB.officers[editOffIdx].id:Date.now();
+  const join=document.getElementById('of-join').value;
+  const obj={id:oid,fname:fn,lname:ln,rank,unit,badge,discord,join,certs};
+  if(editOffIdx>=0)DB.officers[editOffIdx]=obj;
+  else DB.officers.push(obj);
+  const ui=DB.users.findIndex(u=>u.id===oid);
+  if(ui>=0)DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,badge,discord,certs};
+  persist();closeOffForm();renderRoster();
+}
+function delOfficer(idx){
+  const o=DB.officers[idx];
+  if(!o)return;
+  showConfirm(
+    'Remove Officer',
+    'Are you sure you want to remove <strong>'+o.fname+' '+o.lname+'</strong> from the roster?',
+    function(){DB.officers.splice(idx,1);persist();renderRoster();}
+  );
+}
+
+function renderCommand(){
+  const tb=document.getElementById('cmd-body');
+  const cs=document.getElementById('cmd-search')?document.getElementById('cmd-search').value.trim().toLowerCase():'';
+  let list=DB.users.filter(u=>{
+    if(!cs)return true;
+    return (u.fname+' '+u.lname+' '+(u.badge||'')+' '+(u.discord||'')).toLowerCase().includes(cs);
+  });
+  // Sort: command first, then by rank order, then badge asc
+  list.sort((a,b)=>{
+    if(a.role==='command'&&b.role!=='command')return -1;
+    if(b.role==='command'&&a.role!=='command')return 1;
+    const rd=rankGroup(a.rank)-rankGroup(b.rank);
+    if(rd!==0)return rd;
+    return (parseInt(a.badge)||0)-(parseInt(b.badge)||0);
+  });
+  if(!list.length){tb.innerHTML='<tr class="empty"><td colspan="8">No users found.</td></tr>';return}
+  let out='';
+  let lastGroup='';
+  list.forEach(u=>{
+    const grp=u.role==='command'?'Command':u.rank;
+    if(grp!==lastGroup){
+      lastGroup=grp;
+      out+='<tr class="rank-divider"><td colspan="8"><span>'+grp+'</span></td></tr>';
+    }
+    const i=DB.users.indexOf(u);
+    const isSelf=currentUser&&currentUser.id===u.id;
+    const rb=u.role==='command'?'<span class="badge bk-cmd">Command</span>':'<span class="badge bk-off">Officer</span>';
+    const ub='<span class="badge '+(UNITCLS[u.unit]||'')+'">'+u.unit+'</span>';
+    const initTag=u.mustChangePassword?'<span style="font-size:10px;color:#ffb432;margin-right:4px">⚠ initial pw</span>':'';
+    const joinFmt=u.join?new Date(u.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button>'+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
+  });
+  tb.innerHTML=out;
+  const countEl=document.getElementById('cmd-count');
+  if(countEl)countEl.textContent='Total: '+list.length+(list.length===1?' user':' users');
+}
+
+function openUserForm(i){
+  editUsrIdx=i;
+  if(i===-1){
+    document.getElementById('usr-form-title').textContent='Add User';
+    ['uf-fn','uf-ln','uf-pass','uf-badge','uf-discord'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('uf-join').value=new Date().toISOString().split('T')[0];
+    document.getElementById('uf-role').value='officer';
+    document.getElementById('uf-unit').value='PATROL';
+    updateUsrRanks();
+    ['uc-lw','uc-hw','uc-int','uc-heli','uc-moto'].forEach(id=>document.getElementById(id).checked=false);
+  } else {
+    const u=DB.users[i];
+    document.getElementById('usr-form-title').textContent='Edit User';
+    document.getElementById('uf-fn').value=u.fname;
+    document.getElementById('uf-ln').value=u.lname;
+    document.getElementById('uf-pass').value=u.password;
+    document.getElementById('uf-role').value=u.role;
+    document.getElementById('uf-unit').value=u.unit;
+    populateRanks('uf-rank',u.unit,u.rank);
+    document.getElementById('uf-badge').value=u.badge||'';
+    document.getElementById('uf-discord').value=u.discord||'';
+    document.getElementById('uf-join').value=u.join||'';
+    document.getElementById('uc-lw').checked=(u.certs||[]).includes('Light Weapon');
+    document.getElementById('uc-hw').checked=(u.certs||[]).includes('Heavy Weapon');
+    document.getElementById('uc-int').checked=(u.certs||[]).includes('Interceptor Vehicle');
+    document.getElementById('uc-heli').checked=(u.certs||[]).includes('Helicopter');
+    document.getElementById('uc-moto').checked=(u.certs||[]).includes('Motorcycle');
+  }
+  document.getElementById('usr-form-ov').classList.add('on');
+}
+function closeUserForm(){document.getElementById('usr-form-ov').classList.remove('on')}
+
+function saveUser(){
+  const fn=document.getElementById('uf-fn').value.trim();
+  const ln=document.getElementById('uf-ln').value.trim();
+  const pw=document.getElementById('uf-pass').value.trim();
+  const discord=document.getElementById('uf-discord').value.trim();
+  if(!fn||!ln||!pw||!discord){alert('Please fill in all required fields including Discord ID.');return}
+  const certs=[];
+  if(document.getElementById('uc-lw').checked)certs.push('Light Weapon');
+  if(document.getElementById('uc-hw').checked)certs.push('Heavy Weapon');
+  if(document.getElementById('uc-int').checked)certs.push('Interceptor Vehicle');
+  if(document.getElementById('uc-heli').checked)certs.push('Helicopter');
+  if(document.getElementById('uc-moto').checked)certs.push('Motorcycle');
+  const uid=editUsrIdx>=0?DB.users[editUsrIdx].id:Date.now();
+  const rank=document.getElementById('uf-rank').value;
+  const unit=document.getElementById('uf-unit').value;
+  const badge=document.getElementById('uf-badge').value;
+  const role=document.getElementById('uf-role').value;
+  const isNew=editUsrIdx===-1;
+  const join=document.getElementById('uf-join').value;
+  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,role,rank,unit,badge,discord,join,certs};
+  const officerObj={id:uid,fname:fn,lname:ln,rank,unit,badge,discord,join,certs};
+  if(editUsrIdx>=0){
+    DB.users[editUsrIdx]=userObj;
+    const oi=DB.officers.findIndex(o=>o.id===uid);
+    if(oi>=0)DB.officers[oi]=officerObj;else DB.officers.push(officerObj);
+  } else {
+    DB.users.push(userObj);
+    DB.officers.push(officerObj);
+  }
+  persist();closeUserForm();renderCommand();
+}
+
+function delUser(i){
+  const u=DB.users[i];
+  showConfirm(
+    'Remove User',
+    'Are you sure you want to remove <strong>'+u.fname+' '+u.lname+'</strong>? They will also be removed from the roster.',
+    function(){
+      const uid=DB.users[i].id;
+      DB.users.splice(i,1);
+      const oi=DB.officers.findIndex(o=>o.id===uid);
+      if(oi>=0)DB.officers.splice(oi,1);
+      persist();renderCommand();
+    }
+  );
+}
+
+let selMode=false;
+let selectedIds=new Set();
+
+function toggleSelMode(){
+  selMode=!selMode;
+  selectedIds.clear();
+  const btn=document.getElementById('sel-mode-btn');
+  const bar=document.getElementById('bulk-bar');
+  const thCb=document.getElementById('th-cb');
+  if(btn)btn.classList.toggle('on',selMode);
+  if(bar)bar.classList.toggle('on',selMode);
+  if(thCb)thCb.style.display=selMode?'':'none';
+  renderRoster();
+}
+
+function toggleRowSel(id,checked){
+  if(checked)selectedIds.add(id);else selectedIds.delete(id);
+  updateBulkCount();
+  const row=document.querySelector('tr[data-id="'+id+'"]');
+  if(row)row.classList.toggle('selected',checked);
+  const allCb=document.getElementById('cb-all');
+  if(allCb){
+    const visible=getVisibleIds();
+    allCb.checked=visible.length>0&&visible.every(id=>selectedIds.has(id));
+    allCb.indeterminate=visible.some(id=>selectedIds.has(id))&&!allCb.checked;
+  }
+}
+
+function toggleAllCb(checked){
+  getVisibleIds().forEach(id=>{if(checked)selectedIds.add(id);else selectedIds.delete(id);});
+  renderRoster();
+}
+
+function selectAllVisible(){
+  getVisibleIds().forEach(id=>selectedIds.add(id));
+  const allCb=document.getElementById('cb-all');
+  if(allCb)allCb.checked=true;
+  renderRoster();
+}
+
+function clearSelection(){
+  selectedIds.clear();
+  const allCb=document.getElementById('cb-all');
+  if(allCb){allCb.checked=false;allCb.indeterminate=false;}
+  renderRoster();
+}
+
+function getVisibleIds(){
+  const fu=document.getElementById('f-unit').value;
+  const fr=document.getElementById('f-rank').value;
+  const fc=document.getElementById('f-cert').value;
+  const fs=document.getElementById('f-search').value.trim().toLowerCase();
+  return DB.officers.filter(o=>{
+    if(fu&&o.unit!==fu)return false;
+    if(fr&&o.rank!==fr)return false;
+    if(fc&&!(o.certs||[]).includes(fc))return false;
+    if(fs&&!(o.fname+' '+o.lname+' '+(o.badge||'')+' '+(o.discord||'')).toLowerCase().includes(fs))return false;
+    return true;
+  }).map(o=>o.id);
+}
+
+function updateBulkCount(){
+  const el=document.getElementById('bulk-count');
+  if(el)el.textContent=selectedIds.size+' selected';
+}
+
+function setBulkAction(val, btn){
+  document.getElementById('bulk-action').value=val;
+  document.querySelectorAll('.bulk-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const applyBtn=document.getElementById('bulk-apply-btn');
+  if(applyBtn)applyBtn.style.display='';
+}
+
+function applyBulk(){
+  const action=document.getElementById('bulk-action').value;
+  if(!action||selectedIds.size===0)return;
+  if(action==='delete'){
+    showConfirm('Remove Officers','Remove <strong>'+selectedIds.size+'</strong> selected officers?',function(){
+      DB.officers=DB.officers.filter(o=>!selectedIds.has(o.id));
+      selectedIds.clear();persist();renderRoster();
+    });
+    return;
+  }
+  if(action.startsWith('cert-add-')){
+    const cert=action.slice(9);
+    DB.officers.forEach(o=>{if(selectedIds.has(o.id)&&!(o.certs||[]).includes(cert)){o.certs=o.certs||[];o.certs.push(cert);}});
+  } else if(action.startsWith('cert-rm-')){
+    const cert=action.slice(8);
+    DB.officers.forEach(o=>{if(selectedIds.has(o.id))o.certs=(o.certs||[]).filter(c=>c!==cert);});
+  } else if(action.startsWith('unit-')){
+    const unit=action.slice(5);
+    DB.officers.forEach(o=>{if(selectedIds.has(o.id))o.unit=unit;});
+  }
+  persist();
+  document.getElementById('bulk-action').value='';
+  document.querySelectorAll('.bulk-chip').forEach(b=>b.classList.remove('active'));
+  const applyBtn=document.getElementById('bulk-apply-btn');
+  if(applyBtn)applyBtn.style.display='none';
+  renderRoster();
+}
+
+window.onload=()=>{
+  updateOffRanks();
+  updateUsrRanks();
+  setTimeout(()=>document.getElementById('li-ident').focus(),300);
+};
+</script>
+<!-- CONFIRM DIALOG -->
+<div id="confirm-overlay" class="overlay">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-icon" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-msg" class="desc" style="margin-bottom:28px"></p>
+    <div style="display:flex;gap:10px">
+      <button class="fcancel" style="flex:1" onclick="closeConfirm()">Cancel</button>
+      <button id="confirm-ok" class="fsave" style="flex:1;background:linear-gradient(135deg,#c0392b,#e74c3c)">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _confirmCb=null;
+function showConfirm(title,msg,cb){
+  _confirmCb=cb;
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').innerHTML=msg;
+  document.getElementById('confirm-overlay').classList.add('on');
+}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('on');_confirmCb=null;}
+document.getElementById('confirm-ok').onclick=function(){
+  if(_confirmCb)_confirmCb();
+  closeConfirm();
+};
+</script>
+
+</body>
+</html>
