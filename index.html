@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -171,6 +172,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- HOME -->
+
 <div id="pg-home" class="page on">
   <div class="home-center">
     <div class="home-sub">Welcome to the Training Center</div>
@@ -199,6 +201,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- UNIT PICKER -->
+
 <div id="pg-unit-picker" class="page">
   <div style="text-align:center;margin-bottom:32px;padding-top:20px">
     <div class="home-sub">Officer Roster</div>
@@ -233,6 +236,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- METRO SUB-PICKER -->
+
 <div id="pg-metro-picker" class="page">
   <div style="text-align:center;margin-bottom:32px;padding-top:20px">
     <div class="home-sub">Metro Division</div>
@@ -267,6 +271,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- ROSTER -->
+
 <div id="pg-roster" class="page">
   <div class="sec-top">
     <div class="sec-left">
@@ -344,6 +349,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- COMMAND -->
+
 <div id="pg-command" class="page">
   <div class="sec-top">
     <div class="sec-left">
@@ -370,6 +376,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- LOGIN -->
+
 <div id="login-overlay" class="overlay on">
   <div class="modal">
     <div class="modal-icon">🔐</div>
@@ -383,6 +390,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- CHANGE PASSWORD (first login) -->
+
 <div id="chpw-overlay" class="overlay">
   <div class="modal">
     <div class="modal-icon">🔑</div>
@@ -396,6 +404,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- OFFICER FORM -->
+
 <div id="off-form-ov" class="form-overlay">
   <div class="form-box">
     <h3 id="off-form-title">Add Officer</h3>
@@ -433,6 +442,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 </div>
 
 <!-- USER FORM -->
+
 <div id="usr-form-ov" class="form-overlay">
   <div class="form-box">
     <h3 id="usr-form-title">Add User</h3>
@@ -989,7 +999,9 @@ window.onload=()=>{
   setTimeout(()=>document.getElementById('li-ident').focus(),300);
 };
 </script>
+
 <!-- CONFIRM DIALOG -->
+
 <div id="confirm-overlay" class="overlay">
   <div class="modal" style="max-width:360px">
     <div class="modal-icon" id="confirm-icon">⚠️</div>
@@ -1017,8 +1029,8 @@ document.getElementById('confirm-ok').onclick=function(){
 };
 </script>
 
-
 <!-- Firebase -->
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -1085,5 +1097,6 @@ onSnapshot(doc(db, 'lspd', 'users'), (snap) => {
 // Load on startup
 window.firebaseLoad();
 </script>
+
 </body>
 </html>
