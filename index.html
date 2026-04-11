@@ -398,6 +398,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="tab-btn" id="tab-roles" onclick="switchTab('roles')">🏷 Roles</button>
     <button class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
+    <button class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
   </div>
 
   <!-- Accounts Tab -->
@@ -431,6 +432,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <!-- Ranks Tab -->
   <div id="tab-content-ranks" style="display:none">
     <div id="ranks-mgmt-list"></div>
+  </div>
+
+  <!-- Log Tab -->
+  <div id="tab-content-log" style="display:none">
+    <div id="log-list"></div>
   </div>
 </div>
 
@@ -985,7 +991,7 @@ function renderRoster(){
     const checked=selectedIds.has(o.id)?'checked':'';
     const cbCell=selMode?'<td><input type="checkbox" class="row-cb" '+checked+' onchange="toggleRowSel('+o.id+',this.checked)"></td>':'';
     const selCls=selectedIds.has(o.id)?' class="selected"':'';
-    out+='<tr'+selCls+'>'+cbCell+'<td style="font-weight:600">'+o.fname+'</td><td style="color:rgba(255,255,255,0.75)">'+o.lname+'</td><td><span class="badge bk-rank">'+o.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(o.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(o.discord||'—')+'</td><td>'+cb+'</td><td style="display:flex;gap:4px">'+acts+'</td></tr>';
+    out+='<tr'+selCls+'>'+cbCell+'<td style="font-weight:600;cursor:pointer;color:#7ac3ff" onclick="openProfile('+o.id+')">'+o.fname+'</td><td style="color:rgba(255,255,255,0.75);cursor:pointer" onclick="openProfile('+o.id+')">'+o.lname+'</td><td><span class="badge bk-rank">'+o.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(o.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(o.discord||'—')+'</td><td>'+cb+'</td><td style="display:flex;gap:4px">'+acts+'</td></tr>';
   });
   tb.innerHTML=out;
   updateBulkCount();
@@ -998,6 +1004,36 @@ function renderRoster(){
 }
 
 function clearFilters(){rosterMetroAll=false;selectedRanks.clear();['f-unit','f-cert','f-search'].forEach(id=>document.getElementById(id).value='');renderRankChips();renderRoster();}
+
+let profileOfficerId=null;
+function openProfile(id){
+  profileOfficerId=id;
+  const o=DB.officers.find(x=>x.id===id);if(!o)return;
+  const oUnits=(o.units||[o.unit]);
+  const ub=oUnits.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join(' ');
+  const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join(' ')||'<span style="color:rgba(255,255,255,0.25);font-size:12px">None</span>';
+  const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+  document.getElementById('profile-content').innerHTML=
+    '<div style="text-align:center;margin-bottom:24px">'
+    +'<div style="font-size:48px;margin-bottom:8px">👮</div>'
+    +'<div style="font-size:22px;font-weight:900;color:#fff">'+o.fname+' '+o.lname+'</div>'
+    +'<div style="margin:8px 0">'+ub+'</div>'
+    +'<span class="badge bk-rank" style="font-size:13px;padding:5px 14px">'+o.rank+'</span>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Badge</div><div style="font-size:20px;font-weight:700;color:#7ac3ff">#'+(o.badge||'—')+'</div></div>'
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Join Date</div><div style="font-size:14px;font-weight:600;color:#fff">'+joinFmt+'</div></div>'
+    +'</div>'
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Discord ID</div><div style="font-size:13px;color:#7ac3ff">'+(o.discord||'—')+'</div></div>'
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Clearances</div><div>'+cb+'</div></div>';
+  document.getElementById('profile-edit-btn').style.display=hasPerm('edit_officer')?'':'none';
+  document.getElementById('profile-ov').classList.add('on');
+}
+function closeProfile(){document.getElementById('profile-ov').classList.remove('on');}
+function editFromProfile(){
+  closeProfile();
+  if(profileOfficerId!=null)openOffFormById(profileOfficerId);
+}
 
 function openOffFormById(id){openOffForm(DB.officers.findIndex(o=>o.id===id))}
 function delOfficerById(id){
@@ -1123,13 +1159,19 @@ function renderCommand(){
   if(countEl)countEl.textContent='Total: '+list.length+(list.length===1?' user':' users');
 }
 
+function populateRoleSelect(selectId, currentRoleId){
+  const sel=document.getElementById(selectId);
+  if(!sel)return;
+  sel.innerHTML=(DB.customRoles||[]).map(r=>'<option value="'+r.id+'"'+(r.id===currentRoleId?' selected':'')+'>'+r.name+'</option>').join('');
+}
+
 function openUserForm(i){
   editUsrIdx=i;
   if(i===-1){
     document.getElementById('usr-form-title').textContent='Add User';
     ['uf-fn','uf-ln','uf-pass','uf-badge','uf-discord'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('uf-join').value=new Date().toISOString().split('T')[0];
-    document.getElementById('uf-role').value='officer';
+    populateRoleSelect('uf-role','officer');
     buildUsrUnitGrid(['PATROL']);
     ['uc-lw','uc-hw','uc-int','uc-heli','uc-moto'].forEach(id=>document.getElementById(id).checked=false);
   } else {
@@ -1138,7 +1180,7 @@ function openUserForm(i){
     document.getElementById('uf-fn').value=u.fname;
     document.getElementById('uf-ln').value=u.lname;
     document.getElementById('uf-pass').value=u.password;
-    document.getElementById('uf-role').value=u.role;
+    populateRoleSelect('uf-role',u.roleId||u.role||'officer');
     document.getElementById('uf-badge').value=u.badge||'';
     document.getElementById('uf-discord').value=u.discord||'';
     buildUsrUnitGrid(u.units||[u.unit],u.rank);
@@ -1171,11 +1213,13 @@ function saveUser(){
   if(!selUsrUnits.length){alert('Please select at least one unit.');return;}
   const unit=selUsrUnits[0];
   const badge=document.getElementById('uf-badge').value;
-  const role=document.getElementById('uf-role').value;
+  const roleId=document.getElementById('uf-role').value;
+  const roleObj=(DB.customRoles||[]).find(r=>r.id===roleId)||{};
+  const role=(roleObj.id==='command'||roleObj.id==='red_command')?'command':'officer';
   const isNew=editUsrIdx===-1;
   const join=document.getElementById('uf-join').value;
   const existSR=editUsrIdx>=0?(DB.users[editUsrIdx].specialRoles||[]):[];
-  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,role,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:existSR};
+  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,roleId,role,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:existSR};
   const officerObj={id:uid,fname:fn,lname:ln,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:[]};
   if(editUsrIdx>=0){
     DB.users[editUsrIdx]=userObj;
@@ -1185,6 +1229,7 @@ function saveUser(){
     DB.users.push(userObj);
     DB.officers.push(officerObj);
   }
+  logAction(editUsrIdx>=0?'Edit User':'Add User',fn+' '+ln);
   persist();closeUserForm();renderCommand();
 }
 
@@ -1195,6 +1240,7 @@ function delUser(i){
     'Are you sure you want to remove <strong>'+u.fname+' '+u.lname+'</strong>? They will also be removed from the roster.',
     function(){
       const uid=DB.users[i].id;
+      logAction('Delete User',u.fname+' '+u.lname);
       DB.users.splice(i,1);
       const oi=DB.officers.findIndex(o=>o.id===uid);
       if(oi>=0)DB.officers.splice(oi,1);
@@ -1209,8 +1255,13 @@ let editRoleId=null;
 let editUnitDefId=null;
 
 function switchTab(tab){
+  const pageMap={accounts:'mgmt_accounts',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log'};
+  if(pageMap[tab]&&!canAccess(pageMap[tab])){
+    const first=['accounts','roles','units','ranks','log'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
+    if(first&&first!==tab){switchTab(first);return;}
+  }
   currentTab=tab;
-  ['accounts','roles','units','ranks'].forEach(t=>{
+  ['accounts','roles','units','ranks','log'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -1227,6 +1278,7 @@ function switchTab(tab){
   else if(tab==='roles')renderRoles();
   else if(tab==='units')renderUnitsTab();
   else if(tab==='ranks')renderRanksTab();
+  else if(tab==='log')renderLog();
 }
 
 function mgmtAddAction(){
@@ -1267,22 +1319,30 @@ function openRoleForm(id){
   document.getElementById('rf-perms').innerHTML=ALL_PERMISSIONS.map(p=>
     '<label class="chk-item"><input type="checkbox" id="rp-'+p.id+'"'+(selPerms.includes(p.id)?' checked':'')+'>'+p.label+'</label>'
   ).join('');
+  const selPages=r?(r.allowedPages||[]):[];
+  document.getElementById('rf-pages').innerHTML=PAGE_DEFS.map(p=>
+    '<label class="chk-item"><input type="checkbox" id="rpa-'+p.id+'"'+(selPages.includes(p.id)?' checked':'')+'>'+p.icon+' '+p.label+'</label>'
+  ).join('');
   document.getElementById('role-form-ov').classList.add('on');
 }
 function closeRoleForm(){document.getElementById('role-form-ov').classList.remove('on');}
 function saveRole(){
   const perms=ALL_PERMISSIONS.filter(p=>{const el=document.getElementById('rp-'+p.id);return el&&el.checked;}).map(p=>p.id);
+  const allowedPages=PAGE_DEFS.filter(p=>{const el=document.getElementById('rpa-'+p.id);return el&&el.checked;}).map(p=>p.id);
   if(!DB.customRoles)DB.customRoles=[];
   if(editRoleId){
     const i=DB.customRoles.findIndex(r=>r.id===editRoleId);
     const name=document.getElementById('rf-name');
     const newName=(name&&!name.disabled)?name.value.trim():null;
     if(newName===''||(!newName&&!DB.customRoles[i])){alert('Please enter a role name.');return;}
-    if(i>=0)DB.customRoles[i]={...DB.customRoles[i],...(newName&&{name:newName}),permissions:perms};
+    const finalName=newName||(DB.customRoles[i]?DB.customRoles[i].name:editRoleId);
+    if(i>=0)DB.customRoles[i]={...DB.customRoles[i],...(newName&&{name:newName}),permissions:perms,allowedPages};
+    logAction(editRoleId?'Edit Role':'Add Role',finalName);
   } else {
     const name=document.getElementById('rf-name').value.trim();
     if(!name){alert('Please enter a role name.');return;}
-    DB.customRoles.push({id:'role_'+Date.now(),name,permissions:perms});
+    DB.customRoles.push({id:'role_'+Date.now(),name,permissions:perms,allowedPages});
+    logAction('Add Role',name);
   }
   persist();closeRoleForm();renderRoles();
 }
@@ -1290,6 +1350,7 @@ function delRole(id){
   const r=(DB.customRoles||[]).find(x=>x.id===id);
   const warn=r&&r.system?' This is a system role — you can always add it back manually.':'';
   showConfirm('Delete Role','Are you sure you want to delete <strong>'+(r?r.name:id)+'</strong>?'+warn,function(){
+    logAction('Delete Role',r?r.name:id);
     DB.customRoles=(DB.customRoles||[]).filter(r=>r.id!==id);
     persist();renderRoles();
   });
@@ -1329,6 +1390,7 @@ function saveUnitDef(){
     DB.unitDefs.push({id,name,icon});
     if(!DB.ranksByUnit[id])DB.ranksByUnit[id]=JSON.parse(JSON.stringify(RANKS_BY_UNIT['PATROL']||[]));
   }
+  logAction(editUnitDefId?'Edit Unit':'Add Unit',name);
   persist();closeUnitForm();renderUnitsTab();
 }
 function delUnitDef(id){
@@ -1360,12 +1422,14 @@ function addRankToUnit(unitId){
   if(!DB.ranksByUnit[unitId])DB.ranksByUnit[unitId]=JSON.parse(JSON.stringify(RANKS_BY_UNIT[unitId]||RANKS_BY_UNIT['PATROL']||[]));
   if(DB.ranksByUnit[unitId].includes(name)){alert('This rank already exists.');return;}
   DB.ranksByUnit[unitId].push(name);
+  logAction('Add Rank',name+' → '+unitId);
   persist();renderRanksTab();
 }
 function removeRankFromUnit(unitId,rank){
   showConfirm('Remove Rank','Remove rank "'+rank+'" from '+unitId+'?',function(){
     if(!DB.ranksByUnit[unitId])DB.ranksByUnit[unitId]=JSON.parse(JSON.stringify(RANKS_BY_UNIT[unitId]||RANKS_BY_UNIT['PATROL']||[]));
     DB.ranksByUnit[unitId]=DB.ranksByUnit[unitId].filter(r=>r!==rank);
+    logAction('Remove Rank',rank+' from '+unitId);
     persist();renderRanksTab();
   });
 }
@@ -1376,6 +1440,21 @@ function moveRank(unitId,idx,dir){
   if(newIdx<0||newIdx>=ranks.length)return;
   [ranks[idx],ranks[newIdx]]=[ranks[newIdx],ranks[idx]];
   persist();renderRanksTab();
+}
+
+function renderLog(){
+  const list=document.getElementById('log-list');if(!list)return;
+  const logs=DB.auditLog||[];
+  const countEl=document.getElementById('cmd-count');
+  if(countEl)countEl.textContent='Total: '+logs.length+' entries';
+  if(!logs.length){list.innerHTML='<div style="color:rgba(255,255,255,0.25);font-size:13px;padding:20px 0">No activity logged yet.</div>';return;}
+  list.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Who</th><th>Action</th><th>Details</th></tr></thead><tbody>'
+    +logs.map(e=>{
+      const d=new Date(e.ts);
+      const ts=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      return '<tr><td style="color:rgba(255,255,255,0.35);font-size:11px;white-space:nowrap">'+ts+'</td><td style="font-weight:600;font-size:12px">'+e.who+'</td><td><span class="badge bk-off" style="font-size:10px">'+e.action+'</span></td><td style="font-size:12px;color:rgba(255,255,255,0.6)">'+e.details+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div>';
 }
 
 let selMode=false;
@@ -1552,6 +1631,7 @@ window.firebasePersist = async function() {
       unitDefs: JSON.stringify(DB.unitDefs),
       ranksByUnit: JSON.stringify(DB.ranksByUnit)
     });
+    await setDoc(doc(db, 'lspd', 'auditlog'), { data: JSON.stringify((DB.auditLog||[]).slice(0,500)) });
   } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
 };
 
@@ -1569,7 +1649,10 @@ window.firebaseLoad = async function() {
       if(cd.unitDefs) DB.unitDefs=JSON.parse(cd.unitDefs);
       if(cd.ranksByUnit) DB.ranksByUnit=JSON.parse(cd.ranksByUnit);
     }
-    // Migrate data format (handles v18 → v19 transition)
+    ensureBuiltinRoles();
+    const lSnap = await getDoc(doc(db, 'lspd', 'auditlog'));
+    if(lSnap.exists()) DB.auditLog = JSON.parse(lSnap.data().data||'[]');
+    // Migrate data format
     migrateAll();
     // Save migrated data to localStorage
     localStorage.setItem('lspd_users', JSON.stringify(DB.users));
@@ -1618,6 +1701,14 @@ onSnapshot(doc(db, 'lspd', 'config'), (snap) => {
     if(cd.customRoles) DB.customRoles=JSON.parse(cd.customRoles);
     if(cd.unitDefs) DB.unitDefs=JSON.parse(cd.unitDefs);
     if(cd.ranksByUnit) DB.ranksByUnit=JSON.parse(cd.ranksByUnit);
+    ensureBuiltinRoles();
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'auditlog'), (snap) => {
+  if(snap.exists()){
+    DB.auditLog=JSON.parse(snap.data().data||'[]');
+    if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&currentTab==='log')renderLog();
   }
 });
 
