@@ -186,6 +186,25 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .add-rank-row{display:flex;gap:8px;margin-top:8px}
 .add-rank-input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Heebo',sans-serif}
 .add-rank-input:focus{outline:none;border-color:rgba(74,158,255,0.5)}
+.complaint-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px;margin-bottom:10px;transition:.2s}
+.complaint-card:hover{border-color:rgba(74,158,255,0.25)}
+.complaint-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px}
+.cstatus{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;flex-shrink:0}
+.cstatus-pending{background:rgba(255,180,50,0.15);color:#ffb432;border:1px solid rgba(255,180,50,0.3)}
+.cstatus-reviewing{background:rgba(74,158,255,0.15);color:#7ac3ff;border:1px solid rgba(74,158,255,0.3)}
+.cstatus-resolved{background:rgba(122,232,122,0.15);color:#80e880;border:1px solid rgba(122,232,122,0.3)}
+.cstatus-dismissed{background:rgba(255,80,80,0.12);color:#ff7070;border:1px solid rgba(255,80,80,0.25)}
+.rank-history-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.rank-history-item:last-child{border-bottom:none}
+.csv-preview{max-height:260px;overflow-y:auto;border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:12px;margin-top:10px}
+.csv-preview table{width:100%;border-collapse:collapse}
+.csv-preview th{padding:8px 10px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.45);font-size:10px;letter-spacing:.7px;text-transform:uppercase}
+.csv-preview td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);color:#ccd6f0}
+.upload-zone{border:2px dashed rgba(74,158,255,0.3);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.2s;background:rgba(74,158,255,0.03)}
+.upload-zone:hover{border-color:rgba(74,158,255,0.6);background:rgba(74,158,255,0.08)}
+.upload-zone.has-file{border-color:rgba(122,232,122,0.5);background:rgba(122,232,122,0.05)}
+.progress-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#3a5fff,#6a5fff);transition:width .3s;border-radius:2px}
 </style>
 </head>
 <body>
@@ -224,6 +243,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <span class="card-icon">⭐</span>
       <div class="card-lbl">MANAGEMENT</div>
       <div class="card-sub">Accounts · Roles · Units</div>
+    </div>
+    <div class="card" id="card-reports" style="display:none" onclick="goReports()">
+      <span class="card-icon">📋</span>
+      <div class="card-lbl">REPORTS</div>
+      <div class="card-sub">Complaints &amp; Incidents</div>
     </div>
   </div>
   <div style="max-width:400px;margin:28px auto 0">
@@ -392,6 +416,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <span id="cmd-count" style="background:rgba(245,196,113,0.15);border:1px solid rgba(245,196,113,0.3);color:#f5c471;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700"></span>
     </div>
     <button class="add-btn" id="mgmt-add-btn" onclick="mgmtAddAction()">+ Add User</button>
+    <button class="back-btn" id="mgmt-csv-btn" style="display:none" onclick="openCsvImport()" title="Import from CSV">📥 Import CSV</button>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-accounts" onclick="switchTab('accounts')">👥 Accounts</button>
@@ -437,6 +462,112 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <!-- Log Tab -->
   <div id="tab-content-log" style="display:none">
     <div id="log-list"></div>
+  </div>
+</div>
+
+<!-- REPORTS PAGE -->
+
+<div id="pg-reports" class="page">
+  <div class="sec-top">
+    <div class="sec-left">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <span class="ptitle">📋 Reports &amp; Complaints</span>
+      <span id="reports-count" style="background:rgba(255,180,50,0.15);border:1px solid rgba(255,180,50,0.3);color:#ffb432;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700"></span>
+    </div>
+    <button class="add-btn" onclick="openComplaintForm(null)">+ File Report</button>
+  </div>
+  <div class="filters">
+    <select id="rf-filter-status" onchange="renderReports()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Heebo',sans-serif">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="reviewing">Under Review</option>
+      <option value="resolved">Resolved</option>
+      <option value="dismissed">Dismissed</option>
+    </select>
+    <select id="rf-filter-type" onchange="renderReports()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Heebo',sans-serif">
+      <option value="">All Types</option>
+      <option>Use of Force</option><option>Misconduct</option><option>Insubordination</option><option>Negligence</option><option>Policy Violation</option><option>Other</option>
+    </select>
+  </div>
+  <div id="reports-list"></div>
+</div>
+
+<!-- COMPLAINT FORM -->
+
+<div id="complaint-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:540px">
+    <h3 id="complaint-form-title">File a Report</h3>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>Report Type</label>
+        <select id="cf-type" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif">
+          <option value="">Select type...</option>
+          <option>Use of Force</option><option>Misconduct</option><option>Insubordination</option><option>Negligence</option><option>Policy Violation</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label><span class="req">*</span>Officer Subject</label>
+        <select id="cf-subject" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif"></select>
+      </div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>Incident Date</label><input id="cf-date" type="date"></div>
+      <div class="field"><label><span class="req">*</span>Incident Time</label><input id="cf-time" type="time"></div>
+    </div>
+    <div class="field"><label><span class="req">*</span>Description</label>
+      <textarea id="cf-desc" rows="4" placeholder="Describe the incident in detail..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;resize:vertical"></textarea>
+    </div>
+    <div class="field">
+      <label><span class="req">*</span>Body Camera Recording <span style="color:rgba(255,255,255,0.3);font-size:10px">(required — video, audio, or any file)</span></label>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('cf-file').click()">
+        <div id="upload-zone-text">
+          <div style="font-size:28px;margin-bottom:8px">📹</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload body cam recording</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">Any file format accepted</div>
+        </div>
+        <input type="file" id="cf-file" style="display:none" onchange="handleFileSelect(this)">
+      </div>
+      <div class="progress-bar" id="upload-progress-bar" style="display:none"><div class="progress-fill" id="upload-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div id="cf-notes-wrap" style="display:none">
+      <div class="field"><label>Command Notes / Update</label>
+        <textarea id="cf-notes" rows="2" placeholder="Internal notes (visible to Command only)..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;resize:vertical"></textarea>
+      </div>
+      <div class="field"><label>Update Status</label>
+        <select id="cf-status" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif">
+          <option value="pending">🟡 Pending</option>
+          <option value="reviewing">🔵 Under Review</option>
+          <option value="resolved">✅ Resolved</option>
+          <option value="dismissed">❌ Dismissed</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeComplaintForm()">Cancel</button>
+      <button class="fsave" id="cf-save-btn" onclick="saveComplaint()">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV IMPORT -->
+
+<div id="csv-import-ov" class="form-overlay">
+  <div class="form-box" style="max-width:600px">
+    <h3>📥 Import Officers from CSV</h3>
+    <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px">CSV must have columns: <code style="background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px">fname, lname, rank, unit, badge, discord, join</code></p>
+    <div class="upload-zone" id="csv-upload-zone" onclick="document.getElementById('csv-file').click()">
+      <div id="csv-zone-text">
+        <div style="font-size:28px;margin-bottom:8px">📊</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to select CSV file</div>
+      </div>
+      <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none" onchange="handleCsvFile(this)">
+    </div>
+    <div id="csv-preview-wrap" style="display:none">
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin:12px 0 6px">Preview — <span id="csv-row-count"></span> officers found:</div>
+      <div id="csv-preview" class="csv-preview"></div>
+    </div>
+    <div class="form-btns" style="margin-top:16px">
+      <button class="fcancel" onclick="closeCsvImport()">Cancel</button>
+      <button class="fsave" id="csv-import-btn" style="display:none" onclick="doImportCsv()">Import</button>
+    </div>
   </div>
 </div>
 
@@ -708,7 +839,7 @@ function refreshUsrRanks(currentRank){
   if(sel)sel.innerHTML=ranks.map(r=>'<option'+(r===cur?' selected':'')+'>'+r+'</option>').join('');
 }
 
-const DATA_VERSION='v20';
+const DATA_VERSION='v21';
 if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_users');
   localStorage.removeItem('lspd_officers');
@@ -725,7 +856,8 @@ let DB={
   customRoles:JSON.parse(localStorage.getItem('lspd_custom_roles')||'[]'),
   unitDefs:JSON.parse(localStorage.getItem('lspd_unit_defs')||'null')||DEFAULT_UNIT_DEFS,
   ranksByUnit:JSON.parse(localStorage.getItem('lspd_ranks_by_unit')||'null')||JSON.parse(JSON.stringify(RANKS_BY_UNIT)),
-  auditLog:JSON.parse(localStorage.getItem('lspd_audit_log')||'[]')
+  auditLog:JSON.parse(localStorage.getItem('lspd_audit_log')||'[]'),
+  complaints:JSON.parse(localStorage.getItem('lspd_complaints')||'[]')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
 
@@ -733,6 +865,7 @@ function migrateAll(){
   DB.officers=DB.officers.map(o=>{
     if(!o.units)o.units=[o.unit||'PATROL'];
     if(!o.specialRoles)o.specialRoles=[];
+    if(!o.rankHistory)o.rankHistory=[];
     return o;
   });
   DB.users=DB.users.map(u=>{
@@ -791,6 +924,7 @@ function persist(){
   localStorage.setItem('lspd_unit_defs',JSON.stringify(DB.unitDefs));
   localStorage.setItem('lspd_ranks_by_unit',JSON.stringify(DB.ranksByUnit));
   localStorage.setItem('lspd_audit_log',JSON.stringify(DB.auditLog||[]));
+  localStorage.setItem('lspd_complaints',JSON.stringify(DB.complaints||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -866,6 +1000,7 @@ function finishLogin(u){
   rp.className='role-pill '+(isCmd?'pill-command':'pill-officer');
   document.getElementById('card-command').style.display=canAccess('management')?'block':'none';
   document.getElementById('btn-add-off').style.display=(hasPerm('add_officer')||isCmd)?'':'none';
+  document.getElementById('card-reports').style.display='block';
   clickSound();
 }
 
@@ -1031,7 +1166,12 @@ function openProfile(id){
     +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Join Date</div><div style="font-size:14px;font-weight:600;color:#fff">'+joinFmt+'</div></div>'
     +'</div>'
     +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Discord ID</div><div style="font-size:13px;color:#7ac3ff">'+(o.discord||'—')+'</div></div>'
-    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Clearances</div><div>'+cb+'</div></div>';
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Clearances</div><div>'+cb+'</div></div>'
+    +(o.rankHistory&&o.rankHistory.length?
+      '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Rank History</div>'
+      +[...o.rankHistory].reverse().map(h=>'<div class="rank-history-item"><span style="font-size:11px;color:rgba(255,255,255,0.3);min-width:80px">'+h.date+'</span><span class="badge bk-rank" style="font-size:10px">'+h.from+'</span><span style="color:rgba(255,255,255,0.3);font-size:11px">→</span><span class="badge bk-rank" style="font-size:10px;background:rgba(74,158,255,0.15);border-color:rgba(74,158,255,0.3);color:#7ac3ff">'+h.to+'</span><span style="font-size:10px;color:rgba(255,255,255,0.25);margin-left:auto">by '+h.by+'</span></div>').join('')
+      +'</div>'
+      :'');
   document.getElementById('profile-edit-btn').style.display=hasPerm('edit_officer')?'':'none';
   document.getElementById('profile-ov').classList.add('on');
 }
@@ -1103,7 +1243,12 @@ function saveOfficer(){
   const oid=editOffIdx>=0?DB.officers[editOffIdx].id:Date.now();
   const join=document.getElementById('of-join').value;
   const existSpecialRoles=editOffIdx>=0?(DB.officers[editOffIdx].specialRoles||[]):[];
-  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:existSpecialRoles};
+  const existRankHistory=editOffIdx>=0?(DB.officers[editOffIdx].rankHistory||[]):[];
+  const prevRank=editOffIdx>=0?DB.officers[editOffIdx].rank:null;
+  if(prevRank&&prevRank!==rank){
+    existRankHistory.push({from:prevRank,to:rank,date:new Date().toISOString().split('T')[0],by:currentUser?currentUser.fname+' '+currentUser.lname:'System'});
+  }
+  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:existSpecialRoles,rankHistory:existRankHistory};
   if(editOffIdx>=0)DB.officers[editOffIdx]=obj;
   else DB.officers.push(obj);
   const ui=DB.users.findIndex(u=>u.id===oid);
@@ -1281,6 +1426,8 @@ function switchTab(tab){
     else if(tab==='roles'){addBtn.style.display='';addBtn.textContent='+ Add Role';}
     else if(tab==='units'){addBtn.style.display='';addBtn.textContent='+ Add Unit';}
     else{addBtn.style.display='none';}
+  const csvBtn=document.getElementById('mgmt-csv-btn');
+  if(csvBtn)csvBtn.style.display=tab==='accounts'?'':'none';
   }
   if(tab==='accounts')renderCommand();
   else if(tab==='roles')renderRoles();
@@ -1580,6 +1727,208 @@ function applyBulk(){
   renderRoster();
 }
 
+// ====== REPORTS / COMPLAINTS ======
+let editComplaintId=null;
+function goReports(){clickSound();showPage('pg-reports');renderReports();}
+
+const CSTATUS_LABEL={pending:'🟡 Pending',reviewing:'🔵 Under Review',resolved:'✅ Resolved',dismissed:'❌ Dismissed'};
+const CSTATUS_CLS={pending:'cstatus-pending',reviewing:'cstatus-reviewing',resolved:'cstatus-resolved',dismissed:'cstatus-dismissed'};
+
+function renderReports(){
+  const list=document.getElementById('reports-list');if(!list)return;
+  let items=(DB.complaints||[]);
+  const fs=document.getElementById('rf-filter-status')?document.getElementById('rf-filter-status').value:'';
+  const ft=document.getElementById('rf-filter-type')?document.getElementById('rf-filter-type').value:'';
+  if(fs)items=items.filter(c=>c.status===fs);
+  if(ft)items=items.filter(c=>c.type===ft);
+  // Officers only see their own; command sees all
+  const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
+  if(!isCmd&&currentUser)items=items.filter(c=>c.reporterId===currentUser.id);
+  const countEl=document.getElementById('reports-count');
+  if(countEl)countEl.textContent=items.length+' report'+(items.length===1?'':'s');
+  if(!items.length){list.innerHTML='<div style="color:rgba(255,255,255,0.25);font-size:13px;padding:40px;text-align:center">No reports found.</div>';return;}
+  list.innerHTML=items.map(c=>{
+    const subj=DB.officers.find(o=>o.id===c.subjectId);
+    const reporter=DB.users.find(u=>u.id===c.reporterId);
+    const subjName=subj?subj.fname+' '+subj.lname:'Unknown';
+    const repName=reporter?reporter.fname+' '+reporter.lname:'Unknown';
+    const dateStr=c.incidentDate+(c.incidentTime?' '+c.incidentTime:'');
+    const fileLink=c.fileUrl?'<a href="'+c.fileUrl+'" target="_blank" style="color:#7ac3ff;font-size:12px;text-decoration:none">📹 View Recording</a>':'';
+    const cmds=isCmd?'<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">'
+      +'<button class="act-btn" onclick="openComplaintForm(\''+c.id+'\')">✏ Review</button>'
+      +'<select onchange="quickUpdateStatus(\''+c.id+'\',this.value)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:4px 8px;border-radius:6px;font-size:11px;font-family:inherit">'
+      +Object.entries(CSTATUS_LABEL).map(([v,l])=>'<option value="'+v+'"'+(c.status===v?' selected':'')+'>'+l+'</option>').join('')
+      +'</select>'
+      +'<button class="act-btn del-btn" onclick="deleteComplaint(\''+c.id+'\')">✕</button>'
+      +'</div>':'';
+    return '<div class="complaint-card">'
+      +'<div class="complaint-card-header">'
+      +'<div><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">'+c.type+'</div>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,0.4)">Subject: <span style="color:#fff;font-weight:600">'+subjName+'</span> &nbsp;·&nbsp; Filed by: '+repName+' &nbsp;·&nbsp; '+dateStr+'</div></div>'
+      +'<span class="cstatus '+(CSTATUS_CLS[c.status]||'cstatus-pending')+'">'+(CSTATUS_LABEL[c.status]||c.status)+'</span>'
+      +'</div>'
+      +'<div style="font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:8px">'+c.description+'</div>'
+      +(c.notes?'<div style="font-size:12px;color:#7ac3ff;background:rgba(74,158,255,0.07);padding:8px 12px;border-radius:7px;margin-bottom:8px">📝 '+c.notes+'</div>':'')
+      +fileLink+cmds
+      +'</div>';
+  }).join('');
+}
+
+function openComplaintForm(id){
+  editComplaintId=id;
+  const c=id?(DB.complaints||[]).find(x=>x.id===id):null;
+  document.getElementById('complaint-form-title').textContent=c?'Review Report':'File a Report';
+  document.getElementById('cf-save-btn').textContent=c?'Save Changes':'Submit Report';
+  document.getElementById('cf-type').value=c?c.type:'';
+  document.getElementById('cf-date').value=c?c.incidentDate:new Date().toISOString().split('T')[0];
+  document.getElementById('cf-time').value=c?c.incidentTime:'';
+  document.getElementById('cf-desc').value=c?c.description:'';
+  // Populate subject dropdown
+  const subjSel=document.getElementById('cf-subject');
+  subjSel.innerHTML=DB.officers.filter(o=>!currentUser||o.id!==currentUser.id).map(o=>'<option value="'+o.id+'"'+(c&&c.subjectId===o.id?' selected':'')+'>'+o.fname+' '+o.lname+' #'+(o.badge||'?')+'</option>').join('');
+  // Command notes section
+  const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
+  document.getElementById('cf-notes-wrap').style.display=isCmd&&c?'':'none';
+  if(c&&document.getElementById('cf-notes'))document.getElementById('cf-notes').value=c.notes||'';
+  if(c&&document.getElementById('cf-status'))document.getElementById('cf-status').value=c.status||'pending';
+  // Reset upload zone
+  const zone=document.getElementById('upload-zone');
+  if(c&&c.fileUrl){zone.classList.add('has-file');document.getElementById('upload-zone-text').innerHTML='<div style="font-size:20px">✅</div><div style="font-size:12px;color:#80e880">File already uploaded: '+c.fileName+'</div>';}
+  else{zone.classList.remove('has-file');document.getElementById('upload-zone-text').innerHTML='<div style="font-size:28px;margin-bottom:8px">📹</div><div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload body cam recording</div><div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">Any file format accepted</div>';}
+  document.getElementById('cf-file').value='';
+  document.getElementById('upload-progress-bar').style.display='none';
+  document.getElementById('complaint-form-ov').classList.add('on');
+}
+function closeComplaintForm(){document.getElementById('complaint-form-ov').classList.remove('on');}
+
+function handleFileSelect(input){
+  const file=input.files[0];if(!file)return;
+  const zone=document.getElementById('upload-zone');
+  zone.classList.add('has-file');
+  document.getElementById('upload-zone-text').innerHTML='<div style="font-size:20px">📎</div><div style="font-size:12px;color:#80e880">'+file.name+'</div><div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">'+Math.round(file.size/1024)+'KB</div>';
+}
+
+async function saveComplaint(){
+  const type=document.getElementById('cf-type').value;
+  const subjectId=parseInt(document.getElementById('cf-subject').value)||document.getElementById('cf-subject').value;
+  const incidentDate=document.getElementById('cf-date').value;
+  const incidentTime=document.getElementById('cf-time').value;
+  const description=document.getElementById('cf-desc').value.trim();
+  const fileInput=document.getElementById('cf-file');
+  const file=fileInput.files[0];
+  if(!type||!subjectId||!incidentDate||!description){alert('Please fill in all required fields.');return;}
+  const isEdit=!!editComplaintId;
+  const existing=isEdit?(DB.complaints||[]).find(c=>c.id===editComplaintId):null;
+  if(!isEdit&&!file){alert('Body camera recording is required. Please upload a file.');return;}
+  const btn=document.getElementById('cf-save-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  let fileUrl=existing?existing.fileUrl:'';
+  let fileName=existing?existing.fileName:'';
+  if(file&&window._fbStorage){
+    try{
+      document.getElementById('upload-progress-bar').style.display='';
+      const storageRef=window._fbStorage.ref('complaints/'+Date.now()+'_'+file.name);
+      const task=storageRef.put(file);
+      await new Promise((res,rej)=>{
+        task.on('state_changed',
+          snap=>{const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);document.getElementById('upload-progress-fill').style.width=pct+'%';},
+          rej, res);
+      });
+      fileUrl=await storageRef.getDownloadURL();
+      fileName=file.name;
+    }catch(e){alert('File upload failed: '+e.message);btn.disabled=false;btn.textContent=isEdit?'Save Changes':'Submit Report';return;}
+  } else if(file&&!window._fbStorage){
+    // Fallback: store as base64 for small files (<5MB)
+    if(file.size>5*1024*1024){alert('File too large (max 5MB without Firebase Storage). Please use a smaller file or configure Firebase Storage.');btn.disabled=false;btn.textContent=isEdit?'Save Changes':'Submit Report';return;}
+    fileUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
+    fileName=file.name;
+  }
+  if(!DB.complaints)DB.complaints=[];
+  const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
+  if(isEdit){
+    const i=DB.complaints.findIndex(c=>c.id===editComplaintId);
+    if(i>=0){
+      DB.complaints[i]={...DB.complaints[i],type,subjectId,incidentDate,incidentTime,description,fileUrl,fileName};
+      if(isCmd){DB.complaints[i].notes=document.getElementById('cf-notes').value.trim();DB.complaints[i].status=document.getElementById('cf-status').value;}
+    }
+    logAction('Update Report',type+' — '+description.slice(0,40));
+  } else {
+    DB.complaints.unshift({id:'cmp_'+Date.now(),ts:Date.now(),reporterId:currentUser.id,subjectId,type,incidentDate,incidentTime,description,fileUrl,fileName,status:'pending',notes:''});
+    logAction('File Report',type+' against officer #'+subjectId);
+  }
+  persist();btn.disabled=false;btn.textContent=isEdit?'Save Changes':'Submit Report';
+  closeComplaintForm();renderReports();
+}
+
+function quickUpdateStatus(id,status){
+  const i=(DB.complaints||[]).findIndex(c=>c.id===id);
+  if(i>=0){DB.complaints[i].status=status;logAction('Update Report Status',status);persist();renderReports();}
+}
+function deleteComplaint(id){
+  showConfirm('Delete Report','Are you sure you want to permanently delete this report?',function(){
+    DB.complaints=(DB.complaints||[]).filter(c=>c.id!==id);
+    logAction('Delete Report',id);persist();renderReports();
+  });
+}
+
+// ====== CSV IMPORT ======
+let _csvData=[];
+function openCsvImport(){document.getElementById('csv-import-ov').classList.add('on');}
+function closeCsvImport(){document.getElementById('csv-import-ov').classList.remove('on');_csvData=[];document.getElementById('csv-preview-wrap').style.display='none';document.getElementById('csv-import-btn').style.display='none';document.getElementById('csv-zone-text').innerHTML='<div style="font-size:28px;margin-bottom:8px">📊</div><div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to select CSV file</div>';document.getElementById('csv-file').value='';}
+
+function handleCsvFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){alert('CSV must have a header row and at least one data row.');return;}
+    const headers=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/['"]/g,''));
+    const required=['fname','lname'];
+    if(!required.every(r=>headers.includes(r))){alert('CSV must have at least "fname" and "lname" columns.');return;}
+    _csvData=lines.slice(1).map(line=>{
+      const vals=line.split(',').map(v=>v.trim().replace(/^["']|["']$/g,''));
+      const obj={};headers.forEach((h,i)=>{obj[h]=vals[i]||'';});
+      return obj;
+    }).filter(r=>r.fname&&r.lname);
+    document.getElementById('csv-row-count').textContent=_csvData.length;
+    document.getElementById('csv-preview').innerHTML='<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'
+      +_csvData.slice(0,10).map(r=>'<tr>'+headers.map(h=>'<td>'+(r[h]||'—')+'</td>').join('')+'</tr>').join('')
+      +(_csvData.length>10?'<tr><td colspan="'+headers.length+'" style="color:rgba(255,255,255,0.3);text-align:center;padding:8px">...and '+(_csvData.length-10)+' more</td></tr>':'')
+      +'</tbody></table>';
+    document.getElementById('csv-preview-wrap').style.display='';
+    document.getElementById('csv-import-btn').style.display='';
+    document.getElementById('csv-zone-text').innerHTML='<div style="font-size:20px">✅</div><div style="font-size:12px;color:#80e880">'+file.name+' — '+_csvData.length+' rows ready</div>';
+  };
+  reader.readAsText(file);
+}
+
+function doImportCsv(){
+  if(!_csvData.length)return;
+  const today=new Date().toISOString().split('T')[0];
+  let added=0;
+  _csvData.forEach(r=>{
+    const fname=(r.fname||'').trim();const lname=(r.lname||'').trim();
+    if(!fname||!lname)return;
+    const unit=(r.unit||'PATROL').trim().toUpperCase();
+    const rank=r.rank||'Officer';
+    const badge=r.badge||'';
+    const discord=r.discord||'';
+    const join=r.join||today;
+    const id=Date.now()+added;
+    const officer={id,fname,lname,rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[],rankHistory:[]};
+    DB.officers.push(officer);
+    if(!DB.users.find(u=>u.badge&&u.badge===badge&&badge)){
+      DB.users.push({id,fname,lname,password:'0000',mustChangePassword:true,role:'officer',rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[]});
+    }
+    added++;
+  });
+  logAction('CSV Import',added+' officers imported');
+  persist();closeCsvImport();
+  if(currentTab==='accounts')renderCommand();
+  alert(added+' officers imported successfully!');
+}
+
 window.onload=()=>{
   buildOffUnitGrid(['PATROL']);
   buildUsrUnitGrid(['PATROL']);
@@ -1621,7 +1970,8 @@ document.getElementById('confirm-ok').onclick=function(){
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyOPpROUQmaaPTlG8FlnZ7aSA_znZ-Y64oU",
@@ -1635,6 +1985,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
+// Expose storage for saveComplaint
+window._fbStorage={ref:(path)=>{const r=ref(storage,path);return{put:(file)=>uploadBytesResumable(r,file),getDownloadURL:()=>getDownloadURL(r)};}}
 
 // Override persist to save to Firestore
 window.firebasePersist = async function() {
@@ -1647,6 +2000,7 @@ window.firebasePersist = async function() {
       ranksByUnit: JSON.stringify(DB.ranksByUnit)
     });
     await setDoc(doc(db, 'lspd', 'auditlog'), { data: JSON.stringify((DB.auditLog||[]).slice(0,500)) });
+    await setDoc(doc(db, 'lspd', 'complaints'), { data: JSON.stringify(DB.complaints||[]) });
   } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
 };
 
@@ -1667,6 +2021,8 @@ window.firebaseLoad = async function() {
     ensureBuiltinRoles();
     const lSnap = await getDoc(doc(db, 'lspd', 'auditlog'));
     if(lSnap.exists()) DB.auditLog = JSON.parse(lSnap.data().data||'[]');
+    const compSnap = await getDoc(doc(db, 'lspd', 'complaints'));
+    if(compSnap.exists()) DB.complaints = JSON.parse(compSnap.data().data||'[]');
     // Migrate data format
     migrateAll();
     // Save migrated data to localStorage
@@ -1724,6 +2080,14 @@ onSnapshot(doc(db, 'lspd', 'auditlog'), (snap) => {
   if(snap.exists()){
     DB.auditLog=JSON.parse(snap.data().data||'[]');
     if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&currentTab==='log')renderLog();
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'complaints'), (snap) => {
+  if(snap.exists()){
+    DB.complaints=JSON.parse(snap.data().data||'[]');
+    localStorage.setItem('lspd_complaints',JSON.stringify(DB.complaints));
+    if(document.getElementById('pg-reports')&&document.getElementById('pg-reports').classList.contains('on'))renderReports();
   }
 });
 
