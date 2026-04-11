@@ -599,6 +599,14 @@ const ALL_PERMISSIONS=[
   {id:'bulk_actions',label:'Bulk Actions'}
 ];
 const PERM_LABELS=Object.fromEntries(ALL_PERMISSIONS.map(p=>[p.id,p.label]));
+const BUILTIN_ROLES=[
+  {id:'officer',name:'Officer',system:true,description:'Basic access — view roster only',
+    permissions:[]},
+  {id:'command',name:'Command',system:true,description:'Full management access',
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions']},
+  {id:'red_command',name:'Red Command',system:true,description:'Top command — same as Command + unit management',
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions']}
+];
 
 function clickSound(){
   try{
@@ -717,6 +725,11 @@ function migrateAll(){
   });
 }
 migrateAll();
+// Apply any saved permission overrides for built-in roles
+(DB.customRoles||[]).forEach(cr=>{
+  const bi=BUILTIN_ROLES.findIndex(r=>r.id===cr.id);
+  if(bi>=0)BUILTIN_ROLES[bi].permissions=cr.permissions;
+});
 
 function persist(){
   localStorage.setItem('lspd_users',JSON.stringify(DB.users));
@@ -1156,21 +1169,38 @@ function mgmtAddAction(){
 // --- Roles ---
 function renderRoles(){
   const list=document.getElementById('roles-list');if(!list)return;
-  const roles=DB.customRoles||[];
+  const custom=DB.customRoles||[];
   const countEl=document.getElementById('cmd-count');
-  if(countEl)countEl.textContent='Total: '+roles.length+(roles.length===1?' role':' roles');
-  if(!roles.length){list.innerHTML='<div style="color:rgba(255,255,255,0.3);font-size:13px;padding:20px 0">No custom roles yet. Click "+ Add Role" to create one.</div>';return;}
-  list.innerHTML=roles.map(r=>{
+  if(countEl)countEl.textContent='Total: '+(BUILTIN_ROLES.length+custom.length)+' roles';
+  function roleCard(r){
     const perms=(r.permissions||[]).map(p=>'<span class="perm-chip">'+(PERM_LABELS[p]||p)+'</span>').join('');
-    return '<div class="role-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><span style="font-size:14px;font-weight:700;color:#fff">'+r.name+'</span><div style="display:flex;gap:4px"><button class="act-btn" onclick="openRoleForm(\''+r.id+'\')">✏</button><button class="act-btn del-btn" onclick="delRole(\''+r.id+'\')">✕</button></div></div><div>'+(perms||'<span style="font-size:11px;color:rgba(255,255,255,0.25)">No permissions</span>')+'</div></div>';
-  }).join('');
+    const noPerms='<span style="font-size:11px;color:rgba(255,255,255,0.25)">View only — no management access</span>';
+    const actions=r.system
+      ?'<div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:rgba(255,255,255,0.25);padding:3px 8px;border:1px solid rgba(255,255,255,0.08);border-radius:5px">System</span><button class="act-btn" title="Edit permissions" onclick="openRoleForm(\''+r.id+'\')">✏</button></div>'
+      :'<div style="display:flex;gap:4px"><button class="act-btn" onclick="openRoleForm(\''+r.id+'\')">✏</button><button class="act-btn del-btn" onclick="delRole(\''+r.id+'\')">✕</button></div>';
+    const desc=r.description?'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:8px">'+r.description+'</div>':'';
+    return '<div class="role-card">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
+      +'<span style="font-size:14px;font-weight:700;color:#fff">'+r.name+'</span>'+actions+'</div>'
+      +desc+'<div>'+(perms||noPerms)+'</div></div>';
+  }
+  const builtinHtml='<div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">System Roles</div>'
+    +'<div class="role-grid" style="margin-bottom:24px">'+BUILTIN_ROLES.map(roleCard).join('')+'</div>';
+  const customHtml='<div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Custom Roles</div>'
+    +(custom.length
+      ?'<div class="role-grid">'+custom.map(roleCard).join('')+'</div>'
+      :'<div style="color:rgba(255,255,255,0.25);font-size:13px;padding:12px 0">No custom roles yet. Click "+ Add Role" to create one.</div>');
+  list.innerHTML=builtinHtml+customHtml;
 }
 
 function openRoleForm(id){
   editRoleId=id;
-  const r=id?(DB.customRoles||[]).find(x=>x.id===id):null;
-  document.getElementById('role-form-title').textContent=r?'Edit Role':'Add Role';
-  document.getElementById('rf-name').value=r?r.name:'';
+  // Look in custom roles first, then built-in
+  const r=id?((DB.customRoles||[]).find(x=>x.id===id)||BUILTIN_ROLES.find(x=>x.id===id)):null;
+  document.getElementById('role-form-title').textContent=r?('Edit Role — '+r.name):'Add Role';
+  const nameEl=document.getElementById('rf-name');
+  nameEl.value=r?r.name:'';
+  nameEl.disabled=!!(r&&r.system);
   const selPerms=r?(r.permissions||[]):[];
   document.getElementById('rf-perms').innerHTML=ALL_PERMISSIONS.map(p=>
     '<label class="chk-item"><input type="checkbox" id="rp-'+p.id+'"'+(selPerms.includes(p.id)?' checked':'')+'>'+p.label+'</label>'
@@ -1179,14 +1209,25 @@ function openRoleForm(id){
 }
 function closeRoleForm(){document.getElementById('role-form-ov').classList.remove('on');}
 function saveRole(){
-  const name=document.getElementById('rf-name').value.trim();
-  if(!name){alert('Please enter a role name.');return;}
   const perms=ALL_PERMISSIONS.filter(p=>{const el=document.getElementById('rp-'+p.id);return el&&el.checked;}).map(p=>p.id);
   if(!DB.customRoles)DB.customRoles=[];
-  if(editRoleId){
+  const isBuiltin=editRoleId&&BUILTIN_ROLES.find(r=>r.id===editRoleId);
+  if(isBuiltin){
+    // Update built-in role permissions override in customRoles
     const i=DB.customRoles.findIndex(r=>r.id===editRoleId);
+    if(i>=0)DB.customRoles[i]={...DB.customRoles[i],permissions:perms};
+    else DB.customRoles.push({id:editRoleId,name:isBuiltin.name,system:true,permissions:perms});
+    // Also patch the in-memory BUILTIN_ROLES entry
+    const bi=BUILTIN_ROLES.findIndex(r=>r.id===editRoleId);
+    if(bi>=0)BUILTIN_ROLES[bi].permissions=perms;
+  } else if(editRoleId){
+    const i=DB.customRoles.findIndex(r=>r.id===editRoleId);
+    const name=document.getElementById('rf-name').value.trim();
+    if(!name){alert('Please enter a role name.');return;}
     if(i>=0)DB.customRoles[i]={...DB.customRoles[i],name,permissions:perms};
   } else {
+    const name=document.getElementById('rf-name').value.trim();
+    if(!name){alert('Please enter a role name.');return;}
     DB.customRoles.push({id:'role_'+Date.now(),name,permissions:perms});
   }
   persist();closeRoleForm();renderRoles();
