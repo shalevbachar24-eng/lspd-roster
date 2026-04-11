@@ -441,6 +441,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <h3 id="role-form-title">Add Role</h3>
     <div class="field"><label><span class="req">*</span>Role Name</label><input id="rf-name" placeholder="e.g. FTO, K9, TRAINER"></div>
     <div class="field"><label>Permissions</label><div class="perm-grid" id="rf-perms"></div></div>
+    <div class="field"><label>Page Access</label><div class="perm-grid" id="rf-pages"></div></div>
     <div class="form-btns">
       <button class="fcancel" onclick="closeRoleForm()">Cancel</button>
       <button class="fsave" onclick="saveRole()">Save</button>
@@ -459,6 +460,17 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="form-btns">
       <button class="fcancel" onclick="closeUnitForm()">Cancel</button>
       <button class="fsave" onclick="saveUnitDef()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFICER PROFILE -->
+<div id="profile-ov" class="form-overlay">
+  <div class="form-box" style="max-width:500px">
+    <div id="profile-content"></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeProfile()">Close</button>
+      <button class="fsave" id="profile-edit-btn" style="display:none" onclick="editFromProfile()">✏ Edit</button>
     </div>
   </div>
 </div>
@@ -540,7 +552,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="fg2">
       <div class="field"><label><span class="req">*</span>Initial Password</label><input id="uf-pass" type="text" placeholder="4-digit PIN" maxlength="4"></div>
       <div class="field"><label><span class="req">*</span>Role</label>
-        <select id="uf-role"><option value="officer">Officer</option><option value="command">Command</option></select>
+        <select id="uf-role"></select>
       </div>
     </div>
     <div class="fg2">
@@ -599,13 +611,24 @@ const ALL_PERMISSIONS=[
   {id:'bulk_actions',label:'Bulk Actions'}
 ];
 const PERM_LABELS=Object.fromEntries(ALL_PERMISSIONS.map(p=>[p.id,p.label]));
+const PAGE_DEFS=[
+  {id:'roster',label:'Roster',icon:'🛡️'},
+  {id:'management',label:'Management Panel',icon:'⭐'},
+  {id:'mgmt_accounts',label:'Accounts Tab',icon:'👥'},
+  {id:'mgmt_roles',label:'Roles Tab',icon:'🏷'},
+  {id:'mgmt_units',label:'Units Tab',icon:'🏢'},
+  {id:'mgmt_ranks',label:'Ranks Tab',icon:'⬆'},
+  {id:'mgmt_log',label:'Activity Log Tab',icon:'📋'},
+];
 const BUILTIN_ROLES=[
   {id:'officer',name:'Officer',system:true,description:'Basic access — view roster only',
-    permissions:[]},
+    permissions:[],allowedPages:['roster']},
   {id:'command',name:'Command',system:true,description:'Full management access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions']},
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions'],
+    allowedPages:['roster','management','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log']},
   {id:'red_command',name:'Red Command',system:true,description:'Top command — same as Command + unit management',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions']}
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions'],
+    allowedPages:['roster','management','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log']}
 ];
 
 function clickSound(){
@@ -679,7 +702,7 @@ function refreshUsrRanks(currentRank){
   if(sel)sel.innerHTML=ranks.map(r=>'<option'+(r===cur?' selected':'')+'>'+r+'</option>').join('');
 }
 
-const DATA_VERSION='v19';
+const DATA_VERSION='v20';
 if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_users');
   localStorage.removeItem('lspd_officers');
@@ -695,7 +718,8 @@ let DB={
   officers:JSON.parse(localStorage.getItem('lspd_officers')||'null')||DEFAULT_OFFICERS,
   customRoles:JSON.parse(localStorage.getItem('lspd_custom_roles')||'[]'),
   unitDefs:JSON.parse(localStorage.getItem('lspd_unit_defs')||'null')||DEFAULT_UNIT_DEFS,
-  ranksByUnit:JSON.parse(localStorage.getItem('lspd_ranks_by_unit')||'null')||JSON.parse(JSON.stringify(RANKS_BY_UNIT))
+  ranksByUnit:JSON.parse(localStorage.getItem('lspd_ranks_by_unit')||'null')||JSON.parse(JSON.stringify(RANKS_BY_UNIT)),
+  auditLog:JSON.parse(localStorage.getItem('lspd_audit_log')||'[]')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
 
@@ -725,17 +749,34 @@ function migrateAll(){
   });
 }
 migrateAll();
-// Ensure built-in roles exist in DB.customRoles (add if missing, apply saved overrides)
-BUILTIN_ROLES.forEach(br=>{
-  const existing=DB.customRoles.find(r=>r.id===br.id);
-  if(existing){
-    // Apply saved permissions to in-memory BUILTIN_ROLES entry
-    const bi=BUILTIN_ROLES.findIndex(r=>r.id===br.id);
-    if(bi>=0)BUILTIN_ROLES[bi].permissions=existing.permissions;
-  } else {
-    DB.customRoles.unshift({...br});
-  }
-});
+function ensureBuiltinRoles(){
+  BUILTIN_ROLES.forEach(br=>{
+    const existing=DB.customRoles.find(r=>r.id===br.id);
+    if(existing){
+      // Apply saved permissions/allowedPages to in-memory BUILTIN_ROLES entry
+      const bi=BUILTIN_ROLES.findIndex(r=>r.id===br.id);
+      if(bi>=0){
+        BUILTIN_ROLES[bi].permissions=existing.permissions;
+        if(existing.allowedPages)BUILTIN_ROLES[bi].allowedPages=existing.allowedPages;
+      }
+      // Ensure allowedPages is set on existing entry in DB
+      if(!existing.allowedPages){
+        existing.allowedPages=br.allowedPages||[];
+      }
+    } else {
+      DB.customRoles.unshift({...br});
+    }
+  });
+}
+ensureBuiltinRoles();
+
+function logAction(action,details){
+  if(!DB.auditLog)DB.auditLog=[];
+  const who=currentUser?currentUser.fname+' '+currentUser.lname:'System';
+  DB.auditLog.unshift({ts:Date.now(),who,action,details});
+  if(DB.auditLog.length>500)DB.auditLog=DB.auditLog.slice(0,500);
+  localStorage.setItem('lspd_audit_log',JSON.stringify(DB.auditLog));
+}
 
 function persist(){
   localStorage.setItem('lspd_users',JSON.stringify(DB.users));
@@ -743,6 +784,7 @@ function persist(){
   localStorage.setItem('lspd_custom_roles',JSON.stringify(DB.customRoles||[]));
   localStorage.setItem('lspd_unit_defs',JSON.stringify(DB.unitDefs));
   localStorage.setItem('lspd_ranks_by_unit',JSON.stringify(DB.ranksByUnit));
+  localStorage.setItem('lspd_audit_log',JSON.stringify(DB.auditLog||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -782,15 +824,36 @@ function doSetPassword(){
   finishLogin(currentUser);
 }
 
+function getUserRole(user){
+  if(!user)return null;
+  const rid=user.roleId;
+  if(rid){const r=(DB.customRoles||[]).find(x=>x.id===rid);if(r)return r;}
+  if(user.role==='command')return(DB.customRoles||[]).find(x=>x.id==='command')||BUILTIN_ROLES.find(x=>x.id==='command')||null;
+  return(DB.customRoles||[]).find(x=>x.id==='officer')||BUILTIN_ROLES.find(x=>x.id==='officer')||null;
+}
+function canAccess(page){
+  if(!currentUser)return false;
+  const role=getUserRole(currentUser);
+  if(!role)return false;
+  return(role.allowedPages||[]).includes(page);
+}
+function hasPerm(perm){
+  if(!currentUser)return false;
+  const role=getUserRole(currentUser);
+  if(!role)return false;
+  return(role.permissions||[]).includes(perm);
+}
+
 function finishLogin(u){
   document.getElementById('hdr-right').style.display='flex';
   document.getElementById('hdr-name').textContent=u.fname+' '+u.lname;
+  const role=getUserRole(u);
   const rp=document.getElementById('hdr-role');
-  const isRC=(u.units||[u.unit]).includes('RED COMMAND');
-  rp.textContent=u.role==='command'?'Command':(isRC?'Red Command':'Officer');
-  rp.className='role-pill '+(u.role==='command'||isRC?'pill-command':'pill-officer');
-  document.getElementById('card-command').style.display=(u.role==='command'||isRC)?'block':'none';
-  document.getElementById('btn-add-off').style.display=u.role==='command'?'':'none';
+  rp.textContent=role?role.name:'Officer';
+  const isCmd=(role&&(role.id==='command'||role.id==='red_command'))||(u.role==='command');
+  rp.className='role-pill '+(isCmd?'pill-command':'pill-officer');
+  document.getElementById('card-command').style.display=canAccess('management')?'block':'none';
+  document.getElementById('btn-add-off').style.display=hasPerm('add_officer')?'':'none';
   clickSound();
 }
 
@@ -854,9 +917,7 @@ function goRoster(){clickSound();showPage('pg-roster');renderRoster()}
 function goCommand(){goMgmt();}
 function goMgmt(){
   if(!currentUser)return;
-  const isCmd=currentUser.role==='command';
-  const isRC=(currentUser.units||[currentUser.unit]).includes('RED COMMAND');
-  if(!isCmd&&!isRC)return;
+  if(!canAccess('management'))return;
   clickSound();showPage('pg-mgmt');switchTab('accounts');
 }
 
@@ -885,7 +946,7 @@ function renderRoster(){
   const fu=document.getElementById('f-unit').value;
   const fc=document.getElementById('f-cert').value;
   const fs=document.getElementById('f-search').value.trim().toLowerCase();
-  const canEdit=currentUser&&currentUser.role==='command';
+  const canEdit=hasPerm('edit_officer');
   let rows=DB.officers.filter(o=>{
     const oUnits=o.units||[o.unit];
     if(rosterMetroAll){
@@ -948,6 +1009,7 @@ function delOfficerById(id){
     function(){
       const idx=DB.officers.findIndex(x=>x.id===id);
       if(idx>=0)DB.officers.splice(idx,1);
+      logAction('Delete Officer',o.fname+' '+o.lname);
       persist();renderRoster();
     }
   );
@@ -1010,6 +1072,7 @@ function saveOfficer(){
     DB.users.push({id:oid,fname:fn,lname:ln,password:'0000',mustChangePassword:true,
       role:'officer',rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:[]});
   }
+  logAction(editOffIdx>=0?'Edit Officer':'Add Officer',fn+' '+ln);
   persist();closeOffForm();renderRoster();
 }
 function delOfficer(idx){
