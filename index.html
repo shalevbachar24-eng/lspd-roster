@@ -151,6 +151,16 @@ tr:hover td{background:rgba(74,158,255,0.04)}
 .bulk-chip.danger.active{background:rgba(232,60,60,0.25);border-color:#ff6b6b}
 tr.selected td{background:rgba(74,158,255,0.1)!important}
 .row-cb{accent-color:#4a9eff;width:14px;height:14px}
+.units-chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.uc-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);transition:.2s;font-family:'Heebo',sans-serif}
+.uc-btn.sel{border-color:rgba(74,158,255,0.6);background:rgba(74,158,255,0.15);color:#fff}
+.uc-btn:hover{border-color:rgba(74,158,255,0.35);color:rgba(255,255,255,0.75)}
+.uc-btn[data-unit="PATROL"].sel{color:#7ac3ff}
+.uc-btn[data-unit="METRO"].sel{border-color:rgba(93,202,165,0.5);background:rgba(93,202,165,0.12);color:#5dcaa5}
+.uc-btn[data-unit="SWAT"].sel{border-color:rgba(232,100,100,0.5);background:rgba(232,100,100,0.12);color:#e88080}
+.uc-btn[data-unit="DETECTIVE"].sel{border-color:rgba(245,196,113,0.5);background:rgba(245,196,113,0.12);color:#f5c471}
+.uc-btn[data-unit="PURSUIT"].sel{border-color:rgba(180,100,240,0.5);background:rgba(180,100,240,0.12);color:#c07aee}
+.uc-btn[data-unit="RED COMMAND"].sel{border-color:rgba(220,50,50,0.5);background:rgba(220,50,50,0.15);color:#ff8888}
 </style>
 </head>
 <body>
@@ -413,12 +423,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="field"><label><span class="req">*</span>Last Name</label><input id="of-ln" placeholder="Bundy"></div>
     </div>
     <div class="fg2">
-      <div class="field"><label><span class="req">*</span>Unit</label>
-        <select id="of-unit" onchange="updateOffRanks()">
-          <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
-        </select>
+      <div class="field" style="grid-column:1/-1"><label><span class="req">*</span>Units (select one or more)</label>
+        <div id="of-units-grid" class="units-chip-grid"></div>
       </div>
       <div class="field"><label><span class="req">*</span>Rank</label><select id="of-rank"></select></div>
+      <div></div>
     </div>
     <div class="fg2">
       <div class="field"><label>Badge #</label><input id="of-badge" placeholder="123" maxlength="3"></div>
@@ -457,12 +466,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       </div>
     </div>
     <div class="fg2">
-      <div class="field"><label><span class="req">*</span>Unit</label>
-        <select id="uf-unit" onchange="updateUsrRanks()">
-          <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
-        </select>
+      <div class="field" style="grid-column:1/-1"><label><span class="req">*</span>Units (select one or more)</label>
+        <div id="uf-units-grid" class="units-chip-grid"></div>
       </div>
       <div class="field"><label><span class="req">*</span>Rank</label><select id="uf-rank"></select></div>
+      <div></div>
     </div>
     <div class="fg2">
       <div class="field"><label>Badge #</label><input id="uf-badge" placeholder="123" maxlength="3"></div>
@@ -533,8 +541,57 @@ function populateRanks(selectId,unit,currentRank){
   const ranks=RANKS_BY_UNIT[unit]||RANKS_BY_UNIT['PATROL'];
   sel.innerHTML=ranks.map(r=>'<option'+(r===currentRank?' selected':'')+'>'+r+'</option>').join('');
 }
-function updateOffRanks(){populateRanks('of-rank',document.getElementById('of-unit').value,null)}
-function updateUsrRanks(){populateRanks('uf-rank',document.getElementById('uf-unit').value,null)}
+function updateOffRanks(){refreshOffRanks();}
+function updateUsrRanks(){refreshUsrRanks();}
+
+function getUnitRanks(units){
+  const hasRC=units.includes('RED COMMAND'),hasOther=units.some(u=>u!=='RED COMMAND');
+  if(hasRC&&!hasOther)return DB.ranksByUnit['RED COMMAND']||RANKS_BY_UNIT['RED COMMAND']||[];
+  const nonRC=units.find(u=>u!=='RED COMMAND')||'PATROL';
+  return DB.ranksByUnit[nonRC]||RANKS_BY_UNIT[nonRC]||RANKS_BY_UNIT['PATROL']||[];
+}
+
+function buildOffUnitGrid(selUnits,currentRank){
+  const grid=document.getElementById('of-units-grid');if(!grid)return;
+  grid.innerHTML=(DB.unitDefs||DEFAULT_UNIT_DEFS).map(u=>{
+    const s=selUnits.includes(u.id);
+    return '<button type="button" class="uc-btn'+(s?' sel':'')+'" data-unit="'+u.id+'" onclick="toggleOffUnit(\''+u.id+'\')">'+u.icon+' '+u.name+'</button>';
+  }).join('');
+  refreshOffRanks(currentRank);
+}
+function toggleOffUnit(uid){
+  const btns=[...document.querySelectorAll('#of-units-grid .uc-btn')];
+  const btn=btns.find(b=>b.dataset.unit===uid);if(!btn)return;
+  if(btn.classList.contains('sel')&&btns.filter(b=>b.classList.contains('sel')).length===1)return;
+  btn.classList.toggle('sel');refreshOffRanks();
+}
+function getSelectedOffUnits(){return[...document.querySelectorAll('#of-units-grid .uc-btn.sel')].map(b=>b.dataset.unit);}
+function refreshOffRanks(currentRank){
+  const units=getSelectedOffUnits();const ranks=getUnitRanks(units.length?units:['PATROL']);
+  const sel=document.getElementById('of-rank');const cur=currentRank||sel.value;
+  if(sel)sel.innerHTML=ranks.map(r=>'<option'+(r===cur?' selected':'')+'>'+r+'</option>').join('');
+}
+
+function buildUsrUnitGrid(selUnits,currentRank){
+  const grid=document.getElementById('uf-units-grid');if(!grid)return;
+  grid.innerHTML=(DB.unitDefs||DEFAULT_UNIT_DEFS).map(u=>{
+    const s=selUnits.includes(u.id);
+    return '<button type="button" class="uc-btn'+(s?' sel':'')+'" data-unit="'+u.id+'" onclick="toggleUsrUnit(\''+u.id+'\')">'+u.icon+' '+u.name+'</button>';
+  }).join('');
+  refreshUsrRanks(currentRank);
+}
+function toggleUsrUnit(uid){
+  const btns=[...document.querySelectorAll('#uf-units-grid .uc-btn')];
+  const btn=btns.find(b=>b.dataset.unit===uid);if(!btn)return;
+  if(btn.classList.contains('sel')&&btns.filter(b=>b.classList.contains('sel')).length===1)return;
+  btn.classList.toggle('sel');refreshUsrRanks();
+}
+function getSelectedUsrUnits(){return[...document.querySelectorAll('#uf-units-grid .uc-btn.sel')].map(b=>b.dataset.unit);}
+function refreshUsrRanks(currentRank){
+  const units=getSelectedUsrUnits();const ranks=getUnitRanks(units.length?units:['PATROL']);
+  const sel=document.getElementById('uf-rank');const cur=currentRank||sel.value;
+  if(sel)sel.innerHTML=ranks.map(r=>'<option'+(r===cur?' selected':'')+'>'+r+'</option>').join('');
+}
 
 const DATA_VERSION='v19';
 if(localStorage.getItem('lspd_version')!==DATA_VERSION){
@@ -779,8 +836,7 @@ function openOffForm(idx){
     document.getElementById('off-form-title').textContent='Add Officer';
     ['of-fn','of-ln','of-badge','of-discord'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('of-join').value=new Date().toISOString().split('T')[0];
-    document.getElementById('of-unit').value='PATROL';
-    updateOffRanks();
+    buildOffUnitGrid(['PATROL']);
     ['oc-lw','oc-hw','oc-int','oc-heli','oc-moto'].forEach(id=>document.getElementById(id).checked=false);
   } else {
     const o=DB.officers[idx];
@@ -789,8 +845,7 @@ function openOffForm(idx){
     document.getElementById('of-ln').value=o.lname;
     document.getElementById('of-badge').value=o.badge||'';
     document.getElementById('of-discord').value=o.discord||'';
-    document.getElementById('of-unit').value=o.unit;
-    populateRanks('of-rank',o.unit,o.rank);
+    buildOffUnitGrid(o.units||[o.unit],o.rank);
     document.getElementById('of-join').value=o.join||'';
     document.getElementById('oc-lw').checked=(o.certs||[]).includes('Light Weapon');
     document.getElementById('oc-hw').checked=(o.certs||[]).includes('Heavy Weapon');
@@ -814,23 +869,23 @@ function saveOfficer(){
   if(document.getElementById('oc-heli').checked)certs.push('Helicopter');
   if(document.getElementById('oc-moto').checked)certs.push('Motorcycle');
   const rank=document.getElementById('of-rank').value;
-  const unit=document.getElementById('of-unit').value;
+  const selUnits=getSelectedOffUnits();
+  if(!selUnits.length){alert('Please select at least one unit.');return;}
+  const unit=selUnits[0];
   const badge=document.getElementById('of-badge').value;
   const oid=editOffIdx>=0?DB.officers[editOffIdx].id:Date.now();
   const join=document.getElementById('of-join').value;
-  // Preserve existing units array when editing; set new unit for new officers
-  const existUnits=editOffIdx>=0?(DB.officers[editOffIdx].units||[unit]):[unit];
   const existSpecialRoles=editOffIdx>=0?(DB.officers[editOffIdx].specialRoles||[]):[];
-  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:existUnits,badge,discord,join,certs,specialRoles:existSpecialRoles};
+  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:existSpecialRoles};
   if(editOffIdx>=0)DB.officers[editOffIdx]=obj;
   else DB.officers.push(obj);
   const ui=DB.users.findIndex(u=>u.id===oid);
   if(ui>=0){
-    DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,units:existUnits,badge,discord,certs};
+    DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,certs};
   } else {
     // Auto-create login account for this new officer
     DB.users.push({id:oid,fname:fn,lname:ln,password:'0000',mustChangePassword:true,
-      role:'officer',rank,unit,units:[unit],badge,discord,join,certs,specialRoles:[]});
+      role:'officer',rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:[]});
   }
   persist();closeOffForm();renderRoster();
 }
@@ -889,8 +944,7 @@ function openUserForm(i){
     ['uf-fn','uf-ln','uf-pass','uf-badge','uf-discord'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('uf-join').value=new Date().toISOString().split('T')[0];
     document.getElementById('uf-role').value='officer';
-    document.getElementById('uf-unit').value='PATROL';
-    updateUsrRanks();
+    buildUsrUnitGrid(['PATROL']);
     ['uc-lw','uc-hw','uc-int','uc-heli','uc-moto'].forEach(id=>document.getElementById(id).checked=false);
   } else {
     const u=DB.users[i];
@@ -899,10 +953,9 @@ function openUserForm(i){
     document.getElementById('uf-ln').value=u.lname;
     document.getElementById('uf-pass').value=u.password;
     document.getElementById('uf-role').value=u.role;
-    document.getElementById('uf-unit').value=u.unit;
-    populateRanks('uf-rank',u.unit,u.rank);
     document.getElementById('uf-badge').value=u.badge||'';
     document.getElementById('uf-discord').value=u.discord||'';
+    buildUsrUnitGrid(u.units||[u.unit],u.rank);
     document.getElementById('uf-join').value=u.join||'';
     document.getElementById('uc-lw').checked=(u.certs||[]).includes('Light Weapon');
     document.getElementById('uc-hw').checked=(u.certs||[]).includes('Heavy Weapon');
@@ -928,13 +981,16 @@ function saveUser(){
   if(document.getElementById('uc-moto').checked)certs.push('Motorcycle');
   const uid=editUsrIdx>=0?DB.users[editUsrIdx].id:Date.now();
   const rank=document.getElementById('uf-rank').value;
-  const unit=document.getElementById('uf-unit').value;
+  const selUsrUnits=getSelectedUsrUnits();
+  if(!selUsrUnits.length){alert('Please select at least one unit.');return;}
+  const unit=selUsrUnits[0];
   const badge=document.getElementById('uf-badge').value;
   const role=document.getElementById('uf-role').value;
   const isNew=editUsrIdx===-1;
   const join=document.getElementById('uf-join').value;
-  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,role,rank,unit,badge,discord,join,certs};
-  const officerObj={id:uid,fname:fn,lname:ln,rank,unit,badge,discord,join,certs};
+  const existSR=editUsrIdx>=0?(DB.users[editUsrIdx].specialRoles||[]):[];
+  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,role,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:existSR};
+  const officerObj={id:uid,fname:fn,lname:ln,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:[]};
   if(editUsrIdx>=0){
     DB.users[editUsrIdx]=userObj;
     const oi=DB.officers.findIndex(o=>o.id===uid);
@@ -1070,8 +1126,8 @@ function applyBulk(){
 }
 
 window.onload=()=>{
-  updateOffRanks();
-  updateUsrRanks();
+  buildOffUnitGrid(['PATROL']);
+  buildUsrUnitGrid(['PATROL']);
   setTimeout(()=>document.getElementById('li-ident').focus(),300);
 };
 </script>
