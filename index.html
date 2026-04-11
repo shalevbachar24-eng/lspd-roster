@@ -161,6 +161,10 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .uc-btn[data-unit="DETECTIVE"].sel{border-color:rgba(245,196,113,0.5);background:rgba(245,196,113,0.12);color:#f5c471}
 .uc-btn[data-unit="PURSUIT"].sel{border-color:rgba(180,100,240,0.5);background:rgba(180,100,240,0.12);color:#c07aee}
 .uc-btn[data-unit="RED COMMAND"].sel{border-color:rgba(220,50,50,0.5);background:rgba(220,50,50,0.15);color:#ff8888}
+.rank-chips-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rfc{padding:5px 11px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);transition:.15s;font-family:'Heebo',sans-serif}
+.rfc.active{background:rgba(74,158,255,0.2);border-color:rgba(74,158,255,0.5);color:#7ac3ff}
+.rfc:hover{border-color:rgba(74,158,255,0.3);color:rgba(255,255,255,0.7)}
 </style>
 </head>
 <body>
@@ -303,16 +307,15 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <option value="">All Units</option>
       <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
     </select>
-    <select id="f-rank" onchange="renderRoster()">
-      <option value="">All Ranks</option>
-      <option>Cadet</option><option>Officer</option><option>Sr. Officer</option><option>Corporal</option><option>Sergeant</option><option>Lieutenant</option><option>Captain</option>
-      <option>COP</option><option>A.COP</option><option>Deputy Chief</option>
-    </select>
     <select id="f-cert" onchange="renderRoster()">
       <option value="">All Clearances</option>
       <option>Light Weapon</option><option>Heavy Weapon</option><option>Interceptor Vehicle</option><option>Helicopter</option><option>Motorcycle</option>
     </select>
     <button class="clr-btn" onclick="clearFilters()">Clear</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Rank:</span>
+    <div id="rank-chips" class="rank-chips-row"></div>
   </div>
   <div class="bulk-bar" id="bulk-bar">
     <span class="bulk-count" id="bulk-count">0 selected</span>
@@ -713,14 +716,15 @@ function showMetroPicker(){clickSound();showPage('pg-metro-picker')}
 function goRosterUnit(unit){
   clickSound();
   rosterMetroAll=false;
+  selectedRanks.clear();
   const fu=document.getElementById('f-unit');
-  document.getElementById('f-rank').value='';
   document.getElementById('f-cert').value='';
   document.getElementById('f-search').value='';
   if(unit==='ALL') fu.value='';
-  else if(unit==='METRO'){ fu.value=''; rosterMetroAll=true; } // All Metro = anyone with METRO in units[]
+  else if(unit==='METRO'){ fu.value=''; rosterMetroAll=true; }
   else fu.value=unit;
   showPage('pg-roster');
+  renderRankChips();
   renderRoster();
 }
 function homeSearch(q){
@@ -738,8 +742,8 @@ function homeSearch(q){
 function jumpToOfficer(id){
   document.getElementById('home-search').value='';
   document.getElementById('home-search-results').innerHTML='';
+  rosterMetroAll=false;selectedRanks.clear();
   document.getElementById('f-unit').value='';
-  document.getElementById('f-rank').value='';
   document.getElementById('f-cert').value='';
   const o=DB.officers.find(x=>x.id===id);
   if(o)document.getElementById('f-search').value=o.fname+' '+o.lname;
@@ -755,11 +759,28 @@ function goRoster(){clickSound();showPage('pg-roster');renderRoster()}
 function goCommand(){if(!currentUser||currentUser.role!=='command')return;clickSound();showPage('pg-command');renderCommand()}
 
 const RANK_ORDER=['Deputy Chief','A.COP','COP','Captain','Lieutenant','Sergeant','Corporal','Sr. Officer','Officer','Cadet'];
-function rankGroup(rank){const i=RANK_ORDER.indexOf(rank);return i>=0?i:99;}
+function getRankOrder(){
+  const rc=(DB.ranksByUnit['RED COMMAND']||RANKS_BY_UNIT['RED COMMAND']||[]).slice().reverse();
+  const patrol=(DB.ranksByUnit['PATROL']||RANKS_BY_UNIT['PATROL']||[]).slice().reverse();
+  const seen=new Set();const order=[];
+  [...rc,...patrol].forEach(r=>{if(!seen.has(r)){seen.add(r);order.push(r);}});
+  return order.length?order:RANK_ORDER;
+}
+function rankGroup(rank){const i=getRankOrder().indexOf(rank);return i>=0?i:99;}
+
+function renderRankChips(){
+  const container=document.getElementById('rank-chips');if(!container)return;
+  container.innerHTML=getRankOrder().map(r=>
+    '<button class="rfc'+(selectedRanks.has(r)?' active':'')+'" onclick="toggleRankFilter(\''+r.replace(/'/g,"\\'")+'\')">' +r+'</button>'
+  ).join('');
+}
+function toggleRankFilter(rank){
+  if(selectedRanks.has(rank))selectedRanks.delete(rank);else selectedRanks.add(rank);
+  renderRankChips();renderRoster();
+}
 
 function renderRoster(){
   const fu=document.getElementById('f-unit').value;
-  const fr=document.getElementById('f-rank').value;
   const fc=document.getElementById('f-cert').value;
   const fs=document.getElementById('f-search').value.trim().toLowerCase();
   const canEdit=currentUser&&currentUser.role==='command';
@@ -770,7 +791,7 @@ function renderRoster(){
     } else if(fu){
       if(!oUnits.includes(fu))return false;
     }
-    if(fr&&o.rank!==fr)return false;
+    if(selectedRanks.size>0&&!selectedRanks.has(o.rank))return false;
     if(fc&&!(o.certs||[]).includes(fc))return false;
     if(fs){
       const hay=(o.fname+' '+o.lname+' '+(o.badge||'')+' '+(o.discord||'')).toLowerCase();
@@ -813,7 +834,7 @@ function renderRoster(){
   }
 }
 
-function clearFilters(){rosterMetroAll=false;['f-unit','f-rank','f-cert','f-search'].forEach(id=>document.getElementById(id).value='');renderRoster()}
+function clearFilters(){rosterMetroAll=false;selectedRanks.clear();['f-unit','f-cert','f-search'].forEach(id=>document.getElementById(id).value='');renderRankChips();renderRoster();}
 
 function openOffFormById(id){openOffForm(DB.officers.findIndex(o=>o.id===id))}
 function delOfficerById(id){
@@ -1020,6 +1041,7 @@ function delUser(i){
 let selMode=false;
 let selectedIds=new Set();
 let rosterMetroAll=false;
+let selectedRanks=new Set();
 
 function toggleSelMode(){
   selMode=!selMode;
@@ -1067,7 +1089,6 @@ function clearSelection(){
 
 function getVisibleIds(){
   const fu=document.getElementById('f-unit').value;
-  const fr=document.getElementById('f-rank').value;
   const fc=document.getElementById('f-cert').value;
   const fs=document.getElementById('f-search').value.trim().toLowerCase();
   return DB.officers.filter(o=>{
@@ -1077,7 +1098,7 @@ function getVisibleIds(){
     } else if(fu){
       if(!oUnits.includes(fu))return false;
     }
-    if(fr&&o.rank!==fr)return false;
+    if(selectedRanks.size>0&&!selectedRanks.has(o.rank))return false;
     if(fc&&!(o.certs||[]).includes(fc))return false;
     if(fs&&!(o.fname+' '+o.lname+' '+(o.badge||'')+' '+(o.discord||'')).toLowerCase().includes(fs))return false;
     return true;
@@ -1128,6 +1149,7 @@ function applyBulk(){
 window.onload=()=>{
   buildOffUnitGrid(['PATROL']);
   buildUsrUnitGrid(['PATROL']);
+  renderRankChips();
   setTimeout(()=>document.getElementById('li-ident').focus(),300);
 };
 </script>
