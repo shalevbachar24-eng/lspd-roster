@@ -289,7 +289,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <input id="f-search" placeholder="Search name, badge, Discord..." oninput="renderRoster()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:inherit;width:100%">
       <button class="srch-x" onclick="document.getElementById('f-search').value='';renderRoster()">✕</button>
     </div>
-    <select id="f-unit" onchange="renderRoster()">
+    <select id="f-unit" onchange="rosterMetroAll=false;renderRoster()">
       <option value="">All Units</option>
       <option>PATROL</option><option>METRO</option><option>SWAT</option><option>DETECTIVE</option><option>PURSUIT</option><option>RED COMMAND</option>
     </select>
@@ -655,14 +655,14 @@ function goUnitPicker(){clickSound();showPage('pg-unit-picker')}
 function showMetroPicker(){clickSound();showPage('pg-metro-picker')}
 function goRosterUnit(unit){
   clickSound();
+  rosterMetroAll=false;
   const fu=document.getElementById('f-unit');
-  if(unit==='ALL')fu.value='';
-  else if(unit==='METRO')fu.value='';
-  else fu.value=unit;
-  // For METRO sub-units keep unit as-is
   document.getElementById('f-rank').value='';
   document.getElementById('f-cert').value='';
   document.getElementById('f-search').value='';
+  if(unit==='ALL') fu.value='';
+  else if(unit==='METRO'){ fu.value=''; rosterMetroAll=true; } // All Metro = anyone with METRO in units[]
+  else fu.value=unit;
   showPage('pg-roster');
   renderRoster();
 }
@@ -673,7 +673,8 @@ function homeSearch(q){
   const results=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(lq)||(o.badge||'').toLowerCase()===lq).slice(0,6);
   if(!results.length){el.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;padding:8px">No officers found</div>';return}
   el.innerHTML=results.map(o=>{
-    const ub='<span class="badge '+(UNITCLS[o.unit]||'')+'" style="font-size:9px;padding:1px 6px">'+o.unit+'</span>';
+    const hsrUnits=o.units||[o.unit];
+    const ub=hsrUnits.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'" style="font-size:9px;padding:1px 6px">'+u+'</span>').join(' ');
     return '<div class="home-search-result" onclick="jumpToOfficer('+o.id+')" style="cursor:pointer"><div style="flex:1"><div class="hsr-name">'+o.fname+' '+o.lname+'</div><div class="hsr-meta">'+o.rank+' · '+ub+'</div></div><div class="hsr-badge">#'+(o.badge||'—')+'</div></div>';
   }).join('');
 }
@@ -706,7 +707,12 @@ function renderRoster(){
   const fs=document.getElementById('f-search').value.trim().toLowerCase();
   const canEdit=currentUser&&currentUser.role==='command';
   let rows=DB.officers.filter(o=>{
-    if(fu&&o.unit!==fu)return false;
+    const oUnits=o.units||[o.unit];
+    if(rosterMetroAll){
+      if(!['METRO','SWAT','DETECTIVE','PURSUIT'].some(u=>oUnits.includes(u)))return false;
+    } else if(fu){
+      if(!oUnits.includes(fu))return false;
+    }
     if(fr&&o.rank!==fr)return false;
     if(fc&&!(o.certs||[]).includes(fc))return false;
     if(fs){
@@ -730,7 +736,8 @@ function renderRoster(){
       lastRank=o.rank;
       out+='<tr class="rank-divider"><td colspan="'+cols+'"><span>'+o.rank+'</span></td></tr>';
     }
-    const ub='<span class="badge '+(UNITCLS[o.unit]||'')+'">'+o.unit+'</span>';
+    const oUnits2=o.units||[o.unit];
+    const ub=oUnits2.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join('<span style="color:rgba(255,255,255,0.25);margin:0 2px;font-size:10px">|</span>');
     const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join('')||'—';
     const acts=canEdit?'<button class="act-btn" onclick="openOffFormById('+o.id+')">✏</button><button class="act-btn del-btn" onclick="delOfficerById('+o.id+')">✕</button>':'';
     const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
@@ -749,7 +756,7 @@ function renderRoster(){
   }
 }
 
-function clearFilters(){['f-unit','f-rank','f-cert','f-search'].forEach(id=>document.getElementById(id).value='');renderRoster()}
+function clearFilters(){rosterMetroAll=false;['f-unit','f-rank','f-cert','f-search'].forEach(id=>document.getElementById(id).value='');renderRoster()}
 
 function openOffFormById(id){openOffForm(DB.officers.findIndex(o=>o.id===id))}
 function delOfficerById(id){
@@ -864,7 +871,8 @@ function renderCommand(){
     const i=DB.users.indexOf(u);
     const isSelf=currentUser&&currentUser.id===u.id;
     const rb=u.role==='command'?'<span class="badge bk-cmd">Command</span>':'<span class="badge bk-off">Officer</span>';
-    const ub='<span class="badge '+(UNITCLS[u.unit]||'')+'">'+u.unit+'</span>';
+    const uUnits=u.units||[u.unit];
+    const ub=uUnits.map(un=>'<span class="badge '+(UNITCLS[un]||'')+'">'+un+'</span>').join(' ');
     const initTag=u.mustChangePassword?'<span style="font-size:10px;color:#ffb432;margin-right:4px">⚠ initial pw</span>':'';
     const joinFmt=u.join?new Date(u.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
     out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button>'+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
@@ -955,6 +963,7 @@ function delUser(i){
 
 let selMode=false;
 let selectedIds=new Set();
+let rosterMetroAll=false;
 
 function toggleSelMode(){
   selMode=!selMode;
@@ -1006,7 +1015,12 @@ function getVisibleIds(){
   const fc=document.getElementById('f-cert').value;
   const fs=document.getElementById('f-search').value.trim().toLowerCase();
   return DB.officers.filter(o=>{
-    if(fu&&o.unit!==fu)return false;
+    const oUnits=o.units||[o.unit];
+    if(rosterMetroAll){
+      if(!['METRO','SWAT','DETECTIVE','PURSUIT'].some(u=>oUnits.includes(u)))return false;
+    } else if(fu){
+      if(!oUnits.includes(fu))return false;
+    }
     if(fr&&o.rank!==fr)return false;
     if(fc&&!(o.certs||[]).includes(fc))return false;
     if(fs&&!(o.fname+' '+o.lname+' '+(o.badge||'')+' '+(o.discord||'')).toLowerCase().includes(fs))return false;
