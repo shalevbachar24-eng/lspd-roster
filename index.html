@@ -497,6 +497,23 @@ const RANKS_BY_UNIT={
 const CERTCLS={'Light Weapon':'bk-lw','Heavy Weapon':'bk-hw','Interceptor Vehicle':'bk-int','Helicopter':'bk-heli','Motorcycle':'bk-moto'};
 const UNITCLS={'PATROL':'bu-PATROL','METRO':'bu-METRO','SWAT':'bu-SWAT','DETECTIVE':'bu-DETECTIVE','PURSUIT':'bu-PURSUIT','RED COMMAND':'bu-RED-COMMAND'};
 
+const DEFAULT_UNIT_DEFS=[
+  {id:'PATROL',name:'PATROL',icon:'🚔'},
+  {id:'METRO',name:'METRO',icon:'🚁'},
+  {id:'SWAT',name:'SWAT',icon:'⚔️'},
+  {id:'DETECTIVE',name:'DETECTIVE',icon:'🔍'},
+  {id:'PURSUIT',name:'PURSUIT',icon:'🏎️'},
+  {id:'RED COMMAND',name:'RED COMMAND',icon:'⭐'}
+];
+const ALL_PERMISSIONS=[
+  {id:'add_officer',label:'Add Officer'},{id:'edit_officer',label:'Edit Officer'},
+  {id:'delete_officer',label:'Delete Officer'},{id:'add_user',label:'Add User'},
+  {id:'edit_user',label:'Edit User'},{id:'manage_roles',label:'Manage Roles'},
+  {id:'manage_units',label:'Manage Units'},{id:'manage_ranks',label:'Manage Ranks'},
+  {id:'bulk_actions',label:'Bulk Actions'}
+];
+const PERM_LABELS=Object.fromEntries(ALL_PERMISSIONS.map(p=>[p.id,p.label]));
+
 function clickSound(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -519,23 +536,59 @@ function populateRanks(selectId,unit,currentRank){
 function updateOffRanks(){populateRanks('of-rank',document.getElementById('of-unit').value,null)}
 function updateUsrRanks(){populateRanks('uf-rank',document.getElementById('uf-unit').value,null)}
 
-const DATA_VERSION='v18';
+const DATA_VERSION='v19';
 if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_users');
   localStorage.removeItem('lspd_officers');
+  localStorage.removeItem('lspd_custom_roles');
+  localStorage.removeItem('lspd_unit_defs');
+  localStorage.removeItem('lspd_ranks_by_unit');
   localStorage.setItem('lspd_version',DATA_VERSION);
 }
 const DEFAULT_OFFICERS=[{"id":2,"fname":"Alex","lname":"Cross","rank":"Lieutenant","unit":"PATROL","badge":"210","discord":"1031228503850500237","certs":[],"join":"2026-10-03"},{"id":3,"fname":"Tommy","lname":"Rell","rank":"Lieutenant","unit":"PATROL","badge":"211","discord":"1074621128796016741","certs":[],"join":"2026-10-03"},{"id":4,"fname":"Hans","lname":"Miller","rank":"Sergeant","unit":"PATROL","badge":"212","discord":"1167844385510150196","certs":[],"join":"2026-10-03"},{"id":5,"fname":"Marcus","lname":"Steele","rank":"Sergeant","unit":"PATROL","badge":"213","discord":"1056695830322626580","certs":[],"join":"2026-10-03"},{"id":6,"fname":"Masson","lname":"BlackWood","rank":"Sergeant","unit":"PATROL","badge":"214","discord":"946840497849270402","certs":[],"join":"2026-10-03"},{"id":7,"fname":"Daniel","lname":"Foster","rank":"Sergeant","unit":"PATROL","badge":"215","discord":"1432451387459113152","certs":[],"join":"2026-10-03"},{"id":8,"fname":"Arthur","lname":"Ray","rank":"Corporal","unit":"PATROL","badge":"216","discord":"492412013633470475","certs":[],"join":"2026-10-03"},{"id":9,"fname":"Leo","lname":"Cross","rank":"Corporal","unit":"PATROL","badge":"217","discord":"833725571216965694","certs":[],"join":"2026-10-03"},{"id":10,"fname":"Eizo","lname":"Mikorashi","rank":"Corporal","unit":"PATROL","badge":"218","discord":"960916258562400286","certs":[],"join":"2026-10-03"},{"id":11,"fname":"Kai","lname":"Carter","rank":"Sr. Officer","unit":"PATROL","badge":"220","discord":"1087006319468363816","certs":[],"join":"2026-10-03"},{"id":12,"fname":"Jack","lname":"Pain","rank":"Sr. Officer","unit":"PATROL","badge":"221","discord":"844611136028016670","certs":[],"join":"2026-10-03"},{"id":13,"fname":"Bob","lname":"Marley","rank":"Sr. Officer","unit":"PATROL","badge":"222","discord":"820296458535698432","certs":[],"join":"2026-10-03"},{"id":14,"fname":"Ted","lname":"Bennett","rank":"Sr. Officer","unit":"PATROL","badge":"223","discord":"380774474619813900","certs":[],"join":"2026-10-03"},{"id":15,"fname":"Karl","lname":"Blake","rank":"Sr. Officer","unit":"PATROL","badge":"224","discord":"1415035857274011700","certs":[],"join":"2026-10-03"},{"id":16,"fname":"Theo","lname":"Ross","rank":"Sr. Officer","unit":"PATROL","badge":"225","discord":"1143633166796587130","certs":[],"join":"2026-10-03"},{"id":17,"fname":"Judd","lname":"Ross","rank":"Sr. Officer","unit":"PATROL","badge":"226","discord":"321996387631890435","certs":[],"join":"2026-10-03"},{"id":18,"fname":"Wade","lname":"Gray","rank":"Sr. Officer","unit":"PATROL","badge":"227","discord":"970691548452900924","certs":[],"join":"2026-10-03"},{"id":19,"fname":"Shmuel","lname":"Grinberg","rank":"Sr. Officer","unit":"PATROL","badge":"228","discord":"1087006319468363816","certs":[],"join":"2026-10-03"},{"id":20,"fname":"Jebediah","lname":"Longnuts","rank":"Sr. Officer","unit":"PATROL","badge":"229","discord":"1397606595747254440","certs":[],"join":"2026-10-03"},{"id":21,"fname":"Ryan","lname":"Levy","rank":"Sr. Officer","unit":"PATROL","badge":"230","discord":"1325129725487616081","certs":[],"join":"2026-10-03"},{"id":22,"fname":"James","lname":"Walker","rank":"Sr. Officer","unit":"PATROL","badge":"231","discord":"1207720713847574551","certs":[],"join":"2026-10-03"},{"id":23,"fname":"Rafael","lname":"Dukan","rank":"Sr. Officer","unit":"PATROL","badge":"232","discord":"1365115333245009970","certs":[],"join":"2026-10-03"},{"id":24,"fname":"Alexander","lname":"Moshon","rank":"Sr. Officer","unit":"PATROL","badge":"233","discord":"910546315509899315","certs":[],"join":"2026-10-03"},{"id":25,"fname":"Tuvia","lname":"Boshkaldo","rank":"Sr. Officer","unit":"PATROL","badge":"234","discord":"818857511117127701","certs":[],"join":"2026-10-03"},{"id":26,"fname":"Takashi","lname":"Llue","rank":"Sr. Officer","unit":"PATROL","badge":"235","discord":"412622468172218368","certs":[],"join":"2026-10-03"},{"id":27,"fname":"Jäger","lname":"Meister","rank":"Sr. Officer","unit":"PATROL","badge":"236","discord":"505677711507980289","certs":[],"join":"2026-10-03"},{"id":28,"fname":"Ace","lname":"King","rank":"Sr. Officer","unit":"PATROL","badge":"237","discord":"1001043640119984169","certs":[],"join":"2026-10-03"},{"id":29,"fname":"Dmitri","lname":"Sokolov","rank":"Sr. Officer","unit":"PATROL","badge":"238","discord":"1330604642664714310","certs":[],"join":"2026-10-03"},{"id":30,"fname":"Tom","lname":"Wilson","rank":"Sr. Officer","unit":"PATROL","badge":"239","discord":"1397903222018015282","certs":[],"join":"2026-10-03"},{"id":31,"fname":"Munson","lname":"Ross","rank":"Officer","unit":"PATROL","badge":"241","discord":"503218719896633348","certs":[],"join":"2026-10-03"},{"id":32,"fname":"Carl","lname":"Johnson","rank":"Officer","unit":"PATROL","badge":"242","discord":"1123109933529964616","certs":[],"join":"2026-10-03"},{"id":33,"fname":"Ryan","lname":"Cooper","rank":"Officer","unit":"PATROL","badge":"243","discord":"966669227266293812","certs":[],"join":"2026-10-03"},{"id":34,"fname":"Pera","lname":"Aukko","rank":"Officer","unit":"PATROL","badge":"244","discord":"788742220659556372","certs":[],"join":"2026-10-03"},{"id":35,"fname":"Ori","lname":"Harush","rank":"Officer","unit":"PATROL","badge":"245","discord":"1192274938183303189","certs":[],"join":"2026-10-03"},{"id":36,"fname":"Avrham","lname":"Cooper","rank":"Officer","unit":"PATROL","badge":"246","discord":"1276651454333059154","certs":[],"join":"2026-10-03"},{"id":37,"fname":"Lior","lname":"Hazan","rank":"Officer","unit":"PATROL","badge":"247","discord":"1183001216607846435","certs":[],"join":"2026-10-03"},{"id":38,"fname":"Elias","lname":"Frost","rank":"Officer","unit":"PATROL","badge":"248","discord":"656928813732855838","certs":[],"join":"2026-10-03"},{"id":39,"fname":"Eliran","lname":"Cohen","rank":"Officer","unit":"PATROL","badge":"249","discord":"1063967775296585768","certs":[],"join":"2026-10-03"},{"id":40,"fname":"Franswa","lname":"Silvouple","rank":"Officer","unit":"PATROL","badge":"250","discord":"1406340139210244167","certs":[],"join":"2026-10-03"},{"id":41,"fname":"Grey","lname":"Goose","rank":"Officer","unit":"PATROL","badge":"251","discord":"951911507267039292","certs":[],"join":"2026-10-03"},{"id":42,"fname":"Randy","lname":"Smiles","rank":"Officer","unit":"PATROL","badge":"252","discord":"1205917017538961502","certs":[],"join":"2026-10-03"},{"id":43,"fname":"Ethan","lname":"Blake","rank":"Officer","unit":"PATROL","badge":"253","discord":"803525613071237120","certs":[],"join":"2026-10-03"},{"id":44,"fname":"Moshiko","lname":"Shimoni","rank":"Officer","unit":"PATROL","badge":"254","discord":"313269912925896716","certs":[],"join":"2026-10-03"},{"id":45,"fname":"Eitan","lname":"Kooper","rank":"Officer","unit":"PATROL","badge":"255","discord":"1267899916248682506","certs":[],"join":"2026-10-03"},{"id":46,"fname":"Sanit","lname":"Sossa","rank":"Officer","unit":"PATROL","badge":"256","discord":"771677974843359233","certs":[],"join":"2026-10-03"},{"id":47,"fname":"Ruslan","lname":"Maxim","rank":"Officer","unit":"PATROL","badge":"257","discord":"791914621035872286","certs":[],"join":"2026-10-03"},{"id":48,"fname":"Dani","lname":"Whiteman","rank":"Officer","unit":"PATROL","badge":"258","discord":"990500938915643392","certs":[],"join":"2026-10-03"},{"id":49,"fname":"John","lname":"Wilson","rank":"Officer","unit":"PATROL","badge":"259","discord":"789119287776116737","certs":[],"join":"2026-10-03"},{"id":50,"fname":"Shimon","lname":"Rexy","rank":"Officer","unit":"PATROL","badge":"260","discord":"1248206085626789892","certs":[],"join":"2026-10-03"},{"id":51,"fname":"Dom","lname":"Fel","rank":"Officer","unit":"PATROL","badge":"261","discord":"868973071267151893","certs":[],"join":"2026-10-03"},{"id":52,"fname":"Marcelo","lname":"Silve","rank":"Officer","unit":"PATROL","badge":"262","discord":"778248136694562834","certs":[],"join":"2026-10-03"},{"id":53,"fname":"Ricardo","lname":"Martinez","rank":"Officer","unit":"PATROL","badge":"263","discord":"483320532989902878","certs":[],"join":"2026-10-03"},{"id":54,"fname":"Richard","lname":"Weed","rank":"Officer","unit":"PATROL","badge":"264","discord":"1047136452900831253","certs":[],"join":"2026-10-03"},{"id":55,"fname":"Viktor","lname":"Vivi","rank":"Officer","unit":"PATROL","badge":"265","discord":"819657060434182175","certs":[],"join":"2026-10-03"},{"id":56,"fname":"Pablo","lname":"Gonzales","rank":"Officer","unit":"PATROL","badge":"266","discord":"763725650674450432","certs":[],"join":"2026-10-03"},{"id":57,"fname":"Nico","lname":"Pahima","rank":"Officer","unit":"PATROL","badge":"267","discord":"744948462063190057","certs":[],"join":"2026-10-03"},{"id":58,"fname":"Ryan","lname":"Gonzales","rank":"Officer","unit":"PATROL","badge":"268","discord":"1009529143735627887","certs":[],"join":"2026-10-03"},{"id":59,"fname":"Kipod","lname":"Brocway","rank":"Officer","unit":"PATROL","badge":"269","discord":"1213056217102942219","certs":[],"join":"2026-10-03"},{"id":60,"fname":"Stefan","lname":"Johnson","rank":"Officer","unit":"PATROL","badge":"270","discord":"523838379553587210","certs":[],"join":"2026-10-03"},{"id":61,"fname":"Ido","lname":"Sabag","rank":"Officer","unit":"PATROL","badge":"271","discord":"1100345574965919846","certs":[],"join":"2026-10-03"},{"id":62,"fname":"James","lname":"Heisenberg","rank":"Officer","unit":"PATROL","badge":"272","discord":"1163798986264674314","certs":[],"join":"2026-10-03"},{"id":63,"fname":"Ramsey","lname":"Shoshan","rank":"Officer","unit":"PATROL","badge":"273","discord":"1269675202074378241","certs":[],"join":"2026-10-03"},{"id":64,"fname":"Tomer","lname":"Malka","rank":"Officer","unit":"PATROL","badge":"274","discord":"1375085965818990604","certs":[],"join":"2026-10-03"},{"id":65,"fname":"Nitzan","lname":"Malka","rank":"Officer","unit":"PATROL","badge":"275","discord":"1171902695645397133","certs":[],"join":"2026-10-03"},{"id":66,"fname":"Paddy","lname":"Pimblert","rank":"Officer","unit":"PATROL","badge":"276","discord":"1399011487770607616","certs":[],"join":"2026-10-03"},{"id":67,"fname":"Abdul","lname":"Jabbar","rank":"Officer","unit":"PATROL","badge":"277","discord":"613814567210057738","certs":[],"join":"2026-10-03"},{"id":68,"fname":"Harry","lname":"Florence","rank":"Officer","unit":"PATROL","badge":"278","discord":"312809616155082752","certs":[],"join":"2026-10-03"},{"id":69,"fname":"Avi","lname":"Yeffet","rank":"Officer","unit":"PATROL","badge":"279","discord":"832533902882373652","certs":[],"join":"2026-10-03"},{"id":70,"fname":"Benjamin","lname":"White","rank":"Officer","unit":"PATROL","badge":"280","discord":"1205171700237598835","certs":[],"join":"2026-10-03"},{"id":71,"fname":"Ryan","lname":"Stone","rank":"Officer","unit":"PATROL","badge":"281","discord":"1406230768035954779","certs":[],"join":"2026-10-03"},{"id":72,"fname":"Abraham","lname":"White","rank":"Officer","unit":"PATROL","badge":"282","discord":"1182994095170396211","certs":[],"join":"2026-10-03"},{"id":73,"fname":"Tomer","lname":"Malka","rank":"Officer","unit":"PATROL","badge":"283","discord":"","certs":[],"join":"2026-10-03"},{"id":74,"fname":"Dani","lname":"Levi","rank":"Officer","unit":"PATROL","badge":"284","discord":"","certs":[],"join":"2026-10-03"}];
 const DEFAULT_USERS=[{"id":1,"fname":"Jeffrey","lname":"Bundy","password":"0000","mustChangePassword":false,"role":"command","rank":"Lieutenant","unit":"PATROL","badge":"201","discord":"","certs":[]},{"id":2,"fname":"Alex","lname":"Cross","password":"0000","mustChangePassword":true,"role":"officer","rank":"Lieutenant","unit":"PATROL","badge":"210","discord":"1031228503850500237","join":"2026-10-03","certs":[]},{"id":3,"fname":"Tommy","lname":"Rell","password":"0000","mustChangePassword":true,"role":"officer","rank":"Lieutenant","unit":"PATROL","badge":"211","discord":"1074621128796016741","join":"2026-10-03","certs":[]},{"id":4,"fname":"Hans","lname":"Miller","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"212","discord":"1167844385510150196","join":"2026-10-03","certs":[]},{"id":5,"fname":"Marcus","lname":"Steele","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"213","discord":"1056695830322626580","join":"2026-10-03","certs":[]},{"id":6,"fname":"Masson","lname":"BlackWood","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"214","discord":"946840497849270402","join":"2026-10-03","certs":[]},{"id":7,"fname":"Daniel","lname":"Foster","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sergeant","unit":"PATROL","badge":"215","discord":"1432451387459113152","join":"2026-10-03","certs":[]},{"id":8,"fname":"Arthur","lname":"Ray","password":"0000","mustChangePassword":true,"role":"officer","rank":"Corporal","unit":"PATROL","badge":"216","discord":"492412013633470475","join":"2026-10-03","certs":[]},{"id":9,"fname":"Leo","lname":"Cross","password":"0000","mustChangePassword":true,"role":"officer","rank":"Corporal","unit":"PATROL","badge":"217","discord":"833725571216965694","join":"2026-10-03","certs":[]},{"id":10,"fname":"Eizo","lname":"Mikorashi","password":"0000","mustChangePassword":true,"role":"officer","rank":"Corporal","unit":"PATROL","badge":"218","discord":"960916258562400286","join":"2026-10-03","certs":[]},{"id":11,"fname":"Kai","lname":"Carter","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"220","discord":"1087006319468363816","join":"2026-10-03","certs":[]},{"id":12,"fname":"Jack","lname":"Pain","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"221","discord":"844611136028016670","join":"2026-10-03","certs":[]},{"id":13,"fname":"Bob","lname":"Marley","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"222","discord":"820296458535698432","join":"2026-10-03","certs":[]},{"id":14,"fname":"Ted","lname":"Bennett","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"223","discord":"380774474619813900","join":"2026-10-03","certs":[]},{"id":15,"fname":"Karl","lname":"Blake","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"224","discord":"1415035857274011700","join":"2026-10-03","certs":[]},{"id":16,"fname":"Theo","lname":"Ross","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"225","discord":"1143633166796587130","join":"2026-10-03","certs":[]},{"id":17,"fname":"Judd","lname":"Ross","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"226","discord":"321996387631890435","join":"2026-10-03","certs":[]},{"id":18,"fname":"Wade","lname":"Gray","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"227","discord":"970691548452900924","join":"2026-10-03","certs":[]},{"id":19,"fname":"Shmuel","lname":"Grinberg","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"228","discord":"1087006319468363816","join":"2026-10-03","certs":[]},{"id":20,"fname":"Jebediah","lname":"Longnuts","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"229","discord":"1397606595747254440","join":"2026-10-03","certs":[]},{"id":21,"fname":"Ryan","lname":"Levy","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"230","discord":"1325129725487616081","join":"2026-10-03","certs":[]},{"id":22,"fname":"James","lname":"Walker","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"231","discord":"1207720713847574551","join":"2026-10-03","certs":[]},{"id":23,"fname":"Rafael","lname":"Dukan","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"232","discord":"1365115333245009970","join":"2026-10-03","certs":[]},{"id":24,"fname":"Alexander","lname":"Moshon","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"233","discord":"910546315509899315","join":"2026-10-03","certs":[]},{"id":25,"fname":"Tuvia","lname":"Boshkaldo","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"234","discord":"818857511117127701","join":"2026-10-03","certs":[]},{"id":26,"fname":"Takashi","lname":"Llue","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"235","discord":"412622468172218368","join":"2026-10-03","certs":[]},{"id":27,"fname":"Jäger","lname":"Meister","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"236","discord":"505677711507980289","join":"2026-10-03","certs":[]},{"id":28,"fname":"Ace","lname":"King","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"237","discord":"1001043640119984169","join":"2026-10-03","certs":[]},{"id":29,"fname":"Dmitri","lname":"Sokolov","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"238","discord":"1330604642664714310","join":"2026-10-03","certs":[]},{"id":30,"fname":"Tom","lname":"Wilson","password":"0000","mustChangePassword":true,"role":"officer","rank":"Sr. Officer","unit":"PATROL","badge":"239","discord":"1397903222018015282","join":"2026-10-03","certs":[]},{"id":31,"fname":"Munson","lname":"Ross","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"241","discord":"503218719896633348","join":"2026-10-03","certs":[]},{"id":32,"fname":"Carl","lname":"Johnson","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"242","discord":"1123109933529964616","join":"2026-10-03","certs":[]},{"id":33,"fname":"Ryan","lname":"Cooper","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"243","discord":"966669227266293812","join":"2026-10-03","certs":[]},{"id":34,"fname":"Pera","lname":"Aukko","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"244","discord":"788742220659556372","join":"2026-10-03","certs":[]},{"id":35,"fname":"Ori","lname":"Harush","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"245","discord":"1192274938183303189","join":"2026-10-03","certs":[]},{"id":36,"fname":"Avrham","lname":"Cooper","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"246","discord":"1276651454333059154","join":"2026-10-03","certs":[]},{"id":37,"fname":"Lior","lname":"Hazan","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"247","discord":"1183001216607846435","join":"2026-10-03","certs":[]},{"id":38,"fname":"Elias","lname":"Frost","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"248","discord":"656928813732855838","join":"2026-10-03","certs":[]},{"id":39,"fname":"Eliran","lname":"Cohen","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"249","discord":"1063967775296585768","join":"2026-10-03","certs":[]},{"id":40,"fname":"Franswa","lname":"Silvouple","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"250","discord":"1406340139210244167","join":"2026-10-03","certs":[]},{"id":41,"fname":"Grey","lname":"Goose","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"251","discord":"951911507267039292","join":"2026-10-03","certs":[]},{"id":42,"fname":"Randy","lname":"Smiles","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"252","discord":"1205917017538961502","join":"2026-10-03","certs":[]},{"id":43,"fname":"Ethan","lname":"Blake","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"253","discord":"803525613071237120","join":"2026-10-03","certs":[]},{"id":44,"fname":"Moshiko","lname":"Shimoni","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"254","discord":"313269912925896716","join":"2026-10-03","certs":[]},{"id":45,"fname":"Eitan","lname":"Kooper","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"255","discord":"1267899916248682506","join":"2026-10-03","certs":[]},{"id":46,"fname":"Sanit","lname":"Sossa","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"256","discord":"771677974843359233","join":"2026-10-03","certs":[]},{"id":47,"fname":"Ruslan","lname":"Maxim","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"257","discord":"791914621035872286","join":"2026-10-03","certs":[]},{"id":48,"fname":"Dani","lname":"Whiteman","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"258","discord":"990500938915643392","join":"2026-10-03","certs":[]},{"id":49,"fname":"John","lname":"Wilson","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"259","discord":"789119287776116737","join":"2026-10-03","certs":[]},{"id":50,"fname":"Shimon","lname":"Rexy","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"260","discord":"1248206085626789892","join":"2026-10-03","certs":[]},{"id":51,"fname":"Dom","lname":"Fel","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"261","discord":"868973071267151893","join":"2026-10-03","certs":[]},{"id":52,"fname":"Marcelo","lname":"Silve","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"262","discord":"778248136694562834","join":"2026-10-03","certs":[]},{"id":53,"fname":"Ricardo","lname":"Martinez","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"263","discord":"483320532989902878","join":"2026-10-03","certs":[]},{"id":54,"fname":"Richard","lname":"Weed","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"264","discord":"1047136452900831253","join":"2026-10-03","certs":[]},{"id":55,"fname":"Viktor","lname":"Vivi","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"265","discord":"819657060434182175","join":"2026-10-03","certs":[]},{"id":56,"fname":"Pablo","lname":"Gonzales","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"266","discord":"763725650674450432","join":"2026-10-03","certs":[]},{"id":57,"fname":"Nico","lname":"Pahima","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"267","discord":"744948462063190057","join":"2026-10-03","certs":[]},{"id":58,"fname":"Ryan","lname":"Gonzales","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"268","discord":"1009529143735627887","join":"2026-10-03","certs":[]},{"id":59,"fname":"Kipod","lname":"Brocway","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"269","discord":"1213056217102942219","join":"2026-10-03","certs":[]},{"id":60,"fname":"Stefan","lname":"Johnson","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"270","discord":"523838379553587210","join":"2026-10-03","certs":[]},{"id":61,"fname":"Ido","lname":"Sabag","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"271","discord":"1100345574965919846","join":"2026-10-03","certs":[]},{"id":62,"fname":"James","lname":"Heisenberg","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"272","discord":"1163798986264674314","join":"2026-10-03","certs":[]},{"id":63,"fname":"Ramsey","lname":"Shoshan","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"273","discord":"1269675202074378241","join":"2026-10-03","certs":[]},{"id":64,"fname":"Tomer","lname":"Malka","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"274","discord":"1375085965818990604","join":"2026-10-03","certs":[]},{"id":65,"fname":"Nitzan","lname":"Malka","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"275","discord":"1171902695645397133","join":"2026-10-03","certs":[]},{"id":66,"fname":"Paddy","lname":"Pimblert","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"276","discord":"1399011487770607616","join":"2026-10-03","certs":[]},{"id":67,"fname":"Abdul","lname":"Jabbar","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"277","discord":"613814567210057738","join":"2026-10-03","certs":[]},{"id":68,"fname":"Harry","lname":"Florence","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"278","discord":"312809616155082752","join":"2026-10-03","certs":[]},{"id":69,"fname":"Avi","lname":"Yeffet","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"279","discord":"832533902882373652","join":"2026-10-03","certs":[]},{"id":70,"fname":"Benjamin","lname":"White","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"280","discord":"1205171700237598835","join":"2026-10-03","certs":[]},{"id":71,"fname":"Ryan","lname":"Stone","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"281","discord":"1406230768035954779","join":"2026-10-03","certs":[]},{"id":72,"fname":"Abraham","lname":"White","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"282","discord":"1182994095170396211","join":"2026-10-03","certs":[]},{"id":73,"fname":"Tomer","lname":"Malka","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"283","discord":"","join":"2026-10-03","certs":[]},{"id":74,"fname":"Dani","lname":"Levi","password":"0000","mustChangePassword":true,"role":"officer","rank":"Officer","unit":"PATROL","badge":"284","discord":"","join":"2026-10-03","certs":[]}];
 let DB={
   users:JSON.parse(localStorage.getItem('lspd_users')||'null')||DEFAULT_USERS,
-  officers:JSON.parse(localStorage.getItem('lspd_officers')||'null')||DEFAULT_OFFICERS
+  officers:JSON.parse(localStorage.getItem('lspd_officers')||'null')||DEFAULT_OFFICERS,
+  customRoles:JSON.parse(localStorage.getItem('lspd_custom_roles')||'[]'),
+  unitDefs:JSON.parse(localStorage.getItem('lspd_unit_defs')||'null')||DEFAULT_UNIT_DEFS,
+  ranksByUnit:JSON.parse(localStorage.getItem('lspd_ranks_by_unit')||'null')||JSON.parse(JSON.stringify(RANKS_BY_UNIT))
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
+
+function migrateAll(){
+  DB.officers=DB.officers.map(o=>{
+    if(!o.units)o.units=[o.unit||'PATROL'];
+    if(!o.specialRoles)o.specialRoles=[];
+    return o;
+  });
+  DB.users=DB.users.map(u=>{
+    if(!u.units)u.units=[u.unit||'PATROL'];
+    if(!u.specialRoles)u.specialRoles=[];
+    return u;
+  });
+  // Auto-create login account for any officer that doesn't have one
+  DB.officers.forEach(o=>{
+    if(!DB.users.find(u=>u.id===o.id)){
+      DB.users.push({
+        id:o.id,fname:o.fname,lname:o.lname,
+        password:'0000',mustChangePassword:true,
+        role:'officer',rank:o.rank,
+        units:o.units,unit:(o.units[0]||'PATROL'),
+        badge:o.badge,discord:o.discord,join:o.join,
+        certs:o.certs||[],specialRoles:[]
+      });
+    }
+  });
+}
+migrateAll();
 
 function persist(){
   localStorage.setItem('lspd_users',JSON.stringify(DB.users));
   localStorage.setItem('lspd_officers',JSON.stringify(DB.officers));
+  localStorage.setItem('lspd_custom_roles',JSON.stringify(DB.customRoles||[]));
+  localStorage.setItem('lspd_unit_defs',JSON.stringify(DB.unitDefs));
+  localStorage.setItem('lspd_ranks_by_unit',JSON.stringify(DB.ranksByUnit));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -758,11 +811,20 @@ function saveOfficer(){
   const badge=document.getElementById('of-badge').value;
   const oid=editOffIdx>=0?DB.officers[editOffIdx].id:Date.now();
   const join=document.getElementById('of-join').value;
-  const obj={id:oid,fname:fn,lname:ln,rank,unit,badge,discord,join,certs};
+  // Preserve existing units array when editing; set new unit for new officers
+  const existUnits=editOffIdx>=0?(DB.officers[editOffIdx].units||[unit]):[unit];
+  const existSpecialRoles=editOffIdx>=0?(DB.officers[editOffIdx].specialRoles||[]):[];
+  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:existUnits,badge,discord,join,certs,specialRoles:existSpecialRoles};
   if(editOffIdx>=0)DB.officers[editOffIdx]=obj;
   else DB.officers.push(obj);
   const ui=DB.users.findIndex(u=>u.id===oid);
-  if(ui>=0)DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,badge,discord,certs};
+  if(ui>=0){
+    DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,units:existUnits,badge,discord,certs};
+  } else {
+    // Auto-create login account for this new officer
+    DB.users.push({id:oid,fname:fn,lname:ln,password:'0000',mustChangePassword:true,
+      role:'officer',rank,unit,units:[unit],badge,discord,join,certs,specialRoles:[]});
+  }
   persist();closeOffForm();renderRoster();
 }
 function delOfficer(idx){
@@ -1053,6 +1115,11 @@ window.firebasePersist = async function() {
   try {
     await setDoc(doc(db, 'lspd', 'users'), { data: JSON.stringify(DB.users) });
     await setDoc(doc(db, 'lspd', 'officers'), { data: JSON.stringify(DB.officers) });
+    await setDoc(doc(db, 'lspd', 'config'), {
+      customRoles: JSON.stringify(DB.customRoles||[]),
+      unitDefs: JSON.stringify(DB.unitDefs),
+      ranksByUnit: JSON.stringify(DB.ranksByUnit)
+    });
   } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
 };
 
@@ -1061,11 +1128,23 @@ window.firebaseLoad = async function() {
   try {
     const uSnap = await getDoc(doc(db, 'lspd', 'users'));
     const oSnap = await getDoc(doc(db, 'lspd', 'officers'));
+    const cSnap = await getDoc(doc(db, 'lspd', 'config'));
     if(uSnap.exists()) DB.users = JSON.parse(uSnap.data().data);
     if(oSnap.exists()) DB.officers = JSON.parse(oSnap.data().data);
-    // Save to localStorage as backup
+    if(cSnap.exists()) {
+      const cd=cSnap.data();
+      if(cd.customRoles) DB.customRoles=JSON.parse(cd.customRoles);
+      if(cd.unitDefs) DB.unitDefs=JSON.parse(cd.unitDefs);
+      if(cd.ranksByUnit) DB.ranksByUnit=JSON.parse(cd.ranksByUnit);
+    }
+    // Migrate data format (handles v18 → v19 transition)
+    migrateAll();
+    // Save migrated data to localStorage
     localStorage.setItem('lspd_users', JSON.stringify(DB.users));
     localStorage.setItem('lspd_officers', JSON.stringify(DB.officers));
+    // Re-render active pages
+    if(document.getElementById('pg-roster').classList.contains('on')) renderRoster();
+    if(document.getElementById('pg-command') && document.getElementById('pg-command').classList.contains('on')) renderCommand();
     console.log('Loaded from Firebase:', DB.users.length, 'users,', DB.officers.length, 'officers');
   } catch(e) { console.warn('Firebase load failed, using localStorage', e); }
 };
@@ -1074,9 +1153,12 @@ window.firebaseLoad = async function() {
 onSnapshot(doc(db, 'lspd', 'officers'), (snap) => {
   if(snap.exists()) {
     const fresh = JSON.parse(snap.data().data);
-    // Only update if different (avoid loop)
     if(JSON.stringify(fresh) !== JSON.stringify(DB.officers)) {
-      DB.officers = fresh;
+      DB.officers = fresh.map(o=>{
+        if(!o.units)o.units=[o.unit||'PATROL'];
+        if(!o.specialRoles)o.specialRoles=[];
+        return o;
+      });
       localStorage.setItem('lspd_officers', JSON.stringify(DB.officers));
       if(document.getElementById('roster-body')) renderRoster();
     }
@@ -1087,10 +1169,23 @@ onSnapshot(doc(db, 'lspd', 'users'), (snap) => {
   if(snap.exists()) {
     const fresh = JSON.parse(snap.data().data);
     if(JSON.stringify(fresh) !== JSON.stringify(DB.users)) {
-      DB.users = fresh;
+      DB.users = fresh.map(u=>{
+        if(!u.units)u.units=[u.unit||'PATROL'];
+        if(!u.specialRoles)u.specialRoles=[];
+        return u;
+      });
       localStorage.setItem('lspd_users', JSON.stringify(DB.users));
       if(document.getElementById('cmd-body') && document.getElementById('pg-command').classList.contains('on')) renderCommand();
     }
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'config'), (snap) => {
+  if(snap.exists()) {
+    const cd=snap.data();
+    if(cd.customRoles) DB.customRoles=JSON.parse(cd.customRoles);
+    if(cd.unitDefs) DB.unitDefs=JSON.parse(cd.unitDefs);
+    if(cd.ranksByUnit) DB.ranksByUnit=JSON.parse(cd.ranksByUnit);
   }
 });
 
