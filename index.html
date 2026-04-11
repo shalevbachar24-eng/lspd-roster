@@ -725,10 +725,16 @@ function migrateAll(){
   });
 }
 migrateAll();
-// Apply any saved permission overrides for built-in roles
-(DB.customRoles||[]).forEach(cr=>{
-  const bi=BUILTIN_ROLES.findIndex(r=>r.id===cr.id);
-  if(bi>=0)BUILTIN_ROLES[bi].permissions=cr.permissions;
+// Ensure built-in roles exist in DB.customRoles (add if missing, apply saved overrides)
+BUILTIN_ROLES.forEach(br=>{
+  const existing=DB.customRoles.find(r=>r.id===br.id);
+  if(existing){
+    // Apply saved permissions to in-memory BUILTIN_ROLES entry
+    const bi=BUILTIN_ROLES.findIndex(r=>r.id===br.id);
+    if(bi>=0)BUILTIN_ROLES[bi].permissions=existing.permissions;
+  } else {
+    DB.customRoles.unshift({...br});
+  }
 });
 
 function persist(){
@@ -1169,35 +1175,28 @@ function mgmtAddAction(){
 // --- Roles ---
 function renderRoles(){
   const list=document.getElementById('roles-list');if(!list)return;
-  const custom=DB.customRoles||[];
+  const roles=DB.customRoles||[];
   const countEl=document.getElementById('cmd-count');
-  if(countEl)countEl.textContent='Total: '+(BUILTIN_ROLES.length+custom.length)+' roles';
+  if(countEl)countEl.textContent='Total: '+roles.length+(roles.length===1?' role':' roles');
+  if(!roles.length){list.innerHTML='<div style="color:rgba(255,255,255,0.25);font-size:13px;padding:20px 0">No roles yet. Click "+ Add Role" to create one.</div>';return;}
   function roleCard(r){
     const perms=(r.permissions||[]).map(p=>'<span class="perm-chip">'+(PERM_LABELS[p]||p)+'</span>').join('');
     const noPerms='<span style="font-size:11px;color:rgba(255,255,255,0.25)">View only — no management access</span>';
-    const actions=r.system
-      ?'<div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:rgba(255,255,255,0.25);padding:3px 8px;border:1px solid rgba(255,255,255,0.08);border-radius:5px">System</span><button class="act-btn" title="Edit permissions" onclick="openRoleForm(\''+r.id+'\')">✏</button></div>'
-      :'<div style="display:flex;gap:4px"><button class="act-btn" onclick="openRoleForm(\''+r.id+'\')">✏</button><button class="act-btn del-btn" onclick="delRole(\''+r.id+'\')">✕</button></div>';
+    const sysTag=r.system?'<span style="font-size:10px;color:rgba(255,255,255,0.22);padding:2px 7px;border:1px solid rgba(255,255,255,0.08);border-radius:4px;margin-right:6px">System</span>':'';
     const desc=r.description?'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:8px">'+r.description+'</div>':'';
     return '<div class="role-card">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
-      +'<span style="font-size:14px;font-weight:700;color:#fff">'+r.name+'</span>'+actions+'</div>'
-      +desc+'<div>'+(perms||noPerms)+'</div></div>';
+      +'<span style="font-size:14px;font-weight:700;color:#fff">'+sysTag+r.name+'</span>'
+      +'<div style="display:flex;gap:4px"><button class="act-btn" onclick="openRoleForm(\''+r.id+'\')">✏</button><button class="act-btn del-btn" onclick="delRole(\''+r.id+'\')">✕</button></div>'
+      +'</div>'+desc+'<div>'+(perms||noPerms)+'</div></div>';
   }
-  const builtinHtml='<div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">System Roles</div>'
-    +'<div class="role-grid" style="margin-bottom:24px">'+BUILTIN_ROLES.map(roleCard).join('')+'</div>';
-  const customHtml='<div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Custom Roles</div>'
-    +(custom.length
-      ?'<div class="role-grid">'+custom.map(roleCard).join('')+'</div>'
-      :'<div style="color:rgba(255,255,255,0.25);font-size:13px;padding:12px 0">No custom roles yet. Click "+ Add Role" to create one.</div>');
-  list.innerHTML=builtinHtml+customHtml;
+  list.innerHTML='<div class="role-grid">'+roles.map(roleCard).join('')+'</div>';
 }
 
 function openRoleForm(id){
   editRoleId=id;
-  // Look in custom roles first, then built-in
-  const r=id?((DB.customRoles||[]).find(x=>x.id===id)||BUILTIN_ROLES.find(x=>x.id===id)):null;
-  document.getElementById('role-form-title').textContent=r?('Edit Role — '+r.name):'Add Role';
+  const r=id?(DB.customRoles||[]).find(x=>x.id===id):null;
+  document.getElementById('role-form-title').textContent=r?('Edit — '+r.name):'Add Role';
   const nameEl=document.getElementById('rf-name');
   nameEl.value=r?r.name:'';
   nameEl.disabled=!!(r&&r.system);
@@ -1211,20 +1210,12 @@ function closeRoleForm(){document.getElementById('role-form-ov').classList.remov
 function saveRole(){
   const perms=ALL_PERMISSIONS.filter(p=>{const el=document.getElementById('rp-'+p.id);return el&&el.checked;}).map(p=>p.id);
   if(!DB.customRoles)DB.customRoles=[];
-  const isBuiltin=editRoleId&&BUILTIN_ROLES.find(r=>r.id===editRoleId);
-  if(isBuiltin){
-    // Update built-in role permissions override in customRoles
+  if(editRoleId){
     const i=DB.customRoles.findIndex(r=>r.id===editRoleId);
-    if(i>=0)DB.customRoles[i]={...DB.customRoles[i],permissions:perms};
-    else DB.customRoles.push({id:editRoleId,name:isBuiltin.name,system:true,permissions:perms});
-    // Also patch the in-memory BUILTIN_ROLES entry
-    const bi=BUILTIN_ROLES.findIndex(r=>r.id===editRoleId);
-    if(bi>=0)BUILTIN_ROLES[bi].permissions=perms;
-  } else if(editRoleId){
-    const i=DB.customRoles.findIndex(r=>r.id===editRoleId);
-    const name=document.getElementById('rf-name').value.trim();
-    if(!name){alert('Please enter a role name.');return;}
-    if(i>=0)DB.customRoles[i]={...DB.customRoles[i],name,permissions:perms};
+    const name=document.getElementById('rf-name');
+    const newName=(name&&!name.disabled)?name.value.trim():null;
+    if(newName===''||(!newName&&!DB.customRoles[i])){alert('Please enter a role name.');return;}
+    if(i>=0)DB.customRoles[i]={...DB.customRoles[i],...(newName&&{name:newName}),permissions:perms};
   } else {
     const name=document.getElementById('rf-name').value.trim();
     if(!name){alert('Please enter a role name.');return;}
@@ -1233,7 +1224,9 @@ function saveRole(){
   persist();closeRoleForm();renderRoles();
 }
 function delRole(id){
-  showConfirm('Delete Role','Are you sure you want to delete this role?',function(){
+  const r=(DB.customRoles||[]).find(x=>x.id===id);
+  const warn=r&&r.system?' This is a system role — you can always add it back manually.':'';
+  showConfirm('Delete Role','Are you sure you want to delete <strong>'+(r?r.name:id)+'</strong>?'+warn,function(){
     DB.customRoles=(DB.customRoles||[]).filter(r=>r.id!==id);
     persist();renderRoles();
   });
