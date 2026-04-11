@@ -205,6 +205,24 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .upload-zone.has-file{border-color:rgba(122,232,122,0.5);background:rgba(122,232,122,0.05)}
 .progress-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:8px}
 .progress-fill{height:100%;background:linear-gradient(90deg,#3a5fff,#6a5fff);transition:width .3s;border-radius:2px}
+/* Notification bell */
+.notif-bell{position:relative;background:none;border:none;font-size:19px;padding:6px 9px;border-radius:8px;transition:.18s;color:rgba(255,255,255,0.55)}
+.notif-bell:hover{background:rgba(255,255,255,0.07);color:#fff}
+.notif-badge{position:absolute;top:2px;right:2px;background:#e84040;color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:0 4px;min-width:15px;height:15px;line-height:15px;text-align:center;display:none}
+.notif-panel{position:fixed;top:56px;right:16px;width:330px;background:#131d32;border:1px solid rgba(74,158,255,0.22);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.55);z-index:300;max-height:440px;overflow-y:auto;display:none}
+.notif-panel.open{display:block}
+.notif-item{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:.14s}
+.notif-item:hover{background:rgba(74,158,255,0.07)}
+.notif-item.unread{background:rgba(74,158,255,0.045)}
+.notif-item:last-child{border-bottom:none}
+/* Announcement banner */
+.announce-bar{background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.22);border-radius:10px;padding:10px 18px;font-size:13px;color:#7ac3ff;margin-bottom:20px;text-align:center;display:none}
+/* Site Config */
+.cfg-section{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.cfg-section-title{font-size:12px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:14px}
+.cfg-list-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.cfg-list-item:last-child{border-bottom:none}
+.cfg-list-item span{font-size:13px;color:#ccd6f0}
 </style>
 </head>
 <body>
@@ -221,13 +239,24 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <div class="hdr-right" id="hdr-right" style="display:none">
     <span class="hdr-name" id="hdr-name"></span>
     <span class="role-pill" id="hdr-role"></span>
+    <button class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()" title="Notifications">
+      🔔<span class="notif-badge" id="notif-badge"></span>
+    </button>
     <button class="logout-btn" onclick="logout()">Log Out</button>
   </div>
+</div>
+<div id="notif-panel" class="notif-panel">
+  <div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#131d32;z-index:1">
+    <span style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.4);text-transform:uppercase">Notifications</span>
+    <button onclick="markAllNotifsRead()" style="background:none;border:none;color:#7ac3ff;font-size:11px">Mark all read</button>
+  </div>
+  <div id="notif-items"></div>
 </div>
 
 <!-- HOME -->
 
 <div id="pg-home" class="page on">
+  <div id="announce-bar" class="announce-bar">📢 <span id="announce-text"></span></div>
   <div class="home-center">
     <div class="home-sub">Welcome to the Training Center</div>
     <div class="home-title">Select your <span>Category</span></div>
@@ -424,6 +453,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
     <button class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
+    <button class="tab-btn" id="tab-config" onclick="switchTab('config')">⚙️ Site Config</button>
   </div>
 
   <!-- Accounts Tab -->
@@ -463,6 +493,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <div id="tab-content-log" style="display:none">
     <div id="log-list"></div>
   </div>
+
+  <!-- Site Config Tab -->
+  <div id="tab-content-config" style="display:none">
+    <div id="site-config-content"></div>
+  </div>
 </div>
 
 <!-- REPORTS PAGE -->
@@ -486,7 +521,6 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </select>
     <select id="rf-filter-type" onchange="renderReports()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Heebo',sans-serif">
       <option value="">All Types</option>
-      <option>Use of Force</option><option>Misconduct</option><option>Insubordination</option><option>Negligence</option><option>Policy Violation</option><option>Other</option>
     </select>
   </div>
   <div id="reports-list"></div>
@@ -501,7 +535,6 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="field"><label><span class="req">*</span>Report Type</label>
         <select id="cf-type" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif">
           <option value="">Select type...</option>
-          <option>Use of Force</option><option>Misconduct</option><option>Insubordination</option><option>Negligence</option><option>Policy Violation</option><option>Other</option>
         </select>
       </div>
       <div class="field"><label><span class="req">*</span>Your Discord ID</label>
@@ -524,16 +557,8 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <textarea id="cf-desc" rows="4" placeholder="Describe the incident in detail..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;resize:vertical"></textarea>
     </div>
     <div class="field">
-      <label><span class="req">*</span>Body Camera Recording <span style="color:rgba(255,255,255,0.3);font-size:10px">(required — video, audio, or any file)</span></label>
-      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('cf-file').click()">
-        <div id="upload-zone-text">
-          <div style="font-size:28px;margin-bottom:8px">📹</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload body cam recording</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">Any file format accepted</div>
-        </div>
-        <input type="file" id="cf-file" style="display:none" onchange="handleFileSelect(this)">
-      </div>
-      <div class="progress-bar" id="upload-progress-bar" style="display:none"><div class="progress-fill" id="upload-progress-fill" style="width:0%"></div></div>
+      <label><span class="req">*</span>Body Camera Recording Link <span style="color:rgba(255,255,255,0.3);font-size:10px">(paste Google Drive / Dropbox / YouTube link)</span></label>
+      <input id="cf-doc-url" type="url" placeholder="https://drive.google.com/..." style="width:100%">
     </div>
     <div id="cf-notes-wrap" style="display:none">
       <div class="field"><label>Command Notes / Update</label>
@@ -847,7 +872,7 @@ function refreshUsrRanks(currentRank){
   if(sel)sel.innerHTML=ranks.map(r=>'<option'+(r===cur?' selected':'')+'>'+r+'</option>').join('');
 }
 
-const DATA_VERSION='v21';
+const DATA_VERSION='v22';
 if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_users');
   localStorage.removeItem('lspd_officers');
@@ -865,7 +890,13 @@ let DB={
   unitDefs:JSON.parse(localStorage.getItem('lspd_unit_defs')||'null')||DEFAULT_UNIT_DEFS,
   ranksByUnit:JSON.parse(localStorage.getItem('lspd_ranks_by_unit')||'null')||JSON.parse(JSON.stringify(RANKS_BY_UNIT)),
   auditLog:JSON.parse(localStorage.getItem('lspd_audit_log')||'[]'),
-  complaints:JSON.parse(localStorage.getItem('lspd_complaints')||'[]')
+  complaints:JSON.parse(localStorage.getItem('lspd_complaints')||'[]'),
+  notifications:JSON.parse(localStorage.getItem('lspd_notifications')||'[]'),
+  siteConfig:JSON.parse(localStorage.getItem('lspd_site_config')||'null')||{
+    announcement:'',announcementEnabled:false,
+    reportTypes:['Use of Force','Misconduct','Insubordination','Negligence','Policy Violation','Other'],
+    certs:['Light Weapon','Heavy Weapon','Interceptor Vehicle','Helicopter','Motorcycle']
+  }
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
 
@@ -925,6 +956,65 @@ function logAction(action,details){
   localStorage.setItem('lspd_audit_log',JSON.stringify(DB.auditLog));
 }
 
+// ====== NOTIFICATIONS ======
+function createNotif(userId,type,message,refId){
+  if(!userId)return;
+  if(!DB.notifications)DB.notifications=[];
+  DB.notifications.unshift({id:'n_'+Date.now()+'_'+Math.random().toString(36).slice(2),userId:String(userId),type,message,refId:refId||null,ts:Date.now(),read:false});
+  if(DB.notifications.length>300)DB.notifications=DB.notifications.slice(0,300);
+  persist();updateNotifBadge();
+}
+function getMyNotifs(){
+  if(!currentUser)return[];
+  return(DB.notifications||[]).filter(n=>String(n.userId)===String(currentUser.id));
+}
+function getUnreadCount(){return getMyNotifs().filter(n=>!n.read).length;}
+function updateNotifBadge(){
+  const b=document.getElementById('notif-badge');if(!b)return;
+  const c=getUnreadCount();
+  b.textContent=c>0?(c>99?'99+':c):'';
+  b.style.display=c>0?'block':'none';
+}
+function timeAgo(ts){
+  const d=Date.now()-ts;
+  if(d<60000)return'Just now';
+  if(d<3600000)return Math.floor(d/60000)+'m ago';
+  if(d<86400000)return Math.floor(d/3600000)+'h ago';
+  return Math.floor(d/86400000)+'d ago';
+}
+function toggleNotifPanel(){
+  const p=document.getElementById('notif-panel');if(!p)return;
+  const open=p.classList.toggle('open');
+  if(open)renderNotifPanel();
+}
+function renderNotifPanel(){
+  const el=document.getElementById('notif-items');if(!el)return;
+  const items=getMyNotifs();
+  if(!items.length){el.innerHTML='<div style="padding:28px;text-align:center;color:rgba(255,255,255,0.28);font-size:13px">No notifications yet</div>';return;}
+  const ICONS={rank_change:'⬆️',complaint_filed:'📋',complaint_update:'🔔',info:'ℹ️'};
+  el.innerHTML=items.slice(0,40).map(n=>'<div class="notif-item'+(n.read?'':' unread')+'" onclick="clickNotif(\''+n.id+'\')">'
+    +'<div style="display:flex;align-items:flex-start;gap:9px">'
+    +'<span style="font-size:15px;flex-shrink:0">'+(ICONS[n.type]||'ℹ️')+'</span>'
+    +'<div style="flex:1"><div style="font-size:12px;color:'+(n.read?'rgba(255,255,255,0.5)':'#e8edf5')+';line-height:1.45">'+n.message+'</div>'
+    +'<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:3px">'+timeAgo(n.ts)+'</div></div>'
+    +(!n.read?'<div style="width:6px;height:6px;border-radius:50%;background:#4a9eff;flex-shrink:0;margin-top:5px"></div>':'')
+    +'</div></div>').join('');
+}
+function clickNotif(nid){
+  const n=(DB.notifications||[]).find(x=>x.id===nid);
+  if(n&&!n.read){n.read=true;persist();updateNotifBadge();renderNotifPanel();}
+}
+function markAllNotifsRead(){
+  getMyNotifs().forEach(n=>n.read=true);
+  persist();updateNotifBadge();renderNotifPanel();
+}
+// close notif panel on outside click
+document.addEventListener('click',function(e){
+  const panel=document.getElementById('notif-panel');
+  const bell=document.getElementById('notif-bell');
+  if(panel&&bell&&!panel.contains(e.target)&&!bell.contains(e.target))panel.classList.remove('open');
+});
+
 function persist(){
   localStorage.setItem('lspd_users',JSON.stringify(DB.users));
   localStorage.setItem('lspd_officers',JSON.stringify(DB.officers));
@@ -933,6 +1023,8 @@ function persist(){
   localStorage.setItem('lspd_ranks_by_unit',JSON.stringify(DB.ranksByUnit));
   localStorage.setItem('lspd_audit_log',JSON.stringify(DB.auditLog||[]));
   localStorage.setItem('lspd_complaints',JSON.stringify(DB.complaints||[]));
+  localStorage.setItem('lspd_notifications',JSON.stringify(DB.notifications||[]));
+  localStorage.setItem('lspd_site_config',JSON.stringify(DB.siteConfig||{}));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -1009,6 +1101,11 @@ function finishLogin(u){
   document.getElementById('card-command').style.display=canAccess('management')?'block':'none';
   document.getElementById('btn-add-off').style.display=(hasPerm('add_officer')||isCmd)?'':'none';
   document.getElementById('card-reports').style.display='block';
+  updateNotifBadge();
+  // Show announcement banner if enabled
+  const cfg=DB.siteConfig||{};
+  const bar=document.getElementById('announce-bar');
+  if(bar){if(cfg.announcementEnabled&&cfg.announcement){document.getElementById('announce-text').textContent=cfg.announcement;bar.style.display='block';}else{bar.style.display='none';}}
   clickSound();
 }
 
@@ -1255,6 +1352,11 @@ function saveOfficer(){
   const prevRank=editOffIdx>=0?DB.officers[editOffIdx].rank:null;
   if(prevRank&&prevRank!==rank){
     existRankHistory.push({from:prevRank,to:rank,date:new Date().toISOString().split('T')[0],by:currentUser?currentUser.fname+' '+currentUser.lname:'System'});
+    // Notify the officer about their rank change
+    const tgtUser=DB.users.find(u=>String(u.id)===String(editOffIdx>=0?DB.officers[editOffIdx].id:null));
+    if(tgtUser&&(!currentUser||String(tgtUser.id)!==String(currentUser.id))){
+      createNotif(tgtUser.id,'rank_change','Your rank was updated: '+prevRank+' → '+rank);
+    }
   }
   const obj={id:oid,fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:existSpecialRoles,rankHistory:existRankHistory};
   if(editOffIdx>=0)DB.officers[editOffIdx]=obj;
@@ -1418,11 +1520,11 @@ let editUnitDefId=null;
 function switchTab(tab){
   const pageMap={accounts:'mgmt_accounts',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log'};
   if(pageMap[tab]&&!canAccess(pageMap[tab])){
-    const first=['accounts','roles','units','ranks','log'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
+    const first=['accounts','roles','units','ranks','log','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
   }
   currentTab=tab;
-  ['accounts','roles','units','ranks','log'].forEach(t=>{
+  ['accounts','roles','units','ranks','log','config'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -1442,6 +1544,7 @@ function switchTab(tab){
   else if(tab==='units')renderUnitsTab();
   else if(tab==='ranks')renderRanksTab();
   else if(tab==='log')renderLog();
+  else if(tab==='config')renderSiteConfig();
 }
 
 function mgmtAddAction(){
@@ -1612,6 +1715,69 @@ function moveRank(unitId,idx,dir){
   persist();renderRanksTab();
 }
 
+// ====== SITE CONFIG ======
+function renderSiteConfig(){
+  const el=document.getElementById('site-config-content');if(!el)return;
+  const cfg=DB.siteConfig||{};
+  const rtypes=cfg.reportTypes||['Use of Force','Misconduct','Insubordination','Negligence','Policy Violation','Other'];
+  const certs=cfg.certs||['Light Weapon','Heavy Weapon','Interceptor Vehicle','Helicopter','Motorcycle'];
+  el.innerHTML=
+    // Announcement banner section
+    '<div class="cfg-section">'
+    +'<div class="cfg-section-title">📢 Announcement Banner</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    +'<label style="font-size:13px;color:#ccd6f0;display:flex;align-items:center;gap:8px;cursor:pointer">'
+    +'<input type="checkbox" id="cfg-announce-on"'+(cfg.announcementEnabled?' checked':'')+' onchange="saveSiteConfigField(\'announcementEnabled\',this.checked)"> Show announcement banner on home</label>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<input id="cfg-announce-text" value="'+(cfg.announcement||'').replace(/"/g,'&quot;')+'" placeholder="Announcement text..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit">'
+    +'<button class="add-btn" onclick="saveSiteConfigField(\'announcement\',document.getElementById(\'cfg-announce-text\').value)">Save</button>'
+    +'</div>'
+    +'</div>'
+    // Report types section
+    +'<div class="cfg-section">'
+    +'<div class="cfg-section-title">📋 Report Types</div>'
+    +rtypes.map((t,i)=>'<div class="cfg-list-item"><span>'+t+'</span><button class="act-btn del-btn" onclick="removeSiteConfigItem(\'reportTypes\','+i+')">✕</button></div>').join('')
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<input id="cfg-new-rtype" placeholder="New report type..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit">'
+    +'<button class="add-btn" onclick="addSiteConfigItem(\'reportTypes\',\'cfg-new-rtype\')">+ Add</button>'
+    +'</div>'
+    +'</div>'
+    // Clearances section
+    +'<div class="cfg-section">'
+    +'<div class="cfg-section-title">🏅 Clearances / Certifications</div>'
+    +certs.map((c,i)=>'<div class="cfg-list-item"><span>'+c+'</span><button class="act-btn del-btn" onclick="removeSiteConfigItem(\'certs\','+i+')">✕</button></div>').join('')
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<input id="cfg-new-cert" placeholder="New certification..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit">'
+    +'<button class="add-btn" onclick="addSiteConfigItem(\'certs\',\'cfg-new-cert\')">+ Add</button>'
+    +'</div>'
+    +'</div>';
+}
+function saveSiteConfigField(field,value){
+  if(!DB.siteConfig)DB.siteConfig={};
+  DB.siteConfig[field]=value;
+  persist();
+  // Refresh announcement banner
+  const bar=document.getElementById('announce-bar');
+  if(bar){if(DB.siteConfig.announcementEnabled&&DB.siteConfig.announcement){document.getElementById('announce-text').textContent=DB.siteConfig.announcement;bar.style.display='block';}else{bar.style.display='none';}}
+  renderSiteConfig();
+}
+function addSiteConfigItem(arrayField,inputId){
+  const inp=document.getElementById(inputId);if(!inp)return;
+  const val=inp.value.trim();if(!val)return;
+  if(!DB.siteConfig)DB.siteConfig={};
+  if(!DB.siteConfig[arrayField])DB.siteConfig[arrayField]=[];
+  if(DB.siteConfig[arrayField].includes(val)){alert('Already exists.');return;}
+  DB.siteConfig[arrayField].push(val);
+  inp.value='';
+  persist();renderSiteConfig();
+}
+function removeSiteConfigItem(arrayField,idx){
+  if(!DB.siteConfig||!DB.siteConfig[arrayField])return;
+  DB.siteConfig[arrayField].splice(idx,1);
+  persist();renderSiteConfig();
+}
+
 function renderLog(){
   const list=document.getElementById('log-list');if(!list)return;
   const logs=DB.auditLog||[];
@@ -1737,7 +1903,17 @@ function applyBulk(){
 
 // ====== REPORTS / COMPLAINTS ======
 let editComplaintId=null;
-function goReports(){clickSound();showPage('pg-reports');renderReports();}
+function goReports(){
+  clickSound();showPage('pg-reports');
+  // Populate type filter from siteConfig
+  const sel=document.getElementById('rf-filter-type');
+  if(sel){
+    const cur=sel.value;
+    const rtypes=(DB.siteConfig&&DB.siteConfig.reportTypes)||['Use of Force','Misconduct','Insubordination','Negligence','Policy Violation','Other'];
+    sel.innerHTML='<option value="">All Types</option>'+rtypes.map(t=>'<option'+(t===cur?' selected':'')+'>'+t+'</option>').join('');
+  }
+  renderReports();
+}
 
 const CSTATUS_LABEL={pending:'🟡 Pending',reviewing:'🔵 Under Review',resolved:'✅ Resolved',dismissed:'❌ Dismissed'};
 const CSTATUS_CLS={pending:'cstatus-pending',reviewing:'cstatus-reviewing',resolved:'cstatus-resolved',dismissed:'cstatus-dismissed'};
@@ -1821,15 +1997,19 @@ function openComplaintForm(id){
   const c=id?(DB.complaints||[]).find(x=>x.id===id):null;
   document.getElementById('complaint-form-title').textContent=c?'Review Report':'File a Report';
   document.getElementById('cf-save-btn').textContent=c?'Save Changes':'Submit Report';
-  document.getElementById('cf-type').value=c?c.type:'';
+  // Populate report type dropdown from siteConfig
+  const cfType=document.getElementById('cf-type');
+  const rtypes=(DB.siteConfig&&DB.siteConfig.reportTypes)||['Use of Force','Misconduct','Insubordination','Negligence','Policy Violation','Other'];
+  cfType.innerHTML='<option value="">Select type...</option>'+rtypes.map(t=>'<option'+(c&&c.type===t?' selected':'')+'>'+t+'</option>').join('');
   document.getElementById('cf-date').value=c?c.incidentDate:new Date().toISOString().split('T')[0];
   document.getElementById('cf-time').value=c?c.incidentTime:'';
   document.getElementById('cf-desc').value=c?c.description:'';
   document.getElementById('cf-reporter-discord').value=c?c.reporterDiscord:(currentUser?.discord||'');
+  document.getElementById('cf-doc-url').value=c?c.fileUrl:'';
   // Subject search
   document.getElementById('cf-subject-id').value=c?c.subjectId:'';
   if(c&&c.subjectId){
-    const subj=DB.officers.find(o=>o.id==c.subjectId);
+    const subj=DB.officers.find(o=>String(o.id)===String(c.subjectId));
     document.getElementById('cf-subject-search').value=subj?subj.fname+' '+subj.lname+' #'+(subj.badge||'?'):'';
   } else {
     document.getElementById('cf-subject-search').value='';
@@ -1840,64 +2020,61 @@ function openComplaintForm(id){
   document.getElementById('cf-notes-wrap').style.display=isCmd&&c?'':'none';
   if(c&&document.getElementById('cf-notes'))document.getElementById('cf-notes').value=c.notes||'';
   if(c&&document.getElementById('cf-status'))document.getElementById('cf-status').value=c.status||'pending';
-  // Upload zone
-  const zone=document.getElementById('upload-zone');
-  const hasFile=c&&c.fileUrl;
-  zone.classList.toggle('has-file',!!hasFile);
-  document.getElementById('upload-zone-text').innerHTML=hasFile
-    ?'<div style="font-size:20px">✅</div><div style="font-size:12px;color:#80e880">File uploaded: '+c.fileName+'</div>'
-    :'<div style="font-size:28px;margin-bottom:8px">📹</div><div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload body cam recording</div><div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">Any file format accepted</div>';
-  document.getElementById('cf-file').value='';
-  document.getElementById('upload-progress-bar').style.display='none';
   document.getElementById('complaint-form-ov').classList.add('on');
 }
 function closeComplaintForm(){document.getElementById('complaint-form-ov').classList.remove('on');}
 
-function handleFileSelect(input){
-  const file=input.files[0];if(!file)return;
-  const zone=document.getElementById('upload-zone');
-  zone.classList.add('has-file');
-  document.getElementById('upload-zone-text').innerHTML='<div style="font-size:20px">📎</div><div style="font-size:12px;color:#80e880">'+file.name+'</div><div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">'+Math.round(file.size/1024)+'KB</div>';
-}
-
-async function saveComplaint(){
+function saveComplaint(){
   const type=document.getElementById('cf-type').value;
   const subjectId=String(document.getElementById('cf-subject-id').value);
   const reporterDiscord=document.getElementById('cf-reporter-discord').value.trim();
   const incidentDate=document.getElementById('cf-date').value;
   const incidentTime=document.getElementById('cf-time').value;
   const description=document.getElementById('cf-desc').value.trim();
-  const fileInput=document.getElementById('cf-file');
-  const file=fileInput.files[0];
+  const docUrl=document.getElementById('cf-doc-url').value.trim();
   if(!type||!subjectId){alert('Please select a report type and search for the subject officer.');return;}
   if(!incidentDate||!description){alert('Please fill in all required fields.');return;}
   const isEdit=!!editComplaintId;
   const existing=isEdit?(DB.complaints||[]).find(c=>c.id===editComplaintId):null;
-  if(!isEdit&&!file){alert('Body camera recording is required. Please upload a file.');return;}
+  if(!isEdit&&!docUrl){alert('Please paste a link to the body camera recording.');return;}
   if(!DB.complaints)DB.complaints=[];
   const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
   const cid=isEdit?editComplaintId:'cmp_'+Date.now();
+  const prevNotes=existing?existing.notes:'';
+  const prevStatus=existing?existing.status:'pending';
+  const newStatus=isEdit&&isCmd?document.getElementById('cf-status').value:prevStatus;
+  const newNotes=isEdit&&isCmd?document.getElementById('cf-notes').value.trim():prevNotes;
   const obj={
     id:cid,
     ts:existing?existing.ts:Date.now(),
     reporterId:existing?existing.reporterId:currentUser.id,
     reporterDiscord,
     subjectId,type,incidentDate,incidentTime,description,
-    fileUrl:existing?existing.fileUrl:'',
-    fileName:existing?existing.fileName:'',
-    fileStatus:existing?existing.fileStatus:(file?'uploading':'none'),
-    status:isEdit&&isCmd?document.getElementById('cf-status').value:(existing?existing.status:'pending'),
-    notes:isEdit&&isCmd?document.getElementById('cf-notes').value.trim():(existing?existing.notes:'')
+    fileUrl:docUrl,
+    fileName:'',fileStatus:'uploaded',
+    status:newStatus,
+    notes:newNotes
   };
   if(isEdit){const i=DB.complaints.findIndex(c=>c.id===cid);if(i>=0)DB.complaints[i]=obj;}
   else DB.complaints.unshift(obj);
   logAction(isEdit?'Update Report':'File Report',type);
+  // Notifications
+  const reporterUserId=existing?existing.reporterId:currentUser.id;
+  if(!isEdit){
+    // Notify subject officer: a new complaint was filed against them
+    createNotif(subjectId,'complaint_filed','A new '+type+' report was filed against you.');
+  } else {
+    // Notify reporter if status or notes changed
+    if(newStatus!==prevStatus||newNotes!==prevNotes){
+      const subjName=(DB.officers.find(o=>String(o.id)===String(subjectId))||{}).fname||'an officer';
+      createNotif(reporterUserId,'complaint_update','Your report ('+type+') status was updated to: '+newStatus+(newNotes&&newNotes!==prevNotes?' — Note: '+newNotes.slice(0,60):''));
+    }
+  }
   persist();
   closeComplaintForm();renderReports();
-  // Upload file in background — complaint is already saved
-  if(file)uploadComplaintFile(cid,file);
 }
 
+// Legacy stub — no longer used but kept to avoid errors from any cached references
 async function uploadComplaintFile(cid,file){
   const update=(url,name,status)=>{
     const i=(DB.complaints||[]).findIndex(c=>c.id===cid);
@@ -1926,7 +2103,16 @@ async function uploadComplaintFile(cid,file){
 
 function quickUpdateStatus(id,status){
   const i=(DB.complaints||[]).findIndex(c=>c.id===id);
-  if(i>=0){DB.complaints[i].status=status;logAction('Update Report Status',status);persist();renderReports();}
+  if(i>=0){
+    const c=DB.complaints[i];
+    const prevStatus=c.status;
+    DB.complaints[i].status=status;
+    logAction('Update Report Status',status);
+    if(status!==prevStatus){
+      createNotif(c.reporterId,'complaint_update','Your report ('+c.type+') status changed to: '+status);
+    }
+    persist();renderReports();
+  }
 }
 function deleteComplaint(id){
   showConfirm('Delete Report','Are you sure you want to permanently delete this report?',function(){
