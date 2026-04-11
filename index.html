@@ -504,9 +504,17 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
           <option>Use of Force</option><option>Misconduct</option><option>Insubordination</option><option>Negligence</option><option>Policy Violation</option><option>Other</option>
         </select>
       </div>
-      <div class="field"><label><span class="req">*</span>Officer Subject</label>
-        <select id="cf-subject" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif"></select>
+      <div class="field"><label><span class="req">*</span>Your Discord ID</label>
+        <input id="cf-reporter-discord" placeholder="123456789012345678" style="width:100%">
       </div>
+    </div>
+    <div class="field"><label><span class="req">*</span>Officer Subject</label>
+      <div class="srch-wrap">
+        <input id="cf-subject-search" placeholder="Search by name or badge #..." oninput="searchComplaintSubject(this.value)" autocomplete="off" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;width:100%">
+        <button class="srch-x" onclick="clearComplaintSubject()">✕</button>
+      </div>
+      <input type="hidden" id="cf-subject-id">
+      <div id="cf-subject-results" style="margin-top:4px"></div>
     </div>
     <div class="fg2">
       <div class="field"><label><span class="req">*</span>Incident Date</label><input id="cf-date" type="date"></div>
@@ -1764,7 +1772,7 @@ function renderReports(){
     return '<div class="complaint-card">'
       +'<div class="complaint-card-header">'
       +'<div><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">'+c.type+'</div>'
-      +'<div style="font-size:12px;color:rgba(255,255,255,0.4)">Subject: <span style="color:#fff;font-weight:600">'+subjName+'</span> &nbsp;·&nbsp; Filed by: '+repName+' &nbsp;·&nbsp; '+dateStr+'</div></div>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,0.4)">Subject: <span style="color:#fff;font-weight:600">'+subjName+'</span> &nbsp;·&nbsp; Filed by: '+repName+(c.reporterDiscord?' <span style="color:rgba(255,255,255,0.55)">('+c.reporterDiscord+')</span>':'')+' &nbsp;·&nbsp; '+dateStr+'</div></div>'
       +'<span class="cstatus '+(CSTATUS_CLS[c.status]||'cstatus-pending')+'">'+(CSTATUS_LABEL[c.status]||c.status)+'</span>'
       +'</div>'
       +'<div style="font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:8px">'+c.description+'</div>'
@@ -1772,6 +1780,29 @@ function renderReports(){
       +fileLink+cmds
       +'</div>';
   }).join('');
+}
+
+// --- Complaint subject search ---
+function searchComplaintSubject(q){
+  const el=document.getElementById('cf-subject-results');if(!el)return;
+  if(!q.trim()){el.innerHTML='';return;}
+  const lq=q.toLowerCase();
+  const results=DB.officers.filter(o=>o.id!==currentUser?.id&&((o.fname+' '+o.lname).toLowerCase().includes(lq)||(o.badge||'').includes(lq))).slice(0,6);
+  if(!results.length){el.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,0.3);padding:6px 0">No officers found</div>';return;}
+  el.innerHTML=results.map(o=>'<div class="home-search-result" onclick="selectComplaintSubject('+o.id+',\''+o.fname+' '+o.lname+' #'+(o.badge||'?')+'\')" style="margin-bottom:4px">'
+    +'<div style="flex:1"><div class="hsr-name">'+o.fname+' '+o.lname+'</div>'
+    +'<div class="hsr-meta">'+o.rank+' · '+(o.units||[o.unit]).join(', ')+'</div></div>'
+    +'<div class="hsr-badge">#'+(o.badge||'—')+'</div></div>').join('');
+}
+function selectComplaintSubject(id,label){
+  document.getElementById('cf-subject-id').value=id;
+  document.getElementById('cf-subject-search').value=label;
+  document.getElementById('cf-subject-results').innerHTML='';
+}
+function clearComplaintSubject(){
+  document.getElementById('cf-subject-id').value='';
+  document.getElementById('cf-subject-search').value='';
+  document.getElementById('cf-subject-results').innerHTML='';
 }
 
 function openComplaintForm(id){
@@ -1783,18 +1814,28 @@ function openComplaintForm(id){
   document.getElementById('cf-date').value=c?c.incidentDate:new Date().toISOString().split('T')[0];
   document.getElementById('cf-time').value=c?c.incidentTime:'';
   document.getElementById('cf-desc').value=c?c.description:'';
-  // Populate subject dropdown
-  const subjSel=document.getElementById('cf-subject');
-  subjSel.innerHTML=DB.officers.filter(o=>!currentUser||o.id!==currentUser.id).map(o=>'<option value="'+o.id+'"'+(c&&c.subjectId===o.id?' selected':'')+'>'+o.fname+' '+o.lname+' #'+(o.badge||'?')+'</option>').join('');
+  document.getElementById('cf-reporter-discord').value=c?c.reporterDiscord:(currentUser?.discord||'');
+  // Subject search
+  document.getElementById('cf-subject-id').value=c?c.subjectId:'';
+  if(c&&c.subjectId){
+    const subj=DB.officers.find(o=>o.id==c.subjectId);
+    document.getElementById('cf-subject-search').value=subj?subj.fname+' '+subj.lname+' #'+(subj.badge||'?'):'';
+  } else {
+    document.getElementById('cf-subject-search').value='';
+  }
+  document.getElementById('cf-subject-results').innerHTML='';
   // Command notes section
   const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
   document.getElementById('cf-notes-wrap').style.display=isCmd&&c?'':'none';
   if(c&&document.getElementById('cf-notes'))document.getElementById('cf-notes').value=c.notes||'';
   if(c&&document.getElementById('cf-status'))document.getElementById('cf-status').value=c.status||'pending';
-  // Reset upload zone
+  // Upload zone
   const zone=document.getElementById('upload-zone');
-  if(c&&c.fileUrl){zone.classList.add('has-file');document.getElementById('upload-zone-text').innerHTML='<div style="font-size:20px">✅</div><div style="font-size:12px;color:#80e880">File already uploaded: '+c.fileName+'</div>';}
-  else{zone.classList.remove('has-file');document.getElementById('upload-zone-text').innerHTML='<div style="font-size:28px;margin-bottom:8px">📹</div><div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload body cam recording</div><div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">Any file format accepted</div>';}
+  const hasFile=c&&c.fileUrl;
+  zone.classList.toggle('has-file',!!hasFile);
+  document.getElementById('upload-zone-text').innerHTML=hasFile
+    ?'<div style="font-size:20px">✅</div><div style="font-size:12px;color:#80e880">File uploaded: '+c.fileName+'</div>'
+    :'<div style="font-size:28px;margin-bottom:8px">📹</div><div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload body cam recording</div><div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">Any file format accepted</div>';
   document.getElementById('cf-file').value='';
   document.getElementById('upload-progress-bar').style.display='none';
   document.getElementById('complaint-form-ov').classList.add('on');
@@ -1810,54 +1851,66 @@ function handleFileSelect(input){
 
 async function saveComplaint(){
   const type=document.getElementById('cf-type').value;
-  const subjectId=parseInt(document.getElementById('cf-subject').value)||document.getElementById('cf-subject').value;
+  const subjectId=document.getElementById('cf-subject-id').value;
+  const reporterDiscord=document.getElementById('cf-reporter-discord').value.trim();
   const incidentDate=document.getElementById('cf-date').value;
   const incidentTime=document.getElementById('cf-time').value;
   const description=document.getElementById('cf-desc').value.trim();
   const fileInput=document.getElementById('cf-file');
   const file=fileInput.files[0];
-  if(!type||!subjectId||!incidentDate||!description){alert('Please fill in all required fields.');return;}
+  if(!type||!subjectId){alert('Please select a report type and search for the subject officer.');return;}
+  if(!incidentDate||!description){alert('Please fill in all required fields.');return;}
   const isEdit=!!editComplaintId;
   const existing=isEdit?(DB.complaints||[]).find(c=>c.id===editComplaintId):null;
   if(!isEdit&&!file){alert('Body camera recording is required. Please upload a file.');return;}
-  const btn=document.getElementById('cf-save-btn');
-  btn.disabled=true;btn.textContent='Saving...';
-  let fileUrl=existing?existing.fileUrl:'';
-  let fileName=existing?existing.fileName:'';
-  if(file&&window._fbStorage){
-    try{
-      document.getElementById('upload-progress-bar').style.display='';
-      const storageRef=window._fbStorage.ref('complaints/'+Date.now()+'_'+file.name);
-      const task=storageRef.put(file);
-      await new Promise((res,rej)=>{
-        task.on('state_changed',
-          snap=>{const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);document.getElementById('upload-progress-fill').style.width=pct+'%';},
-          rej, res);
-      });
-      fileUrl=await storageRef.getDownloadURL();
-      fileName=file.name;
-    }catch(e){alert('File upload failed: '+e.message);btn.disabled=false;btn.textContent=isEdit?'Save Changes':'Submit Report';return;}
-  } else if(file&&!window._fbStorage){
-    // Fallback: store as base64 for small files (<5MB)
-    if(file.size>5*1024*1024){alert('File too large (max 5MB without Firebase Storage). Please use a smaller file or configure Firebase Storage.');btn.disabled=false;btn.textContent=isEdit?'Save Changes':'Submit Report';return;}
-    fileUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
-    fileName=file.name;
-  }
   if(!DB.complaints)DB.complaints=[];
   const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
-  if(isEdit){
-    const i=DB.complaints.findIndex(c=>c.id===editComplaintId);
-    if(i>=0){
-      DB.complaints[i]={...DB.complaints[i],type,subjectId,incidentDate,incidentTime,description,fileUrl,fileName};
-      if(isCmd){DB.complaints[i].notes=document.getElementById('cf-notes').value.trim();DB.complaints[i].status=document.getElementById('cf-status').value;}
-    }
-    logAction('Update Report',type+' — '+description.slice(0,40));
-  } else {
-    DB.complaints.unshift({id:'cmp_'+Date.now(),ts:Date.now(),reporterId:currentUser.id,subjectId,type,incidentDate,incidentTime,description,fileUrl,fileName,status:'pending',notes:''});
-    logAction('File Report',type+' against officer #'+subjectId);
-  }
-  persist();btn.disabled=false;btn.textContent=isEdit?'Save Changes':'Submit Report';
+  const cid=isEdit?editComplaintId:'cmp_'+Date.now();
+  const obj={
+    id:cid,
+    ts:existing?existing.ts:Date.now(),
+    reporterId:existing?existing.reporterId:currentUser.id,
+    reporterDiscord,
+    subjectId,type,incidentDate,incidentTime,description,
+    fileUrl:existing?existing.fileUrl:'',
+    fileName:existing?existing.fileName:'',
+    fileStatus:existing?existing.fileStatus:(file?'uploading':'none'),
+    status:isEdit&&isCmd?document.getElementById('cf-status').value:(existing?existing.status:'pending'),
+    notes:isEdit&&isCmd?document.getElementById('cf-notes').value.trim():(existing?existing.notes:'')
+  };
+  if(isEdit){const i=DB.complaints.findIndex(c=>c.id===cid);if(i>=0)DB.complaints[i]=obj;}
+  else DB.complaints.unshift(obj);
+  logAction(isEdit?'Update Report':'File Report',type);
+  persist();
   closeComplaintForm();renderReports();
+  // Upload file in background — complaint is already saved
+  if(file)uploadComplaintFile(cid,file);
+}
+
+async function uploadComplaintFile(cid,file){
+  const update=(url,name,status)=>{
+    const i=(DB.complaints||[]).findIndex(c=>c.id===cid);
+    if(i>=0){DB.complaints[i].fileUrl=url;DB.complaints[i].fileName=name;DB.complaints[i].fileStatus=status;}
+    persist();
+    if(document.getElementById('pg-reports')&&document.getElementById('pg-reports').classList.contains('on'))renderReports();
+  };
+  if(window._fbStorage){
+    try{
+      const storageRef=window._fbStorage.ref('complaints/'+cid+'_'+file.name);
+      const task=storageRef.put(file);
+      await new Promise((res,rej)=>task.on('state_changed',null,rej,res));
+      const url=await storageRef.getDownloadURL();
+      update(url,file.name,'uploaded');return;
+    }catch(e){console.warn('Storage upload failed:',e);}
+  }
+  // Base64 fallback for files ≤5MB
+  if(file.size<=5*1024*1024){
+    const url=await new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(file);});
+    update(url,file.name,'uploaded');
+  } else {
+    update('','',  'failed');
+    alert('File too large to store automatically. Please share the recording link manually and add it in the report notes.');
+  }
 }
 
 function quickUpdateStatus(id,status){
