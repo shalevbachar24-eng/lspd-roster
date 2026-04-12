@@ -286,11 +286,12 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="card-lbl">REPORTS</div>
       <div class="card-sub">Complaints &amp; Incidents</div>
     </div>
-    <div id="home-custom-cards"></div>
-    <div class="card-add" id="card-add-btn" onclick="openAddHomeCard()">
-      <span style="font-size:36px;display:block;margin-bottom:12px;color:rgba(255,255,255,0.25)">＋</span>
-      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1px">ADD CATEGORY</div>
+    <div class="card" id="card-cadets" style="display:none" onclick="goCadets()">
+      <span class="card-icon">🎓</span>
+      <div class="card-lbl">CADETS</div>
+      <div class="card-sub">Procedures &amp; Guidelines</div>
     </div>
+    <div id="home-custom-cards"></div>
   </div>
   <div style="max-width:400px;margin:28px auto 0">
     <div class="srch-wrap">
@@ -476,6 +477,10 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </div>
     <button class="add-btn" onclick="openComplaintForm(null)">+ File Report</button>
   </div>
+  <div class="tab-bar" id="reports-tab-bar">
+    <button class="tab-btn active" id="rtab-mine" onclick="switchReportsTab('mine')">👤 My Reports</button>
+    <button class="tab-btn" id="rtab-all" style="display:none" onclick="switchReportsTab('all')">🗂 All Reports</button>
+  </div>
   <div class="filters">
     <select id="rf-filter-status" onchange="renderReports()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#ccd6f0;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Heebo',sans-serif">
       <option value="">All Status</option>
@@ -489,6 +494,42 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </select>
   </div>
   <div id="reports-list"></div>
+</div>
+
+<!-- CADETS PAGE -->
+
+<div id="pg-cadets" class="page">
+  <div class="sec-top">
+    <div class="sec-left">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <span class="ptitle">🎓 Cadet Resources &amp; Procedures</span>
+    </div>
+    <button class="add-btn" id="btn-add-procedure" style="display:none" onclick="openProcedureForm(null)">+ Add Procedure</button>
+  </div>
+  <div id="cadets-list"></div>
+</div>
+
+<!-- PROCEDURE FORM -->
+<div id="procedure-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:560px">
+    <h3 id="proc-form-title">Add Procedure</h3>
+    <div class="field"><label><span class="req">*</span>Title</label>
+      <input id="proc-title" placeholder="e.g. Traffic Stop Protocol" style="width:100%">
+    </div>
+    <div class="field"><label><span class="req">*</span>Content</label>
+      <textarea id="proc-content" rows="8" placeholder="Write the procedure or guideline here..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;resize:vertical;line-height:1.6"></textarea>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="proc-pinned"> 📌 Pin to top (important)
+      </label>
+    </div>
+    <input type="hidden" id="proc-edit-id">
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeProcedureForm()">Cancel</button>
+      <button class="fsave" onclick="saveProcedure()">Save</button>
+    </div>
+  </div>
 </div>
 
 <!-- ADD HOME CARD -->
@@ -769,7 +810,10 @@ const ALL_PERMISSIONS=[
   {id:'delete_officer',label:'Delete Officer'},{id:'add_user',label:'Add User'},
   {id:'edit_user',label:'Edit User'},{id:'manage_roles',label:'Manage Roles'},
   {id:'manage_units',label:'Manage Units'},{id:'manage_ranks',label:'Manage Ranks'},
-  {id:'bulk_actions',label:'Bulk Actions'}
+  {id:'bulk_actions',label:'Bulk Actions'},
+  {id:'view_all_reports',label:'View All Reports'},
+  {id:'manage_procedures',label:'Manage Cadet Procedures'},
+  {id:'broadcast_notif',label:'Broadcast Notification'}
 ];
 const PERM_LABELS=Object.fromEntries(ALL_PERMISSIONS.map(p=>[p.id,p.label]));
 const PAGE_DEFS=[
@@ -782,14 +826,14 @@ const PAGE_DEFS=[
   {id:'mgmt_log',label:'Activity Log Tab',icon:'📋'},
 ];
 const BUILTIN_ROLES=[
-  {id:'officer',name:'Officer',system:true,description:'Basic access — view roster only',
-    permissions:[],allowedPages:['roster']},
+  {id:'officer',name:'Officer',system:true,description:'Basic access — view roster and own reports',
+    permissions:[],allowedPages:['roster','reports']},
   {id:'command',name:'Command',system:true,description:'Full management access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions'],
-    allowedPages:['roster','management','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log']},
-  {id:'red_command',name:'Red Command',system:true,description:'Top command — same as Command + unit management',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions'],
-    allowedPages:['roster','management','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log']}
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif'],
+    allowedPages:['roster','management','reports','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log']},
+  {id:'red_command',name:'Red Command',system:true,description:'Top command — full access',
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif'],
+    allowedPages:['roster','management','reports','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log']}
 ];
 
 function clickSound(){
@@ -1092,7 +1136,10 @@ function finishLogin(u){
   document.getElementById('card-command').style.display=canAccess('management')?'block':'none';
   document.getElementById('btn-add-off').style.display=(hasPerm('add_officer')||isCmd)?'':'none';
   document.getElementById('card-reports').style.display='block';
-  document.getElementById('card-add-btn').style.display=isCmd?'block':'none';
+  document.getElementById('card-cadets').style.display='block';
+  // Restore notifications read-state from localStorage on every login
+  const storedNotifs=JSON.parse(localStorage.getItem('lspd_notifications')||'[]');
+  if(storedNotifs.length>0)DB.notifications=storedNotifs;
   updateNotifBadge();
   syncUnitsEverywhere();
   renderHomeCustomCards();
@@ -2009,8 +2056,14 @@ function applyBulk(){
 
 // ====== REPORTS / COMPLAINTS ======
 let editComplaintId=null;
+let currentReportsTab='mine'; // 'mine' | 'all'
+
 function goReports(){
   clickSound();showPage('pg-reports');
+  // Show "All Reports" tab only if user has permission
+  const canAll=hasPerm('view_all_reports');
+  const allBtn=document.getElementById('rtab-all');
+  if(allBtn)allBtn.style.display=canAll?'':'none';
   // Populate type filter from siteConfig
   const sel=document.getElementById('rf-filter-type');
   if(sel){
@@ -2019,6 +2072,79 @@ function goReports(){
     sel.innerHTML='<option value="">All Types</option>'+rtypes.map(t=>'<option'+(t===cur?' selected':'')+'>'+t+'</option>').join('');
   }
   renderReports();
+}
+
+function switchReportsTab(tab){
+  currentReportsTab=tab;
+  ['mine','all'].forEach(t=>{
+    const btn=document.getElementById('rtab-'+t);
+    if(btn)btn.classList.toggle('active',t===tab);
+  });
+  renderReports();
+}
+
+// ====== CADETS ======
+function goCadets(){clickSound();showPage('pg-cadets');renderCadets();}
+function renderCadets(){
+  const el=document.getElementById('cadets-list');if(!el)return;
+  const canManage=hasPerm('manage_procedures');
+  const btn=document.getElementById('btn-add-procedure');
+  if(btn)btn.style.display=canManage?'':'none';
+  const procs=(DB.siteConfig&&DB.siteConfig.cadetProcedures)||[];
+  if(!procs.length){
+    el.innerHTML='<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);font-size:14px">'+(canManage?'No procedures yet. Click "+ Add Procedure" to add the first one.':'No procedures have been posted yet.')+'</div>';
+    return;
+  }
+  const sorted=[...procs].sort((a,b)=>((b.pinned?1:0)-(a.pinned?1:0))||b.ts-a.ts);
+  el.innerHTML=sorted.map(p=>{
+    const d=new Date(p.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    const actions=canManage?'<div style="display:flex;gap:8px;margin-top:14px">'
+      +'<button class="act-btn" onclick="openProcedureForm(\''+p.id+'\')">✏ Edit</button>'
+      +'<button class="act-btn del-btn" onclick="deleteProcedure(\''+p.id+'\')">✕ Delete</button>'
+      +'<button class="act-btn" onclick="toggleProcPin(\''+p.id+'\')" style="color:'+(p.pinned?'#f5c471':'rgba(255,255,255,0.3)')+'">'+(p.pinned?'📌 Pinned':'📌 Pin')+'</button>'
+      +'</div>':'';
+    return '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,'+(p.pinned?'0.12':'0.06')+');border-radius:14px;padding:22px 26px;margin-bottom:16px'+(p.pinned?';border-left:3px solid rgba(245,196,113,0.5)':'')+'">'
+      +(p.pinned?'<span style="font-size:10px;color:#f5c471;font-weight:700;letter-spacing:1px;text-transform:uppercase">📌 PINNED &nbsp;</span>':'')
+      +'<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:10px;margin-top:'+(p.pinned?'6px':'0')+'">'+p.title+'</div>'
+      +'<div style="font-size:13px;color:rgba(255,255,255,0.65);white-space:pre-wrap;line-height:1.7">'+p.content+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Posted by '+p.by+' · '+d+'</div>'
+      +actions+'</div>';
+  }).join('');
+}
+function openProcedureForm(id){
+  const p=id?(DB.siteConfig&&DB.siteConfig.cadetProcedures||[]).find(x=>x.id===id):null;
+  document.getElementById('proc-form-title').textContent=p?'Edit Procedure':'Add Procedure';
+  document.getElementById('proc-title').value=p?p.title:'';
+  document.getElementById('proc-content').value=p?p.content:'';
+  document.getElementById('proc-pinned').checked=!!(p&&p.pinned);
+  document.getElementById('proc-edit-id').value=p?p.id:'';
+  document.getElementById('procedure-form-ov').classList.add('on');
+}
+function closeProcedureForm(){document.getElementById('procedure-form-ov').classList.remove('on');}
+function saveProcedure(){
+  const title=document.getElementById('proc-title').value.trim();
+  const content=document.getElementById('proc-content').value.trim();
+  if(!title||!content){alert('Please fill in title and content.');return;}
+  if(!DB.siteConfig)DB.siteConfig={};
+  if(!DB.siteConfig.cadetProcedures)DB.siteConfig.cadetProcedures=[];
+  const editId=document.getElementById('proc-edit-id').value;
+  const pinned=document.getElementById('proc-pinned').checked;
+  const obj={id:editId||'proc_'+Date.now(),title,content,pinned,ts:editId?((DB.siteConfig.cadetProcedures.find(p=>p.id===editId)||{}).ts||Date.now()):Date.now(),by:currentUser?currentUser.fname+' '+currentUser.lname:'Command'};
+  if(editId){const i=DB.siteConfig.cadetProcedures.findIndex(p=>p.id===editId);if(i>=0)DB.siteConfig.cadetProcedures[i]=obj;else DB.siteConfig.cadetProcedures.push(obj);}
+  else DB.siteConfig.cadetProcedures.push(obj);
+  logAction('Save Procedure',title);
+  persist();closeProcedureForm();renderCadets();
+}
+function deleteProcedure(id){
+  showConfirm('Delete Procedure','Delete this procedure?',function(){
+    if(!DB.siteConfig||!DB.siteConfig.cadetProcedures)return;
+    DB.siteConfig.cadetProcedures=DB.siteConfig.cadetProcedures.filter(p=>p.id!==id);
+    logAction('Delete Procedure',id);persist();renderCadets();
+  });
+}
+function toggleProcPin(id){
+  const p=(DB.siteConfig&&DB.siteConfig.cadetProcedures||[]).find(x=>x.id===id);
+  if(p){p.pinned=!p.pinned;persist();renderCadets();}
 }
 
 const CSTATUS_LABEL={pending:'🟡 Pending',reviewing:'🔵 Under Review',resolved:'✅ Resolved',dismissed:'❌ Dismissed'};
@@ -2031,14 +2157,18 @@ function renderReports(){
   const ft=document.getElementById('rf-filter-type')?document.getElementById('rf-filter-type').value:'';
   if(fs)items=items.filter(c=>c.status===fs);
   if(ft)items=items.filter(c=>c.type===ft);
-  // Officers only see their own; command sees all
-  const isCmd=currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
-  if(!isCmd&&currentUser)items=items.filter(c=>{
-    // Show if I filed it OR I'm one of the subjects
-    const myId=String(currentUser.id);
-    const sids=(c.subjectIds||[String(c.subjectId||'')]).map(String);
-    return String(c.reporterId)===myId||sids.includes(myId);
-  });
+  const canAll=hasPerm('view_all_reports');
+  const isCmd=canAll||currentUser&&(currentUser.role==='command'||(currentUser.units||[]).includes('RED COMMAND')||hasPerm('manage_roles'));
+  // Tab filtering
+  if(currentReportsTab==='mine'||!canAll){
+    // "My Reports": reports I filed OR reports against me
+    if(currentUser)items=items.filter(c=>{
+      const myId=String(currentUser.id);
+      const sids=(c.subjectIds||[String(c.subjectId||'')]).map(String);
+      return String(c.reporterId)===myId||sids.includes(myId);
+    });
+  }
+  // "All Reports" tab: no personal filter, show everything (already unfiltered)
   const countEl=document.getElementById('reports-count');
   if(countEl)countEl.textContent=items.length+' report'+(items.length===1?'':'s');
   if(!items.length){list.innerHTML='<div style="color:rgba(255,255,255,0.25);font-size:13px;padding:40px;text-align:center">No reports found.</div>';return;}
