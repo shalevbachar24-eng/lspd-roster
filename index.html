@@ -231,6 +231,14 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .cfg-list-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
 .cfg-list-item:last-child{border-bottom:none}
 .cfg-list-item span{font-size:13px;color:#ccd6f0}
+/* Complaint view modal */
+.complaint-view-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.complaint-view-label{font-size:10px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:5px}
+/* Home stats */
+.home-stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px 20px;text-align:center;min-width:120px;flex:1}
+.home-stat-icon{font-size:24px;margin-bottom:6px}
+.home-stat-num{font-size:26px;font-weight:900;color:#fff;line-height:1}
+.home-stat-lbl{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-top:5px}
 </style>
 </head>
 <body>
@@ -291,7 +299,15 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="card-lbl">CADETS</div>
       <div class="card-sub">Procedures &amp; Guidelines</div>
     </div>
+    <div class="card" id="card-broadcast" style="display:none" onclick="openBroadcastForm()">
+      <span class="card-icon">📤</span>
+      <div class="card-lbl">BROADCAST</div>
+      <div class="card-sub">Send to Officers</div>
+    </div>
     <div id="home-custom-cards"></div>
+  </div>
+  <div id="home-stats" style="display:none;margin:32px auto 0;max-width:900px">
+    <div id="home-stats-content"></div>
   </div>
   <div style="max-width:400px;margin:28px auto 0">
     <div class="srch-wrap">
@@ -419,6 +435,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
     <button class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
+    <button class="tab-btn" id="tab-cadets" onclick="switchTab('cadets')">🎓 Cadets</button>
     <button class="tab-btn" id="tab-config" onclick="switchTab('config')">⚙️ Site Config</button>
   </div>
 
@@ -458,6 +475,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <!-- Log Tab -->
   <div id="tab-content-log" style="display:none">
     <div id="log-list"></div>
+  </div>
+
+  <!-- Cadets Tab -->
+  <div id="tab-content-cadets" style="display:none">
+    <div id="cadets-mgmt-list"></div>
   </div>
 
   <!-- Site Config Tab -->
@@ -608,6 +630,52 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="form-btns">
       <button class="fcancel" onclick="closeComplaintForm()">Cancel</button>
       <button class="fsave" id="cf-save-btn" onclick="saveComplaint()">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLAINT VIEW MODAL -->
+<div id="complaint-view-ov" class="form-overlay">
+  <div class="form-box" style="max-width:600px">
+    <div id="complaint-view-content"></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('complaint-view-ov').classList.remove('on')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERSONAL FILE OVERLAY -->
+<div id="personal-file-ov" class="form-overlay">
+  <div class="form-box" style="max-width:580px;max-height:85vh;overflow-y:auto">
+    <div id="personal-file-content"></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('personal-file-ov').classList.remove('on')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- BROADCAST FORM -->
+<div id="broadcast-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:480px">
+    <h3>📤 Broadcast Notification</h3>
+    <div class="field"><label><span class="req">*</span>Message</label>
+      <textarea id="broadcast-msg" rows="4" placeholder="Enter your broadcast message..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif;resize:vertical"></textarea>
+    </div>
+    <div class="field"><label>Target Audience</label>
+      <select id="broadcast-target" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:#e8edf5;padding:11px 14px;border-radius:9px;font-size:13px;font-family:'Heebo',sans-serif">
+        <option value="all">All Officers</option>
+        <option value="rank_Cadet">Rank: Cadet</option>
+        <option value="rank_Officer">Rank: Officer</option>
+        <option value="rank_Sr. Officer">Rank: Sr. Officer</option>
+        <option value="rank_Corporal">Rank: Corporal</option>
+        <option value="rank_Sergeant">Rank: Sergeant</option>
+        <option value="rank_Lieutenant">Rank: Lieutenant</option>
+        <option value="rank_Captain">Rank: Captain</option>
+      </select>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('broadcast-form-ov').classList.remove('on')">Cancel</button>
+      <button class="fsave" onclick="sendBroadcast()">Send</button>
     </div>
   </div>
 </div>
@@ -931,7 +999,8 @@ let DB={
     announcement:'',announcementEnabled:false,
     reportTypes:['Use of Force','Misconduct','Insubordination','Negligence','Policy Violation','Other'],
     certs:['Light Weapon','Heavy Weapon','Interceptor Vehicle','Helicopter','Motorcycle']
-  }
+  },
+  officerNotes:JSON.parse(localStorage.getItem('lspd_officer_notes')||'{}')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1;
 
@@ -1060,6 +1129,7 @@ function persist(){
   localStorage.setItem('lspd_complaints',JSON.stringify(DB.complaints||[]));
   localStorage.setItem('lspd_notifications',JSON.stringify(DB.notifications||[]));
   localStorage.setItem('lspd_site_config',JSON.stringify(DB.siteConfig||{}));
+  localStorage.setItem('lspd_officer_notes',JSON.stringify(DB.officerNotes||{}));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -1124,6 +1194,7 @@ function hasPerm(perm){
   return(role.permissions||[]).includes(perm);
 }
 
+function canSeeCadets(){const isCmd=hasPerm('manage_procedures');const off=DB.officers.find(o=>String(o.id)===String(currentUser.id));return isCmd||(off&&off.rank==='Cadet');}
 function finishLogin(u){
   currentUser=u;
   document.getElementById('hdr-right').style.display='flex';
@@ -1136,7 +1207,8 @@ function finishLogin(u){
   document.getElementById('card-command').style.display=canAccess('management')?'block':'none';
   document.getElementById('btn-add-off').style.display=(hasPerm('add_officer')||isCmd)?'':'none';
   document.getElementById('card-reports').style.display='block';
-  document.getElementById('card-cadets').style.display='block';
+  document.getElementById('card-cadets').style.display=canSeeCadets()?'block':'none';
+  document.getElementById('card-broadcast').style.display=hasPerm('broadcast_notif')?'block':'none';
   // Restore notifications read-state from localStorage on every login
   const storedNotifs=JSON.parse(localStorage.getItem('lspd_notifications')||'[]');
   if(storedNotifs.length>0)DB.notifications=storedNotifs;
@@ -1147,6 +1219,7 @@ function finishLogin(u){
   const cfg=DB.siteConfig||{};
   const bar=document.getElementById('announce-bar');
   if(bar){if(cfg.announcementEnabled&&cfg.announcement){document.getElementById('announce-text').textContent=cfg.announcement;bar.style.display='block';}else{bar.style.display='none';}}
+  renderHomeDashboard();document.getElementById('home-stats').style.display='';
   clickSound();
 }
 
@@ -1356,7 +1429,8 @@ function renderRoster(){
     const oUnits2=o.units||[o.unit];
     const ub=oUnits2.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join('<span style="color:rgba(255,255,255,0.25);margin:0 2px;font-size:10px">|</span>');
     const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join('')||'—';
-    const acts=canEdit?'<button class="act-btn" onclick="openOffFormById('+o.id+')">✏</button><button class="act-btn del-btn" onclick="delOfficerById('+o.id+')">✕</button>':'';
+    const fileBtn='<button class="act-btn" onclick="openPersonalFile('+o.id+')" title="Personal File">📁</button>';
+    const acts=(canEdit?'<button class="act-btn" onclick="openOffFormById('+o.id+')">✏</button><button class="act-btn del-btn" onclick="delOfficerById('+o.id+')">✕</button>':'')+fileBtn;
     const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
     const checked=selectedIds.has(o.id)?'checked':'';
     const cbCell=selMode?'<td><input type="checkbox" class="row-cb" '+checked+' onchange="toggleRowSel('+o.id+',this.checked)"></td>':'';
@@ -1673,11 +1747,11 @@ let editUnitDefId=null;
 function switchTab(tab){
   const pageMap={accounts:'mgmt_accounts',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log'};
   if(pageMap[tab]&&!canAccess(pageMap[tab])){
-    const first=['accounts','roles','units','ranks','log','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
+    const first=['accounts','roles','units','ranks','log','cadets','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
   }
   currentTab=tab;
-  ['accounts','roles','units','ranks','log','config'].forEach(t=>{
+  ['accounts','roles','units','ranks','log','cadets','config'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -1697,6 +1771,7 @@ function switchTab(tab){
   else if(tab==='units')renderUnitsTab();
   else if(tab==='ranks')renderRanksTab();
   else if(tab==='log')renderLog();
+  else if(tab==='cadets')renderCadetsMgmt();
   else if(tab==='config')renderSiteConfig();
 }
 
@@ -2121,6 +2196,28 @@ function openProcedureForm(id){
   document.getElementById('procedure-form-ov').classList.add('on');
 }
 function closeProcedureForm(){document.getElementById('procedure-form-ov').classList.remove('on');}
+function renderCadetsMgmt(){
+  const el=document.getElementById('cadets-mgmt-list');if(!el)return;
+  const procs=(DB.siteConfig&&DB.siteConfig.cadetProcedures)||[];
+  let html='<div style="margin-bottom:16px"><button class="add-btn" onclick="openProcedureForm(null)">+ Add Procedure</button></div>';
+  if(!procs.length){html+='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.25);font-size:14px">No procedures yet. Click "+ Add Procedure" to add the first one.</div>';el.innerHTML=html;return;}
+  const sorted=[...procs].sort((a,b)=>((b.pinned?1:0)-(a.pinned?1:0))||b.ts-a.ts);
+  html+=sorted.map(p=>{
+    const d=new Date(p.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    const actions='<div style="display:flex;gap:8px;margin-top:14px">'
+      +'<button class="act-btn" onclick="openProcedureForm(\''+p.id+'\')">✏ Edit</button>'
+      +'<button class="act-btn del-btn" onclick="deleteProcedure(\''+p.id+'\')">✕ Delete</button>'
+      +'<button class="act-btn" onclick="toggleProcPin(\''+p.id+'\')" style="color:'+(p.pinned?'#f5c471':'rgba(255,255,255,0.3)')+'">'+(p.pinned?'📌 Pinned':'📌 Pin')+'</button>'
+      +'</div>';
+    return '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,'+(p.pinned?'0.12':'0.06')+');border-radius:14px;padding:22px 26px;margin-bottom:16px'+(p.pinned?';border-left:3px solid rgba(245,196,113,0.5)':'')+'">'
+      +(p.pinned?'<span style="font-size:10px;color:#f5c471;font-weight:700;letter-spacing:1px;text-transform:uppercase">📌 PINNED &nbsp;</span>':'')
+      +'<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:10px;margin-top:'+(p.pinned?'6px':'0')+'">'+p.title+'</div>'
+      +'<div style="font-size:13px;color:rgba(255,255,255,0.65);white-space:pre-wrap;line-height:1.7">'+p.content+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Posted by '+p.by+' · '+d+'</div>'
+      +actions+'</div>';
+  }).join('');
+  el.innerHTML=html;
+}
 function saveProcedure(){
   const title=document.getElementById('proc-title').value.trim();
   const content=document.getElementById('proc-content').value.trim();
@@ -2134,17 +2231,174 @@ function saveProcedure(){
   else DB.siteConfig.cadetProcedures.push(obj);
   logAction('Save Procedure',title);
   persist();closeProcedureForm();renderCadets();
+  const mgmtEl=document.getElementById('tab-content-cadets');if(mgmtEl&&mgmtEl.style.display!=='none')renderCadetsMgmt();
 }
 function deleteProcedure(id){
   showConfirm('Delete Procedure','Delete this procedure?',function(){
     if(!DB.siteConfig||!DB.siteConfig.cadetProcedures)return;
     DB.siteConfig.cadetProcedures=DB.siteConfig.cadetProcedures.filter(p=>p.id!==id);
     logAction('Delete Procedure',id);persist();renderCadets();
+    const mgmtEl=document.getElementById('tab-content-cadets');if(mgmtEl&&mgmtEl.style.display!=='none')renderCadetsMgmt();
   });
 }
 function toggleProcPin(id){
   const p=(DB.siteConfig&&DB.siteConfig.cadetProcedures||[]).find(x=>x.id===id);
-  if(p){p.pinned=!p.pinned;persist();renderCadets();}
+  if(p){p.pinned=!p.pinned;persist();renderCadets();
+  const mgmtEl=document.getElementById('tab-content-cadets');if(mgmtEl&&mgmtEl.style.display!=='none')renderCadetsMgmt();}
+}
+
+// ============ HOME DASHBOARD ============
+function renderHomeDashboard(){
+  const el=document.getElementById('home-stats-content');if(!el)return;
+  const offs=DB.officers||[];
+  const complaints=DB.complaints||[];
+  const now=new Date();const thisMonth=now.getMonth();const thisYear=now.getFullYear();
+  const unitCounts={};
+  (DB.unitDefs||[]).forEach(ud=>{unitCounts[ud.name]=offs.filter(o=>(o.units||[o.unit]).includes(ud.name)).length;});
+  const openComplaints=complaints.filter(c=>c.status==='pending'||c.status==='reviewing').length;
+  const joinsThisMonth=offs.filter(o=>{if(!o.join)return false;const d=new Date(o.join);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).length;
+  const withJoin=offs.filter(o=>o.join).sort((a,b)=>new Date(a.join)-new Date(b.join));
+  const senior=withJoin.length?withJoin[0]:null;
+  let html='<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:12px">';
+  (DB.unitDefs||[]).forEach(ud=>{
+    html+='<div class="home-stat-card"><div class="home-stat-icon">'+(ud.icon||'🏢')+'</div><div class="home-stat-num">'+(unitCounts[ud.name]||0)+'</div><div class="home-stat-lbl">'+ud.name+'</div></div>';
+  });
+  html+='</div><div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">';
+  html+='<div class="home-stat-card"><div class="home-stat-icon">📋</div><div class="home-stat-num">'+openComplaints+'</div><div class="home-stat-lbl">Open Reports</div></div>';
+  html+='<div class="home-stat-card"><div class="home-stat-icon">🆕</div><div class="home-stat-num">'+joinsThisMonth+'</div><div class="home-stat-lbl">Joined This Month</div></div>';
+  if(senior)html+='<div class="home-stat-card"><div class="home-stat-icon">⭐</div><div class="home-stat-num" style="font-size:15px;font-weight:800;line-height:1.2">'+senior.fname+'<br>'+senior.lname+'</div><div class="home-stat-lbl">Most Senior</div></div>';
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ============ COMPLAINT VIEW MODAL ============
+function openComplaintView(id){
+  const c=(DB.complaints||[]).find(x=>x.id===id);if(!c)return;
+  const sids=(c.subjectIds||[String(c.subjectId||'')]).filter(Boolean);
+  const subjNames=sids.map(sid=>{const o=DB.officers.find(x=>String(x.id)===sid);return o?o.fname+' '+o.lname:'Unknown';}).join(', ');
+  const reporter=DB.users.find(u=>String(u.id)===String(c.reporterId));
+  const reporterName=reporter?reporter.fname+' '+reporter.lname:'Unknown';
+  const dateStr=c.incidentDate+(c.incidentTime?' at '+c.incidentTime:'');
+  const replies=c.replies||{};const replyCount=Object.keys(replies).length;
+  let html='<div style="margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'
+    +'<div><div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:4px">'+c.type+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,0.3)">ID: '+c.id+'</div></div>'
+    +'<span class="cstatus '+(CSTATUS_CLS[c.status]||'cstatus-pending')+'">'+(CSTATUS_LABEL[c.status]||c.status)+'</span></div>';
+  html+='<div class="complaint-view-section" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
+    +'<div><div class="complaint-view-label">Filed By</div><div style="font-size:13px;color:#ccd6f0;font-weight:600">'+reporterName+(c.reporterDiscord?' <span style="color:#7ac3ff;font-size:12px">('+c.reporterDiscord+')</span>':'')+'</div></div>'
+    +'<div><div class="complaint-view-label">Incident Date</div><div style="font-size:13px;color:#ccd6f0">'+dateStr+'</div></div></div>';
+  html+='<div class="complaint-view-section"><div class="complaint-view-label">Subject(s)</div><div style="font-size:13px;color:#fff;font-weight:600">'+subjNames+'</div></div>';
+  html+='<div class="complaint-view-section"><div class="complaint-view-label">Description</div><div style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.75;white-space:pre-wrap">'+c.description.replace(/</g,'&lt;')+'</div></div>';
+  if(c.fileUrl)html+='<div class="complaint-view-section"><div class="complaint-view-label">Recording / Evidence</div><a href="'+c.fileUrl+'" target="_blank" style="color:#7ac3ff;font-size:13px;text-decoration:none">📹 View Recording</a></div>';
+  if(c.notes)html+='<div class="complaint-view-section"><div class="complaint-view-label">Command Notes</div><div style="font-size:13px;color:#7ac3ff;background:rgba(74,158,255,0.07);padding:10px 14px;border-radius:8px;line-height:1.6">'+c.notes.replace(/</g,'&lt;')+'</div></div>';
+  if(replyCount){
+    html+='<div class="complaint-view-section"><div class="complaint-view-label">Officer Response'+(replyCount>1?'s':'')+'</div>';
+    Object.values(replies).forEach(r=>{
+      html+='<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;margin-bottom:8px">'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">💬 '+r.name+' · '+new Date(r.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'</div>'
+        +'<div style="font-size:13px;color:rgba(255,255,255,0.75)">'+r.text.replace(/</g,'&lt;')+'</div></div>';
+    });
+    html+='</div>';
+  }
+  document.getElementById('complaint-view-content').innerHTML=html;
+  document.getElementById('complaint-view-ov').classList.add('on');
+}
+
+// ============ PERSONAL FILE ============
+function openPersonalFile(id){
+  const o=DB.officers.find(x=>String(x.id)===String(id));if(!o)return;
+  const isCmd=hasPerm('edit_officer')||hasPerm('view_all_reports');
+  const oUnits=(o.units||[o.unit]);
+  const ub=oUnits.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join(' ');
+  const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join(' ')||'<span style="color:rgba(255,255,255,0.25);font-size:12px">None</span>';
+  const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+  const myComplaints=(DB.complaints||[]).filter(c=>{const sids=(c.subjectIds||[String(c.subjectId||'')]).filter(Boolean).map(String);return sids.includes(String(o.id));});
+  if(!DB.officerNotes)DB.officerNotes={};
+  const notes=DB.officerNotes[String(o.id)]||'';
+  let html='<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.07)">'
+    +'<div style="font-size:48px">👮</div><div>'
+    +'<div style="font-size:22px;font-weight:900;color:#fff">'+o.fname+' '+o.lname+'</div>'
+    +'<div style="margin:6px 0">'+ub+'</div>'
+    +'<span class="badge bk-rank">'+o.rank+'</span></div></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Badge</div><div style="font-size:18px;font-weight:700;color:#7ac3ff">#'+(o.badge||'—')+'</div></div>'
+    +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Joined</div><div style="font-size:13px;font-weight:600;color:#fff">'+joinFmt+'</div></div></div>';
+  html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Clearances</div>'+cb+'</div>';
+  if(o.rankHistory&&o.rankHistory.length){
+    html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;margin-bottom:12px">'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Rank History</div>'
+      +[...o.rankHistory].reverse().map(h=>'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'
+        +'<span style="font-size:11px;color:rgba(255,255,255,0.3);min-width:75px">'+h.date+'</span>'
+        +'<span class="badge bk-rank" style="font-size:10px">'+h.from+'</span>'
+        +'<span style="color:rgba(255,255,255,0.3);font-size:10px">→</span>'
+        +'<span class="badge bk-rank" style="font-size:10px;background:rgba(74,158,255,0.15);border-color:rgba(74,158,255,0.3);color:#7ac3ff">'+h.to+'</span>'
+        +'<span style="font-size:10px;color:rgba(255,255,255,0.2);margin-left:auto">by '+h.by+'</span></div>').join('')+'</div>';
+  }
+  if(isCmd){
+    html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;margin-bottom:12px">'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Complaints ('+myComplaints.length+')</div>';
+    if(!myComplaints.length)html+='<div style="font-size:12px;color:rgba(255,255,255,0.25)">No complaints on record.</div>';
+    else html+=myComplaints.map(c=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="document.getElementById(\'personal-file-ov\').classList.remove(\'on\');openComplaintView(\''+c.id+'\')">'
+        +'<div><div style="font-size:12px;color:#ccd6f0">'+c.type+'</div><div style="font-size:11px;color:rgba(255,255,255,0.3)">'+c.incidentDate+'</div></div>'
+        +'<span class="cstatus '+(CSTATUS_CLS[c.status]||'cstatus-pending')+'" style="font-size:10px">'+(CSTATUS_LABEL[c.status]||c.status)+'</span></div>').join('');
+    html+='</div>';
+    html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px">'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">🔒 Command Notes (Private)</div>'
+      +'<textarea id="pfile-notes" rows="4" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical">'+notes.replace(/</g,'&lt;')+'</textarea>'
+      +'<button onclick="saveOfficerNotes(\''+o.id+'\')" style="margin-top:8px;background:rgba(74,158,255,0.14);border:1px solid rgba(74,158,255,0.35);color:#7ac3ff;padding:6px 16px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer">Save Notes</button></div>';
+  }
+  document.getElementById('personal-file-content').innerHTML=html;
+  document.getElementById('personal-file-ov').classList.add('on');
+}
+function saveOfficerNotes(officerId){
+  if(!DB.officerNotes)DB.officerNotes={};
+  const ta=document.getElementById('pfile-notes');if(!ta)return;
+  DB.officerNotes[String(officerId)]=ta.value;
+  logAction('Save Officer Notes','#'+officerId);persist();
+  const btn=ta.nextElementSibling;if(btn){const orig=btn.textContent;btn.textContent='✓ Saved';setTimeout(()=>{btn.textContent=orig;},1500);}
+}
+
+// ============ BROADCAST ============
+function openBroadcastForm(){
+  if(!hasPerm('broadcast_notif')){alert('No permission.');return;}
+  const sel=document.getElementById('broadcast-target');
+  if(sel){
+    let opts='<option value="all">All Officers</option>';
+    (DB.unitDefs||[]).forEach(ud=>{opts+='<option value="unit_'+ud.name+'">Unit: '+ud.name+'</option>';});
+    const allRanks=[...new Set((DB.officers||[]).map(o=>o.rank).filter(Boolean))].sort();
+    allRanks.forEach(r=>{opts+='<option value="rank_'+r+'">Rank: '+r+'</option>';});
+    sel.innerHTML=opts;
+  }
+  document.getElementById('broadcast-msg').value='';
+  document.getElementById('broadcast-form-ov').classList.add('on');
+}
+function sendBroadcast(){
+  const msg=document.getElementById('broadcast-msg').value.trim();
+  if(!msg){alert('Please enter a message.');return;}
+  const target=document.getElementById('broadcast-target').value;
+  let recipientIds=[];
+  if(target==='all'){
+    recipientIds=DB.users.map(u=>String(u.id));
+  } else if(target.startsWith('unit_')){
+    const unitName=target.slice(5);
+    const oIds=DB.officers.filter(o=>(o.units||[o.unit]).includes(unitName)).map(o=>String(o.id));
+    recipientIds=DB.users.filter(u=>oIds.includes(String(u.id))).map(u=>String(u.id));
+  } else if(target.startsWith('rank_')){
+    const rankName=target.slice(5);
+    const oIds=DB.officers.filter(o=>o.rank===rankName).map(o=>String(o.id));
+    recipientIds=DB.users.filter(u=>oIds.includes(String(u.id))).map(u=>String(u.id));
+  }
+  const senderName=currentUser?currentUser.fname+' '+currentUser.lname:'Command';
+  let sent=0;
+  recipientIds.forEach(uid=>{
+    if(String(uid)!==String(currentUser&&currentUser.id)){
+      createNotif(uid,'broadcast','📣 '+senderName+': '+msg);sent++;
+    }
+  });
+  logAction('Broadcast',msg.substring(0,60)+(msg.length>60?'...':''));
+  persist();
+  document.getElementById('broadcast-form-ov').classList.remove('on');
+  alert('Broadcast sent to '+sent+' officer'+(sent===1?'':'s')+'.');
 }
 
 const CSTATUS_LABEL={pending:'🟡 Pending',reviewing:'🔵 Under Review',resolved:'✅ Resolved',dismissed:'❌ Dismissed'};
@@ -2198,7 +2452,7 @@ function renderReports(){
       +'<button class="act-btn del-btn" onclick="deleteComplaint(\''+c.id+'\')">✕</button>'
       +'</div>':'';
     return '<div class="complaint-card">'
-      +'<div class="complaint-card-header">'
+      +'<div class="complaint-card-header" style="cursor:pointer" onclick="openComplaintView(\''+c.id+'\')" title="Click to view details">'
       +'<div><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px">'+c.type+'</div>'
       +'<div style="font-size:12px;color:rgba(255,255,255,0.4)">Against: <span style="color:#fff;font-weight:600">'+subjNames+'</span> &nbsp;·&nbsp; Filed by: '+(reporter?reporter.fname+' '+reporter.lname:'Unknown')+(c.reporterDiscord?' <span style="color:rgba(255,255,255,0.55)">('+c.reporterDiscord+')</span>':'')+' &nbsp;·&nbsp; '+dateStr+'</div></div>'
       +'<span class="cstatus '+(CSTATUS_CLS[c.status]||'cstatus-pending')+'">'+(CSTATUS_LABEL[c.status]||c.status)+'</span>'
