@@ -2205,9 +2205,58 @@ function renderReports(){
       +'</div>'
       +'<div style="font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:8px">'+c.description+'</div>'
       +(c.notes?'<div style="font-size:12px;color:#7ac3ff;background:rgba(74,158,255,0.07);padding:8px 12px;border-radius:7px;margin-bottom:8px">📝 '+c.notes+'</div>':'')
-      +fileLink+cmds
+      +fileLink
+      +(()=>{
+        // Subject replies
+        const replies=c.replies||{};
+        const myId=currentUser?String(currentUser.id):null;
+        const sids=(c.subjectIds||[String(c.subjectId||'')]).filter(Boolean).map(String);
+        const amSubject=myId&&sids.includes(myId);
+        const myReply=myId?replies[myId]:null;
+        let html='';
+        // Show existing replies
+        const visibleReplies=isCmd?Object.values(replies):(amSubject&&myReply?[myReply]:[]);
+        if(visibleReplies.length){
+          html+='<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px">';
+          html+=visibleReplies.map(r=>'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 13px;margin-bottom:6px">'
+            +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:.8px;margin-bottom:4px">💬 '+r.name.toUpperCase()+'</div>'
+            +'<div style="font-size:13px;color:rgba(255,255,255,0.7)">'+r.text.replace(/</g,'&lt;')+'</div>'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px">'+new Date(r.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'</div>'
+            +'</div>').join('');
+          html+='</div>';
+        }
+        // Reply box — only if I'm a subject and haven't replied yet
+        if(amSubject&&!myReply&&c.status!=='dismissed'){
+          html+='<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px">'
+            +'<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:.5px">YOUR RESPONSE (one-time only)</div>'
+            +'<textarea id="reply-'+c.id+'" rows="3" maxlength="500" placeholder="Write your response to this report..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea>'
+            +'<button onclick="saveComplaintReply(\''+c.id+'\')" style="margin-top:7px;background:rgba(74,158,255,0.14);border:1px solid rgba(74,158,255,0.35);color:#7ac3ff;padding:6px 16px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer">Submit Response</button>'
+            +'</div>';
+        }
+        return html;
+      })()
+      +cmds
       +'</div>';
   }).join('');
+}
+
+function saveComplaintReply(cid){
+  const ta=document.getElementById('reply-'+cid);
+  if(!ta)return;
+  const text=ta.value.trim();
+  if(!text){alert('Please write your response before submitting.');return;}
+  const i=(DB.complaints||[]).findIndex(c=>c.id===cid);
+  if(i<0)return;
+  const c=DB.complaints[i];
+  const myId=currentUser?String(currentUser.id):null;
+  if(!myId)return;
+  if(!c.replies)c.replies={};
+  if(c.replies[myId]){alert('You have already submitted a response to this report.');return;}
+  c.replies[myId]={text,ts:Date.now(),name:currentUser.fname+' '+currentUser.lname};
+  // Notify reporter that the officer responded
+  createNotif(c.reporterId,'complaint_update','Officer '+(currentUser.fname+' '+currentUser.lname)+' responded to your report ('+c.type+').');
+  logAction('Reply to Report',c.type);
+  persist();renderReports();
 }
 
 // --- Complaint subject multi-search ---
