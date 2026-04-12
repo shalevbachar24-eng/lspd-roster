@@ -302,9 +302,6 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </div>
     <div id="home-custom-cards"></div>
   </div>
-  <div id="home-stats" style="display:none;margin:32px auto 0;max-width:900px">
-    <div id="home-stats-content"></div>
-  </div>
   <div style="max-width:400px;margin:28px auto 0">
     <div class="srch-wrap">
       <input id="home-search" placeholder="Quick search: name or badge #..." oninput="homeSearch(this.value)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#ccd6f0;padding:10px 32px 10px 14px;border-radius:10px;font-size:13px;font-family:inherit;width:100%">
@@ -433,6 +430,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
     <button class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
     <button class="tab-btn" id="tab-cadets" onclick="switchTab('cadets')">🎓 Cadets</button>
+    <button class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">📊 Analytics</button>
     <button class="tab-btn" id="tab-config" onclick="switchTab('config')">⚙️ Site Config</button>
   </div>
 
@@ -477,6 +475,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <!-- Cadets Tab -->
   <div id="tab-content-cadets" style="display:none">
     <div id="cadets-mgmt-list"></div>
+  </div>
+
+  <!-- Analytics Tab -->
+  <div id="tab-content-analytics" style="display:none">
+    <div id="home-stats-content" style="padding:8px 0"></div>
   </div>
 
   <!-- Site Config Tab -->
@@ -1217,7 +1220,6 @@ function finishLogin(u){
   const cfg=DB.siteConfig||{};
   const bar=document.getElementById('announce-bar');
   if(bar){if(cfg.announcementEnabled&&cfg.announcement){document.getElementById('announce-text').textContent=cfg.announcement;bar.style.display='block';}else{bar.style.display='none';}}
-  renderHomeDashboard();document.getElementById('home-stats').style.display='';
   clickSound();
 }
 
@@ -1745,11 +1747,11 @@ let editUnitDefId=null;
 function switchTab(tab){
   const pageMap={accounts:'mgmt_accounts',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log'};
   if(pageMap[tab]&&!canAccess(pageMap[tab])){
-    const first=['accounts','roles','units','ranks','log','cadets','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
+    const first=['accounts','roles','units','ranks','log','cadets','analytics','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
   }
   currentTab=tab;
-  ['accounts','roles','units','ranks','log','cadets','config'].forEach(t=>{
+  ['accounts','roles','units','ranks','log','cadets','analytics','config'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -1770,6 +1772,7 @@ function switchTab(tab){
   else if(tab==='ranks')renderRanksTab();
   else if(tab==='log')renderLog();
   else if(tab==='cadets')renderCadetsMgmt();
+  else if(tab==='analytics')renderHomeDashboard();
   else if(tab==='config')renderSiteConfig();
 }
 
