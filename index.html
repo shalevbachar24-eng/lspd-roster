@@ -235,10 +235,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .complaint-view-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
 .complaint-view-label{font-size:10px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:5px}
 /* Home stats */
-.home-stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px 20px;text-align:center;min-width:120px;flex:1}
-.home-stat-icon{font-size:24px;margin-bottom:6px}
-.home-stat-num{font-size:26px;font-weight:900;color:#fff;line-height:1}
-.home-stat-lbl{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-top:5px}
+.home-stat-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 22px;text-align:center;min-width:110px;flex:1;transition:.2s}
+.home-stat-card:hover{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.12)}
+.home-stat-icon{font-size:28px;margin-bottom:8px;line-height:1}
+.home-stat-num{font-size:28px;font-weight:900;color:#fff;line-height:1.1}
+.home-stat-lbl{font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:6px}
 </style>
 </head>
 <body>
@@ -298,11 +299,6 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <span class="card-icon">🎓</span>
       <div class="card-lbl">CADETS</div>
       <div class="card-sub">Procedures &amp; Guidelines</div>
-    </div>
-    <div class="card" id="card-broadcast" style="display:none" onclick="openBroadcastForm()">
-      <span class="card-icon">📤</span>
-      <div class="card-lbl">BROADCAST</div>
-      <div class="card-sub">Send to Officers</div>
     </div>
     <div id="home-custom-cards"></div>
   </div>
@@ -428,6 +424,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </div>
     <button class="add-btn" id="mgmt-add-btn" onclick="mgmtAddAction()">+ Add User</button>
     <button class="back-btn" id="mgmt-csv-btn" style="display:none" onclick="openCsvImport()" title="Import from CSV">📥 Import CSV</button>
+    <button class="back-btn" id="mgmt-broadcast-btn" style="display:none;background:rgba(74,158,255,0.12);border-color:rgba(74,158,255,0.35);color:#7ac3ff" onclick="openBroadcastForm()">📤 Broadcast</button>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-accounts" onclick="switchTab('accounts')">👥 Accounts</button>
@@ -1208,7 +1205,8 @@ function finishLogin(u){
   document.getElementById('btn-add-off').style.display=(hasPerm('add_officer')||isCmd)?'':'none';
   document.getElementById('card-reports').style.display='block';
   document.getElementById('card-cadets').style.display=canSeeCadets()?'block':'none';
-  document.getElementById('card-broadcast').style.display=hasPerm('broadcast_notif')?'block':'none';
+  const bcastBtn=document.getElementById('mgmt-broadcast-btn');
+  if(bcastBtn)bcastBtn.style.display=hasPerm('broadcast_notif')?'':'none';
   // Restore notifications read-state from localStorage on every login
   const storedNotifs=JSON.parse(localStorage.getItem('lspd_notifications')||'[]');
   if(storedNotifs.length>0)DB.notifications=storedNotifs;
@@ -2259,14 +2257,25 @@ function renderHomeDashboard(){
   const joinsThisMonth=offs.filter(o=>{if(!o.join)return false;const d=new Date(o.join);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).length;
   const withJoin=offs.filter(o=>o.join).sort((a,b)=>new Date(a.join)-new Date(b.join));
   const senior=withJoin.length?withJoin[0]:null;
+  const statCard=(icon,num,lbl,extra)=>'<div class="home-stat-card">'
+    +'<div class="home-stat-icon">'+icon+'</div>'
+    +'<div class="home-stat-num">'+num+'</div>'
+    +(extra||'')
+    +'<div class="home-stat-lbl">'+lbl+'</div></div>';
   let html='<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:12px">';
   (DB.unitDefs||[]).forEach(ud=>{
-    html+='<div class="home-stat-card"><div class="home-stat-icon">'+(ud.icon||'🏢')+'</div><div class="home-stat-num">'+(unitCounts[ud.name]||0)+'</div><div class="home-stat-lbl">'+ud.name+'</div></div>';
+    html+=statCard(ud.icon||'🏢',unitCounts[ud.name]||0,ud.name);
   });
   html+='</div><div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">';
-  html+='<div class="home-stat-card"><div class="home-stat-icon">📋</div><div class="home-stat-num">'+openComplaints+'</div><div class="home-stat-lbl">Open Reports</div></div>';
-  html+='<div class="home-stat-card"><div class="home-stat-icon">🆕</div><div class="home-stat-num">'+joinsThisMonth+'</div><div class="home-stat-lbl">Joined This Month</div></div>';
-  if(senior)html+='<div class="home-stat-card"><div class="home-stat-icon">⭐</div><div class="home-stat-num" style="font-size:15px;font-weight:800;line-height:1.2">'+senior.fname+'<br>'+senior.lname+'</div><div class="home-stat-lbl">Most Senior</div></div>';
+  html+=statCard('📋',openComplaints,'Open Reports');
+  html+='<div class="home-stat-card" style="position:relative">'
+    +(joinsThisMonth>0?'<span style="position:absolute;top:10px;right:10px;background:#4a9eff;color:#fff;font-size:8px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px">NEW</span>':'')
+    +'<div class="home-stat-icon">🆕</div>'
+    +'<div class="home-stat-num">'+joinsThisMonth+'</div>'
+    +'<div class="home-stat-lbl">Joined This Month</div></div>';
+  if(senior)html+='<div class="home-stat-card"><div class="home-stat-icon">⭐</div>'
+    +'<div class="home-stat-num" style="font-size:15px;font-weight:800;line-height:1.3">'+senior.fname+'<br>'+senior.lname+'</div>'
+    +'<div class="home-stat-lbl">Most Senior</div></div>';
   html+='</div>';
   el.innerHTML=html;
 }
