@@ -431,7 +431,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="tab-btn" id="tab-registrations" onclick="switchTab('registrations')" style="display:none">📩 Pending sign-ups</button>
     <button class="tab-btn" id="tab-invites" onclick="switchTab('invites')">🎫 Invite Codes</button>
     <button class="tab-btn" id="tab-approvals-log" onclick="switchTab('approvals-log')">✅ Approvals Log</button>
-    <button class="tab-btn" id="tab-roles" onclick="switchTab('roles')">🏷 Roles</button>
+    <button class="tab-btn" id="tab-roles" onclick="switchTab('roles')" style="display:none">🏷 Roles</button>
     <button class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
     <button class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
@@ -753,6 +753,9 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="field"><label><span class="req">*</span>Unit ID (uppercase key)</label><input id="ud-id" placeholder="e.g. AVIATION" style="text-transform:uppercase"></div>
     <div class="field"><label><span class="req">*</span>Display Name</label><input id="ud-name" placeholder="Aviation Unit"></div>
     <div class="field"><label>Icon (emoji)</label><input id="ud-icon" placeholder="✈️" maxlength="4"></div>
+    <div class="field" style="display:flex;align-items:center;gap:8px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,0.8);cursor:pointer"><input type="checkbox" id="ud-hide-roster"> Hide from roster category picker</label>
+    </div>
     <div class="form-btns">
       <button class="fcancel" onclick="closeUnitForm()">Cancel</button>
       <button class="fsave" onclick="saveUnitDef()">Save</button>
@@ -825,6 +828,30 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 </div>
 
+<div id="access-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:760px">
+    <h3 id="access-form-title">User Access</h3>
+    <div class="field">
+      <label>Preset</label>
+      <select id="ax-preset"></select>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.8)">
+        <input type="checkbox" id="ax-custom-enabled" onchange="toggleAccessCustom()"> Enable custom access for this user (override preset)
+      </label>
+    </div>
+    <div id="ax-custom-wrap" style="display:none">
+      <div class="field"><label>Permissions</label><div id="ax-perms" class="perm-grid"></div></div>
+      <div class="field"><label>Pages / Rooms</label><div id="ax-pages" class="perm-grid"></div></div>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeAccessForm()">Cancel</button>
+      <button class="back-btn" onclick="resetAccessToPreset()">Reset to Preset</button>
+      <button class="fsave" onclick="saveUserAccess()">Save Access</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGE PASSWORD (first login) -->
 
 <div id="chpw-overlay" class="overlay">
@@ -887,7 +914,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </div>
     <div class="fg2">
       <div class="field"><label><span class="req">*</span>Initial Password</label><input id="uf-pass" type="text" placeholder="4-digit PIN" maxlength="4"></div>
-      <div class="field"><label><span class="req">*</span>Role</label>
+      <div class="field"><label><span class="req">*</span>Access Profile</label>
         <select id="uf-role"></select>
       </div>
     </div>
@@ -932,12 +959,12 @@ const CERTCLS={'Light Weapon':'bk-lw','Heavy Weapon':'bk-hw','Interceptor Vehicl
 const UNITCLS={'PATROL':'bu-PATROL','METRO':'bu-METRO','SWAT':'bu-SWAT','DETECTIVE':'bu-DETECTIVE','PURSUIT':'bu-PURSUIT','RED COMMAND':'bu-RED-COMMAND'};
 
 const DEFAULT_UNIT_DEFS=[
-  {id:'PATROL',name:'PATROL',icon:'🚔'},
-  {id:'METRO',name:'METRO',icon:'🚁'},
-  {id:'SWAT',name:'SWAT',icon:'⚔️'},
-  {id:'DETECTIVE',name:'DETECTIVE',icon:'🔍'},
-  {id:'PURSUIT',name:'PURSUIT',icon:'🏎️'},
-  {id:'RED COMMAND',name:'RED COMMAND',icon:'⭐'}
+  {id:'PATROL',name:'PATROL',icon:'🚔',hiddenInRoster:false},
+  {id:'METRO',name:'METRO',icon:'🚁',hiddenInRoster:false},
+  {id:'SWAT',name:'SWAT',icon:'⚔️',hiddenInRoster:false},
+  {id:'DETECTIVE',name:'DETECTIVE',icon:'🔍',hiddenInRoster:false},
+  {id:'PURSUIT',name:'PURSUIT',icon:'🏎️',hiddenInRoster:false},
+  {id:'RED COMMAND',name:'RED COMMAND',icon:'⭐',hiddenInRoster:false}
 ];
 const ALL_PERMISSIONS=[
   {id:'add_officer',label:'Add Officer'},{id:'edit_officer',label:'Edit Officer'},
@@ -982,6 +1009,12 @@ const BUILTIN_ROLES=[
     permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
     allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']}
 ];
+const ACCESS_PRESETS={
+  cadet:{name:'Cadet',permissions:[],allowedPages:['roster','reports','cadets']},
+  officer:{name:'Officer',permissions:[],allowedPages:['roster','reports','cadets']},
+  command:{name:'Command',permissions:ALL_PERMISSIONS.map(p=>p.id),allowedPages:PAGE_DEFS.map(p=>p.id)},
+  red_command:{name:'Red Command',permissions:ALL_PERMISSIONS.map(p=>p.id),allowedPages:PAGE_DEFS.map(p=>p.id)}
+};
 
 function clickSound(){
   try{
@@ -1089,6 +1122,7 @@ let DB={
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1,pendingApproveReqId=null;
 
 function migrateAll(){
+  DB.unitDefs=(DB.unitDefs||[]).map(u=>({hiddenInRoster:false,...u}));
   DB.officers=DB.officers.map(o=>{
     if(!o.units)o.units=[o.unit||'PATROL'];
     if(!o.specialRoles)o.specialRoles=[];
@@ -1098,6 +1132,10 @@ function migrateAll(){
   DB.users=DB.users.map(u=>{
     if(!u.units)u.units=[u.unit||'PATROL'];
     if(!u.specialRoles)u.specialRoles=[];
+    if(!u.accessPreset)u.accessPreset=getUserPreset(u);
+    if(typeof u.customAccessEnabled==='undefined')u.customAccessEnabled=false;
+    if(!u.customPermissions)u.customPermissions=[];
+    if(!u.customPages)u.customPages=[];
     return u;
   });
   // Auto-create login account for any officer that doesn't have one
@@ -1106,10 +1144,10 @@ function migrateAll(){
       DB.users.push({
         id:o.id,fname:o.fname,lname:o.lname,
         password:'0000',mustChangePassword:true,
-        role:'officer',rank:o.rank,
+        role:'officer',roleId:'officer',accessPreset:(o.rank==='Cadet'?'cadet':'officer'),rank:o.rank,
         units:o.units,unit:(o.units[0]||'PATROL'),
         badge:o.badge,discord:o.discord,join:o.join,
-        certs:o.certs||[],specialRoles:[]
+        certs:o.certs||[],specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]
       });
     }
   });
@@ -1296,7 +1334,8 @@ function finalizeApproveRegistration(){
   if(!pendingApproveReqId)return;
   const req=(DB.registrationRequests||[]).find(function(r){return r.id===pendingApproveReqId&&r.status==='pending';});
   if(!req){alert('Request not found or already handled.');closeRegApprove();return;}
-  const roleId=document.getElementById('appr-role').value;
+  const pickedPreset=document.getElementById('appr-role').value;
+  const roleId=(pickedPreset==='officer'&&req.rank==='Cadet')?'cadet':pickedPreset;
   const pw=(document.getElementById('appr-pin').value||'0000').trim();
   if(!/^\d{4}$/.test(pw)){alert('Initial PIN must be exactly 4 digits.');return;}
   const roleObj=(DB.customRoles||[]).find(function(r){return r.id===roleId;})||{};
@@ -1306,7 +1345,7 @@ function finalizeApproveRegistration(){
   DB.officers.forEach(function(o){maxId=Math.max(maxId,+o.id||0);});
   const newId=maxId+1;
   const join=new Date().toISOString().split('T')[0];
-  const userObj={id:newId,fname:req.fname,lname:req.lname,password:pw,mustChangePassword:true,roleId:roleId,role:baseRole,rank:req.rank,unit:req.unit,units:req.units,badge:req.badge,discord:req.discord,join:join,certs:[],specialRoles:[]};
+  const userObj={id:newId,fname:req.fname,lname:req.lname,password:pw,mustChangePassword:true,roleId:roleId,role:baseRole,accessPreset:roleId,rank:req.rank,unit:req.unit,units:req.units,badge:req.badge,discord:req.discord,join:join,certs:[],specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
   const officerObj={id:newId,fname:req.fname,lname:req.lname,rank:req.rank,unit:req.unit,units:req.units,badge:req.badge,discord:req.discord,join:join,certs:[],specialRoles:[],rankHistory:[]};
   DB.users.push(userObj);
   DB.officers.push(officerObj);
@@ -1474,27 +1513,38 @@ function doSetPassword(){
 
 function getUserRole(user){
   if(!user)return null;
-  const rid=user.roleId;
-  if(rid){
-    const r=(DB.customRoles||[]).find(x=>x.id===rid)||BUILTIN_ROLES.find(x=>x.id===rid);
-    if(r)return r;
+  const p=getUserPreset(user);
+  return {id:p,name:(ACCESS_PRESETS[p]||ACCESS_PRESETS.officer).name,permissions:getEffectiveAccess(user).permissions,allowedPages:getEffectiveAccess(user).allowedPages};
+}
+function getUserPreset(user){
+  const units=user&&((user.units&&user.units.length)?user.units:[user&&user.unit].filter(Boolean));
+  if(user&&user.accessPreset&&ACCESS_PRESETS[user.accessPreset])return user.accessPreset;
+  if(units&&units.includes('RED COMMAND'))return 'red_command';
+  if(user&&(user.rank==='Cadet'))return 'cadet';
+  if(user&&(user.role==='command'||user.roleId==='command'||user.roleId==='red_command'))return 'command';
+  return 'officer';
+}
+function getEffectiveAccess(user){
+  const preset=getUserPreset(user);
+  const base=ACCESS_PRESETS[preset]||ACCESS_PRESETS.officer;
+  if(user&&user.customAccessEnabled){
+    return {
+      preset,
+      permissions:[...(user.customPermissions||[])],
+      allowedPages:[...(user.customPages||[])]
+    };
   }
-  // Fallback by base role field
-  const baseId=(user.role==='command'||(user.units||[user.unit]).includes('RED COMMAND'))?
-    ((user.units||[user.unit]).includes('RED COMMAND')?'red_command':'command'):'officer';
-  return(DB.customRoles||[]).find(x=>x.id===baseId)||BUILTIN_ROLES.find(x=>x.id===baseId)||BUILTIN_ROLES[0];
+  return {preset,permissions:[...(base.permissions||[])],allowedPages:[...(base.allowedPages||[])]};
 }
 function canAccess(page){
   if(!currentUser)return false;
-  const role=getUserRole(currentUser);
-  if(!role)return false;
-  return(role.allowedPages||[]).includes(page);
+  const acc=getEffectiveAccess(currentUser);
+  return(acc.allowedPages||[]).includes(page);
 }
 function hasPerm(perm){
   if(!currentUser)return false;
-  const role=getUserRole(currentUser);
-  if(!role)return false;
-  return(role.permissions||[]).includes(perm);
+  const acc=getEffectiveAccess(currentUser);
+  return(acc.permissions||[]).includes(perm);
 }
 
 function canSeeCadets(){
@@ -1532,14 +1582,15 @@ function finishLogin(u){
 
 // ====== UNIT SYNC — called after every unit add/edit/delete ======
 function syncUnitsEverywhere(){
-  const units=DB.unitDefs||DEFAULT_UNIT_DEFS;
+  const units=(DB.unitDefs||DEFAULT_UNIT_DEFS).map(u=>({hiddenInRoster:false,...u}));
+  const visibleUnits=units.filter(u=>!u.hiddenInRoster);
   const metroUnits=['METRO','DETECTIVE','SWAT','PURSUIT']; // units that belong under METRO
 
   // 1. Unit picker page — ALL + each unit (METRO group → sub-picker link)
   const upEl=document.getElementById('unit-picker-cards');
   if(upEl){
-    const metroGroup=units.filter(u=>metroUnits.includes(u.id));
-    const mainUnits=units.filter(u=>!metroUnits.includes(u.id)||u.id==='METRO');
+    const metroGroup=visibleUnits.filter(u=>metroUnits.includes(u.id));
+    const mainUnits=visibleUnits.filter(u=>!metroUnits.includes(u.id)||u.id==='METRO');
     upEl.innerHTML=
       '<div class="card" onclick="goRosterUnit(\'ALL\')"><div class="unit-img">🛡️</div><div class="card-lbl">ALL</div><div class="card-sub">Full Roster</div></div>'
       +mainUnits.map(u=>{
@@ -1552,7 +1603,7 @@ function syncUnitsEverywhere(){
   // 2. Metro sub-picker page
   const mpEl=document.getElementById('metro-picker-cards');
   if(mpEl){
-    const subs=units.filter(u=>metroUnits.includes(u.id));
+    const subs=visibleUnits.filter(u=>metroUnits.includes(u.id));
     mpEl.innerHTML=
       '<div class="card" onclick="goRosterUnit(\'METRO\')"><div class="unit-img">🚁</div><div class="card-lbl">ALL METRO</div><div class="card-sub">All Metro</div></div>'
       +subs.filter(u=>u.id!=='METRO').map(u=>'<div class="card" onclick="goRosterUnit(\''+u.id+'\')"><div class="unit-img">'+u.icon+'</div><div class="card-lbl">'+u.name+'</div><div class="card-sub"></div></div>').join('');
@@ -1900,7 +1951,7 @@ function saveOfficer(){
     DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,certs};
   } else {
     DB.users.push({id:oid,fname:fn,lname:ln,password:'0000',mustChangePassword:true,
-      role:'officer',rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:[]});
+      role:'officer',roleId:'officer',accessPreset:(rank==='Cadet'?'cadet':'officer'),rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]});
   }
   logAction(editOffIdx>=0?'Edit Officer':'Add Officer',fn+' '+ln);
   persist();closeOffForm();renderRoster();
@@ -1931,8 +1982,10 @@ function renderCommand(){
   });
   // Sort: command first, then by rank order, then badge asc
   list.sort((a,b)=>{
-    if(a.role==='command'&&b.role!=='command')return -1;
-    if(b.role==='command'&&a.role!=='command')return 1;
+    const ac=(getUserPreset(a)==='command'||getUserPreset(a)==='red_command');
+    const bc=(getUserPreset(b)==='command'||getUserPreset(b)==='red_command');
+    if(ac&&!bc)return -1;
+    if(bc&&!ac)return 1;
     const rd=rankGroup(a.rank)-rankGroup(b.rank);
     if(rd!==0)return rd;
     return (parseInt(a.badge)||0)-(parseInt(b.badge)||0);
@@ -1941,7 +1994,7 @@ function renderCommand(){
   let out='';
   let lastGroup='';
   list.forEach(u=>{
-    const grp=u.role==='command'?('Command — '+u.rank):u.rank;
+    const grp=(getUserPreset(u)==='command'||getUserPreset(u)==='red_command')?('Command — '+u.rank):u.rank;
     if(grp!==lastGroup){
       lastGroup=grp;
       out+='<tr class="rank-divider"><td colspan="8"><span>'+grp+'</span></td></tr>';
@@ -1949,13 +2002,14 @@ function renderCommand(){
     const i=DB.users.indexOf(u);
     const isSelf=currentUser&&currentUser.id===u.id;
     const uRole=getUserRole(u);
-    const isCmd=u.role==='command'||(uRole&&(uRole.id==='command'||uRole.id==='red_command'));
+    const preset=getUserPreset(u);
+    const isCmd=(preset==='command'||preset==='red_command');
     const rb='<span class="badge '+(isCmd?'bk-cmd':'bk-off')+'">'+(uRole?uRole.name:(isCmd?'Command':'Officer'))+'</span>';
     const uUnits=u.units||[u.unit];
     const ub=uUnits.map(un=>'<span class="badge '+(UNITCLS[un]||'')+'">'+un+'</span>').join(' ');
     const initTag=u.mustChangePassword?'<span style="font-size:10px;color:#ffb432;margin-right:4px">⚠ initial pw</span>':'';
     const joinFmt=u.join?new Date(u.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
-    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button>'+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
+    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button><button class="act-btn" title="Access settings" onclick="openAccessForm('+i+')">⋮</button>'+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
   });
   tb.innerHTML=out;
   const countEl=document.getElementById('cmd-count');
@@ -1965,7 +2019,8 @@ function renderCommand(){
 function populateRoleSelect(selectId, currentRoleId){
   const sel=document.getElementById(selectId);
   if(!sel)return;
-  sel.innerHTML=(DB.customRoles||[]).map(r=>'<option value="'+r.id+'"'+(r.id===currentRoleId?' selected':'')+'>'+r.name+'</option>').join('');
+  const opts=[['cadet','Cadet'],['officer','Officer'],['command','Command'],['red_command','Red Command']];
+  sel.innerHTML=opts.map(o=>'<option value="'+o[0]+'"'+(o[0]===currentRoleId?' selected':'')+'>'+o[1]+'</option>').join('');
 }
 
 function openUserForm(i){
@@ -1983,7 +2038,7 @@ function openUserForm(i){
     document.getElementById('uf-fn').value=u.fname;
     document.getElementById('uf-ln').value=u.lname;
     document.getElementById('uf-pass').value=u.password;
-    populateRoleSelect('uf-role',u.roleId||u.role||'officer');
+    populateRoleSelect('uf-role',u.accessPreset||getUserPreset(u)||'officer');
     document.getElementById('uf-badge').value=u.badge||'';
     document.getElementById('uf-discord').value=u.discord||'';
     buildUsrUnitGrid(u.units||[u.unit],u.rank);
@@ -2016,13 +2071,14 @@ function saveUser(){
   if(!selUsrUnits.length){alert('Please select at least one unit.');return;}
   const unit=selUsrUnits[0];
   const badge=document.getElementById('uf-badge').value;
-  const roleId=document.getElementById('uf-role').value;
-  const roleObj=(DB.customRoles||[]).find(r=>r.id===roleId)||{};
-  const role=(roleObj.id==='command'||roleObj.id==='red_command')?'command':'officer';
+  const pickedPreset=document.getElementById('uf-role').value;
+  const roleId=(pickedPreset==='officer'&&rank==='Cadet')?'cadet':pickedPreset;
+  const role=(roleId==='command'||roleId==='red_command')?'command':'officer';
   const isNew=editUsrIdx===-1;
   const join=document.getElementById('uf-join').value;
   const existSR=editUsrIdx>=0?(DB.users[editUsrIdx].specialRoles||[]):[];
-  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,roleId,role,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:existSR};
+  const prevCustom=editUsrIdx>=0?DB.users[editUsrIdx]:{};
+  const userObj={id:uid,fname:fn,lname:ln,password:pw,mustChangePassword:isNew,roleId,role,accessPreset:roleId,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:existSR,customAccessEnabled:!!prevCustom.customAccessEnabled,customPermissions:[...(prevCustom.customPermissions||[])],customPages:[...(prevCustom.customPages||[])]};
   const officerObj={id:uid,fname:fn,lname:ln,rank,unit,units:selUsrUnits,badge,discord,join,certs,specialRoles:[]};
   // Notify user if account details changed (skip if editing yourself)
   if(editUsrIdx>=0&&(!currentUser||String(currentUser.id)!==String(uid))){
@@ -2073,6 +2129,61 @@ function delUser(i){
 let currentTab='accounts';
 let editRoleId=null;
 let editUnitDefId=null;
+let editAccessIdx=-1;
+
+function renderAccessEditorCheckboxes(perms,pages){
+  const pWrap=document.getElementById('ax-perms');
+  const pgWrap=document.getElementById('ax-pages');
+  if(pWrap)pWrap.innerHTML=ALL_PERMISSIONS.map(p=>'<label class="chk-item"><input type="checkbox" class="ax-perm" value="'+p.id+'"'+(perms.includes(p.id)?' checked':'')+'>'+p.label+'</label>').join('');
+  if(pgWrap)pgWrap.innerHTML=PAGE_DEFS.map(p=>'<label class="chk-item"><input type="checkbox" class="ax-page" value="'+p.id+'"'+(pages.includes(p.id)?' checked':'')+'>'+p.icon+' '+p.label+'</label>').join('');
+}
+function toggleAccessCustom(){
+  const en=document.getElementById('ax-custom-enabled');
+  const wrap=document.getElementById('ax-custom-wrap');
+  if(wrap)wrap.style.display=(en&&en.checked)?'':'none';
+}
+function openAccessForm(i){
+  editAccessIdx=i;
+  const u=DB.users[i];if(!u)return;
+  document.getElementById('access-form-title').textContent='Access — '+u.fname+' '+u.lname;
+  const presetSel=document.getElementById('ax-preset');
+  if(presetSel){
+    presetSel.innerHTML=[['cadet','Cadet'],['officer','Officer'],['command','Command'],['red_command','Red Command']].map(o=>'<option value="'+o[0]+'"'+((u.accessPreset||getUserPreset(u))===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
+  }
+  const effective=getEffectiveAccess(u);
+  renderAccessEditorCheckboxes(effective.permissions,effective.allowedPages);
+  const ce=document.getElementById('ax-custom-enabled');
+  if(ce)ce.checked=!!u.customAccessEnabled;
+  toggleAccessCustom();
+  document.getElementById('access-form-ov').classList.add('on');
+}
+function closeAccessForm(){document.getElementById('access-form-ov').classList.remove('on');editAccessIdx=-1;}
+function resetAccessToPreset(){
+  if(editAccessIdx<0)return;
+  const u=DB.users[editAccessIdx];if(!u)return;
+  u.customAccessEnabled=false;u.customPermissions=[];u.customPages=[];
+  renderAccessEditorCheckboxes(getEffectiveAccess(u).permissions,getEffectiveAccess(u).allowedPages);
+  const ce=document.getElementById('ax-custom-enabled');if(ce)ce.checked=false;
+  toggleAccessCustom();
+}
+function saveUserAccess(){
+  if(editAccessIdx<0)return;
+  const u=DB.users[editAccessIdx];if(!u)return;
+  const preset=(document.getElementById('ax-preset').value||'officer');
+  u.accessPreset=preset;
+  u.role=(preset==='command'||preset==='red_command')?'command':'officer';
+  u.roleId=u.role;
+  const customEnabled=!!document.getElementById('ax-custom-enabled').checked;
+  u.customAccessEnabled=customEnabled;
+  if(customEnabled){
+    u.customPermissions=[...document.querySelectorAll('.ax-perm:checked')].map(x=>x.value);
+    u.customPages=[...document.querySelectorAll('.ax-page:checked')].map(x=>x.value);
+  } else {
+    u.customPermissions=[];u.customPages=[];
+  }
+  logAction('Edit Access',u.fname+' '+u.lname+' preset='+preset+(customEnabled?' (custom)':''));
+  persist();closeAccessForm();renderCommand();
+}
 
 function switchTab(tab){
   const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
@@ -2209,7 +2320,7 @@ function renderUnitsTab(){
   const units=DB.unitDefs||DEFAULT_UNIT_DEFS;
   const countEl=document.getElementById('cmd-count');
   if(countEl)countEl.textContent='Total: '+units.length+(units.length===1?' unit':' units');
-  list.innerHTML=units.map(u=>'<div class="unit-def-card"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+u.icon+'</span><span style="font-weight:700;font-size:13px;color:#fff">'+u.name+'</span></div><div style="display:flex;gap:4px"><button class="act-btn" onclick="openUnitForm(\''+u.id+'\')">✏</button>'+(units.length>1?'<button class="act-btn del-btn" onclick="delUnitDef(\''+u.id.replace(/'/g,"\\'")+'\')" >✕</button>':'')+'</div></div>').join('');
+  list.innerHTML=units.map(u=>'<div class="unit-def-card"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+u.icon+'</span><div><span style="font-weight:700;font-size:13px;color:#fff">'+u.name+'</span>'+(u.hiddenInRoster?'<div style="font-size:10px;color:#ffb432">Hidden in roster picker</div>':'')+'</div></div><div style="display:flex;gap:4px"><button class="act-btn" onclick="toggleUnitRosterHide(\''+u.id+'\')">'+(u.hiddenInRoster?'👁‍🗨 Show':'🙈 Hide')+'</button><button class="act-btn" onclick="openUnitForm(\''+u.id+'\')">✏</button>'+(units.length>1?'<button class="act-btn del-btn" onclick="delUnitDef(\''+u.id.replace(/'/g,"\\'")+'\')" >✕</button>':'')+'</div></div>').join('');
 }
 
 function openUnitForm(id){
@@ -2220,6 +2331,7 @@ function openUnitForm(id){
   idEl.value=u?u.id:'';idEl.disabled=!!u;
   document.getElementById('ud-name').value=u?u.name:'';
   document.getElementById('ud-icon').value=u?u.icon:'';
+  document.getElementById('ud-hide-roster').checked=!!(u&&u.hiddenInRoster);
   document.getElementById('unitdef-form-ov').classList.add('on');
 }
 function closeUnitForm(){document.getElementById('unitdef-form-ov').classList.remove('on');}
@@ -2227,18 +2339,25 @@ function saveUnitDef(){
   const id=document.getElementById('ud-id').value.trim().toUpperCase();
   const name=document.getElementById('ud-name').value.trim();
   const icon=document.getElementById('ud-icon').value.trim()||'🏢';
+  const hiddenInRoster=!!document.getElementById('ud-hide-roster').checked;
   if(!id||!name){alert('Please fill in all required fields.');return;}
   if(!DB.unitDefs)DB.unitDefs=JSON.parse(JSON.stringify(DEFAULT_UNIT_DEFS));
   if(editUnitDefId){
     const i=DB.unitDefs.findIndex(u=>u.id===editUnitDefId);
-    if(i>=0)DB.unitDefs[i]={id:DB.unitDefs[i].id,name,icon};
+    if(i>=0)DB.unitDefs[i]={id:DB.unitDefs[i].id,name,icon,hiddenInRoster};
   } else {
     if(DB.unitDefs.find(u=>u.id===id)){alert('A unit with this ID already exists.');return;}
-    DB.unitDefs.push({id,name,icon});
+    DB.unitDefs.push({id,name,icon,hiddenInRoster});
     if(!DB.ranksByUnit[id])DB.ranksByUnit[id]=JSON.parse(JSON.stringify(RANKS_BY_UNIT['PATROL']||[]));
   }
   logAction(editUnitDefId?'Edit Unit':'Add Unit',name);
   persist();closeUnitForm();renderUnitsTab();syncUnitsEverywhere();
+}
+function toggleUnitRosterHide(id){
+  const u=(DB.unitDefs||[]).find(x=>x.id===id);if(!u)return;
+  u.hiddenInRoster=!u.hiddenInRoster;
+  logAction(u.hiddenInRoster?'Hide Unit From Roster Picker':'Show Unit In Roster Picker',u.name||u.id);
+  persist();renderUnitsTab();syncUnitsEverywhere();
 }
 function delUnitDef(id){
   showConfirm('Delete Unit','Delete unit "'+id+'"? Officers assigned to it will not be removed.',function(){
@@ -3153,7 +3272,7 @@ function doImportCsv(){
     const officer={id,fname,lname,rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[],rankHistory:[]};
     DB.officers.push(officer);
     if(!DB.users.find(u=>u.badge&&u.badge===badge&&badge)){
-      DB.users.push({id,fname,lname,password:'0000',mustChangePassword:true,role:'officer',rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[]});
+      DB.users.push({id,fname,lname,password:'0000',mustChangePassword:true,role:'officer',roleId:'officer',accessPreset:(rank==='Cadet'?'cadet':'officer'),rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]});
     }
     added++;
   });
