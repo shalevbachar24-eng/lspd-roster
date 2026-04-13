@@ -166,17 +166,32 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .rfc.active{background:rgba(74,158,255,0.2);border-color:rgba(74,158,255,0.5);color:#7ac3ff}
 .rfc:hover{border-color:rgba(74,158,255,0.3);color:rgba(255,255,255,0.7)}
 .tab-bar{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.07)}
-.tab-btn{background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,0.4);padding:10px 18px;font-size:13px;font-weight:600;font-family:'Heebo',sans-serif;margin-bottom:-1px;transition:.2s}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,0.4);padding:10px 18px;font-size:13px;font-weight:600;font-family:'Heebo',sans-serif;margin-bottom:-1px;transition:.2s;cursor:pointer;flex-shrink:0}
 .tab-btn.active{color:#7ac3ff;border-bottom-color:#4a9eff}
 .tab-btn:hover:not(.active){color:rgba(255,255,255,0.7)}
+#pg-mgmt .mgmt-tab-bar{flex-wrap:wrap;gap:8px 6px;margin-bottom:24px;padding:4px 0 16px;border-bottom:1px solid rgba(255,255,255,0.08);align-items:flex-end}
+#pg-mgmt .mgmt-tab-bar .tab-btn{padding:10px 14px;font-size:12px;border-radius:10px 10px 0 0;border-bottom:2px solid transparent;margin-bottom:-1px;background:rgba(255,255,255,0.02);border:1px solid transparent;border-bottom:none}
+#pg-mgmt .mgmt-tab-bar .tab-btn:hover:not(.active){background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.75)}
+#pg-mgmt .mgmt-tab-bar .tab-btn.active{background:rgba(74,158,255,0.1);border-color:rgba(74,158,255,0.22);border-bottom-color:#4a9eff;color:#9ecbff}
+#pg-mgmt [id^="tab-content-"]{padding:6px 4px 32px;min-height:min(320px,50vh)}
+#ranks-mgmt-list{padding-bottom:8px}
 .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:8px}
 .role-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px;transition:.2s}
 .role-card:hover{border-color:rgba(74,158,255,0.3)}
 .perm-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;margin:2px;background:rgba(74,158,255,0.1);color:#7ac3ff;border:1px solid rgba(74,158,255,0.25)}
 .perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-.unit-def-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px}
-.unit-def-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:space-between;transition:.2s}
-.unit-def-card:hover{border-color:rgba(74,158,255,0.3)}
+.unit-def-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:18px;margin-top:12px}
+.unit-def-card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;align-items:stretch;gap:14px;transition:.2s;min-height:120px}
+.unit-def-card:hover{border-color:rgba(74,158,255,0.35);box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+.unit-def-card-main{display:flex;align-items:flex-start;gap:14px}
+.unit-def-icon{font-size:34px;line-height:1;flex-shrink:0}
+.unit-def-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:.2px}
+.unit-def-sub{font-size:12px;color:rgba(255,255,255,0.38);margin-top:6px;line-height:1.45;max-width:36ch}
+.unit-def-flag{font-size:11px;color:#ffb432;margin-top:8px;font-weight:600}
+.unit-def-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding-top:12px;margin-top:auto;border-top:1px solid rgba(255,255,255,0.07)}
+.unit-def-actions .act-btn{padding:8px 12px;font-size:13px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.55)}
+.unit-def-actions .act-btn:hover{background:rgba(74,158,255,0.12);color:#fff;border-color:rgba(74,158,255,0.25)}
+.unit-def-actions .del-btn{border-color:rgba(255,80,80,0.2)}
 .rank-section{margin-bottom:24px}
 .rank-section-title{font-size:13px;font-weight:700;color:#7ac3ff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .rank-list-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:7px;margin-bottom:5px}
@@ -426,18 +441,18 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="back-btn" id="mgmt-csv-btn" style="display:none" onclick="openCsvImport()" title="Import from CSV">📥 Import CSV</button>
     <button class="back-btn" id="mgmt-broadcast-btn" style="display:none;background:rgba(74,158,255,0.12);border-color:rgba(74,158,255,0.35);color:#7ac3ff" onclick="openBroadcastForm()">📤 Broadcast</button>
   </div>
-  <div class="tab-bar">
-    <button class="tab-btn active" id="tab-accounts" onclick="switchTab('accounts')">👥 Accounts</button>
-    <button class="tab-btn" id="tab-registrations" onclick="switchTab('registrations')" style="display:none">📩 Pending sign-ups</button>
-    <button class="tab-btn" id="tab-invites" onclick="switchTab('invites')">🎫 Invite Codes</button>
-    <button class="tab-btn" id="tab-approvals-log" onclick="switchTab('approvals-log')">✅ Approvals Log</button>
-    <button class="tab-btn" id="tab-roles" onclick="switchTab('roles')" style="display:none">🏷 Roles</button>
-    <button class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
-    <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
-    <button class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
-    <button class="tab-btn" id="tab-cadets" onclick="switchTab('cadets')">🎓 Cadets</button>
-    <button class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">📊 Analytics</button>
-    <button class="tab-btn" id="tab-config" onclick="switchTab('config')">⚙️ Site Config</button>
+  <div class="tab-bar mgmt-tab-bar">
+    <button type="button" class="tab-btn active" id="tab-accounts" onclick="switchTab('accounts')">👥 Accounts</button>
+    <button type="button" class="tab-btn" id="tab-registrations" onclick="switchTab('registrations')" style="display:none">📩 Pending sign-ups</button>
+    <button type="button" class="tab-btn" id="tab-invites" onclick="switchTab('invites')">🎫 Invite Codes</button>
+    <button type="button" class="tab-btn" id="tab-approvals-log" onclick="switchTab('approvals-log')">✅ Approvals Log</button>
+    <button type="button" class="tab-btn" id="tab-roles" onclick="switchTab('roles')" style="display:none">🏷 Roles</button>
+    <button type="button" class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
+    <button type="button" class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
+    <button type="button" class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
+    <button type="button" class="tab-btn" id="tab-cadets" onclick="switchTab('cadets')">🎓 Cadets</button>
+    <button type="button" class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">📊 Analytics</button>
+    <button type="button" class="tab-btn" id="tab-config" onclick="switchTab('config')" title="Announcement, report types, certifications">⚙️ Site Config</button>
   </div>
 
   <!-- Accounts Tab -->
@@ -459,7 +474,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 
   <div id="tab-content-registrations" style="display:none">
-    <p style="font-size:12px;color:rgba(255,255,255,0.38);margin-bottom:14px;max-width:720px">Incoming requests from <strong>Sign up as officer</strong>. Duplicate badge or full name is blocked automatically. When you approve, pick a <strong>role</strong> and an initial PIN; the officer appears on the roster and can log in with badge + PIN.</p>
+    <p style="font-size:12px;color:rgba(255,255,255,0.38);margin-bottom:14px;max-width:720px;line-height:1.5">Incoming requests from <strong>Sign up as officer</strong>. Duplicate badge or full name is blocked automatically. When you approve, set an initial PIN; access follows <strong>Management → Ranks</strong> (per unit + rank), with optional per-user overrides (menu on each row in Accounts).</p>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
@@ -1635,6 +1650,12 @@ function hasPerm(perm){
   const acc=getEffectiveAccess(currentUser);
   return(acc.permissions||[]).includes(perm);
 }
+function canOpenMgmtSubPage(pageId){
+  if(!currentUser||!pageId)return false;
+  if(canAccess(pageId))return true;
+  if(pageId==='mgmt_config'&&hasPerm('manage_config'))return true;
+  return false;
+}
 
 function canSeeCadets(){
   if(canAccess('cadets'))return true; // role has explicit cadets page access
@@ -1819,13 +1840,13 @@ function goMgmt(){
   const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
   Object.entries(tabPageMap).forEach(([t,page])=>{
     const btn=document.getElementById('tab-'+t);
-    if(btn)btn.style.display=canAccess(page)?'':'none';
+    if(btn)btn.style.display=canOpenMgmtSubPage(page)?'':'none';
   });
   const bcastBtn=document.getElementById('mgmt-broadcast-btn');
   if(bcastBtn)bcastBtn.style.display=hasPerm('broadcast_notif')?'':'none';
   clickSound();showPage('pg-mgmt');
   // Switch to first accessible tab
-  const firstTab=Object.keys(tabPageMap).find(t=>canAccess(tabPageMap[t]))||'accounts';
+  const firstTab=Object.keys(tabPageMap).find(t=>canOpenMgmtSubPage(tabPageMap[t]))||'accounts';
   switchTab(firstTab);
 }
 
@@ -2301,9 +2322,11 @@ function saveUserAccess(){
 
 function switchTab(tab){
   const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
-  if(pageMap[tab]&&!canAccess(pageMap[tab])){
-    const first=['accounts','registrations','invites','approvals-log','units','ranks','log','cadets','analytics','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
+  if(pageMap[tab]&&!canOpenMgmtSubPage(pageMap[tab])){
+    const first=['accounts','registrations','invites','approvals-log','units','ranks','log','cadets','analytics','config'].find(t=>!pageMap[t]||canOpenMgmtSubPage(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
+    alert('You do not have access to this section. Ask an admin to grant it under Management → Ranks (or your custom access).');
+    return;
   }
   currentTab=tab;
   ['accounts','registrations','invites','approvals-log','roles','units','ranks','log','cadets','analytics','config'].forEach(t=>{
@@ -2429,12 +2452,23 @@ function delRole(id){
 }
 
 // --- Units ---
+function renderUnitDefCardHtml(u,canDel){
+  const sub=(u.rosterDesc||'').trim().replace(/</g,'&lt;');
+  const icon=(u.icon||'').trim()||'\uD83C\uDFE2';
+  return '<div class="unit-def-card"><div class="unit-def-card-main"><span class="unit-def-icon">'+icon+'</span><div><div class="unit-def-name">'+u.name+'</div>'
+    +(sub?'<div class="unit-def-sub">'+sub+'</div>':'')
+    +(u.hiddenInRoster?'<div class="unit-def-flag">Hidden from roster picker</div>':'')
+    +'</div></div><div class="unit-def-actions"><button type="button" class="act-btn" onclick="toggleUnitRosterHide(\''+u.id+'\')">'+(u.hiddenInRoster?'Show in picker':'Hide from picker')+'</button><button type="button" class="act-btn" onclick="openUnitForm(\''+u.id+'\')">Edit</button>'
+    +(canDel?'<button type="button" class="act-btn del-btn" onclick="delUnitDef(\''+u.id.replace(/'/g,"\\'")+'\')">Remove</button>':'')
+    +'</div></div>';
+}
 function renderUnitsTab(){
   const list=document.getElementById('units-def-list');if(!list)return;
   const units=DB.unitDefs||DEFAULT_UNIT_DEFS;
   const countEl=document.getElementById('cmd-count');
   if(countEl)countEl.textContent='Total: '+units.length+(units.length===1?' unit':' units');
-  list.innerHTML=units.map(u=>'<div class="unit-def-card"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+u.icon+'</span><div><span style="font-weight:700;font-size:13px;color:#fff">'+u.name+'</span>'+(u.hiddenInRoster?'<div style="font-size:10px;color:#ffb432">Hidden in roster picker</div>':'')+'</div></div><div style="display:flex;gap:4px"><button class="act-btn" onclick="toggleUnitRosterHide(\''+u.id+'\')">'+(u.hiddenInRoster?'👁‍🗨 Show':'🙈 Hide')+'</button><button class="act-btn" onclick="openUnitForm(\''+u.id+'\')">✏</button>'+(units.length>1?'<button class="act-btn del-btn" onclick="delUnitDef(\''+u.id.replace(/'/g,"\\'")+'\')" >✕</button>':'')+'</div></div>').join('');
+  const uCanDel=units.length>1;
+  list.innerHTML=units.map(function(u){return renderUnitDefCardHtml(u,uCanDel);}).join('');
 }
 
 function openUnitForm(id){
