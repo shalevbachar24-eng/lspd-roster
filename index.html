@@ -322,7 +322,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
   <div style="max-width:400px;margin:28px auto 0">
     <div class="srch-wrap">
-      <input id="home-search" placeholder="Quick search: name or badge #..." oninput="homeSearch(this.value)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#ccd6f0;padding:10px 32px 10px 14px;border-radius:10px;font-size:13px;font-family:inherit;width:100%">
+      <input id="home-search" placeholder="Quick search: name or badge (e.g. 2 → 201, 285…)" oninput="homeSearch(this.value)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#ccd6f0;padding:10px 32px 10px 14px;border-radius:10px;font-size:13px;font-family:inherit;width:100%">
       <button class="srch-x" onclick="document.getElementById('home-search').value='';document.getElementById('home-search-results').innerHTML=''">✕</button>
     </div>
     <div id="home-search-results" style="margin-top:8px"></div>
@@ -474,7 +474,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 
   <div id="tab-content-registrations" style="display:none">
-    <p style="font-size:12px;color:rgba(255,255,255,0.38);margin-bottom:14px;max-width:720px;line-height:1.5">Incoming requests from <strong>Sign up as officer</strong>. Duplicate badge or full name is blocked automatically. When you approve, set an initial PIN; access follows <strong>Management → Ranks</strong> (per unit + rank), with optional per-user overrides (menu on each row in Accounts).</p>
+    <p style="font-size:12px;color:rgba(255,255,255,0.38);margin-bottom:10px;max-width:720px;line-height:1.5">Incoming requests from <strong>Sign up as officer</strong>. Duplicate badge or full name is blocked automatically. When you approve, set an initial PIN; access follows <strong>Management → Ranks</strong> (per unit + rank), with optional per-user overrides (menu on each row in Accounts).</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
+      <button type="button" class="bulk-apply" style="padding:8px 16px" onclick="approveAllPendingRegistrations()">Approve all pending</button>
+      <span style="font-size:11px;color:rgba(255,255,255,0.32)">Uses one PIN for every new account (prompt). Skips rows that fail (e.g. badge already taken).</span>
+    </div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
@@ -809,7 +813,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 <div id="signup-overlay" class="form-overlay">
   <div class="form-box" style="max-width:540px">
     <h3>Sign up as officer</h3>
-    <p style="font-size:11px;color:rgba(255,255,255,0.32);margin:-8px 0 16px">Submit a request for Command approval. You will log in only after approval. Discord ID: enable Developer Mode in Discord, right‑click your profile → Copy User ID.</p>
+    <p style="font-size:11px;color:rgba(255,255,255,0.32);margin:-8px 0 16px">Submit a request for Command approval. You will log in only after approval. If Command enabled Discord verification, use <strong>Verify with Discord</strong> first — your User ID is filled automatically.</p>
     <div class="fg2">
       <div class="field"><label><span class="req">*</span>First name</label><input id="su-fn" placeholder="John" autocomplete="given-name"></div>
       <div class="field"><label><span class="req">*</span>Last name</label><input id="su-ln" placeholder="Doe" autocomplete="family-name"></div>
@@ -820,7 +824,14 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="field"><label><span class="req">*</span>Badge #</label><input id="su-badge" placeholder="e.g. 285" maxlength="3" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
     </div>
     <div class="field"><label><span class="req">*</span>Invite code</label><input id="su-invite" placeholder="ABCDE" maxlength="20" autocomplete="off" style="text-transform:uppercase"></div>
-    <div class="field"><label><span class="req">*</span>Discord user ID</label><input id="su-discord" placeholder="17–19 digits" inputmode="numeric" maxlength="22" autocomplete="off"></div>
+    <div class="field" id="su-discord-verify-wrap" style="display:none">
+      <label>Discord</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px">
+        <button type="button" class="back-btn" id="su-discord-verify-btn" style="padding:8px 14px;font-size:12px" onclick="startDiscordSignupOAuth()">Verify with Discord</button>
+        <span id="su-discord-verify-status" style="font-size:11px;color:rgba(255,255,255,0.45);line-height:1.4"></span>
+      </div>
+    </div>
+    <div class="field"><label><span class="req">*</span>Discord user ID</label><input id="su-discord" placeholder="17–19 digits (filled after verify)" inputmode="numeric" maxlength="22" autocomplete="off"></div>
     <div class="field"><label>Notes <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="su-notes" placeholder="e.g. academy class, transfer…"></div>
     <div class="modal-err" id="su-err" style="min-height:20px"></div>
     <div class="form-btns">
@@ -869,8 +880,15 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <div class="form-box" style="max-width:760px">
     <h3 id="rank-access-title">Rank access</h3>
     <p id="rank-access-sub" class="desc" style="margin-bottom:12px;font-size:12px;color:rgba(255,255,255,0.45);line-height:1.45"></p>
+    <div class="field"><label>Quick layout</label><div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button type="button" class="back-btn" style="padding:6px 12px;font-size:12px" onclick="applyRankPresetAccess('cadet')">Cadet</button>
+      <button type="button" class="back-btn" style="padding:6px 12px;font-size:12px" onclick="applyRankPresetAccess('officer')">Officer</button>
+      <button type="button" class="back-btn" style="padding:6px 12px;font-size:12px" onclick="applyRankPresetAccess('command')">Command</button>
+      <button type="button" class="back-btn" style="padding:6px 12px;font-size:12px" onclick="applyRankPresetAccess('red_command')">Red Command</button>
+    </div></div>
     <div class="field"><label>Permissions</label><div id="rax-perms" class="perm-grid"></div></div>
     <div class="field"><label>Pages / Rooms</label><div id="rax-pages" class="perm-grid"></div></div>
+    <div class="field"><label>Default clearances (by rank+unit)</label><div id="rax-certs" class="perm-grid"></div></div>
     <div class="form-btns">
       <button class="fcancel" onclick="closeRankAccessForm()">Cancel</button>
       <button class="back-btn" type="button" onclick="resetRankAccessToDefaults()">Reset to defaults</button>
@@ -1060,6 +1078,18 @@ const ACCESS_PRESETS={
   red_command:{name:'Red Command',permissions:ALL_PERMISSIONS.map(p=>p.id),allowedPages:PAGE_DEFS.map(p=>p.id)}
 };
 function rankAccessKey(unitId,rank){return unitId+'|'+(rank||'');}
+function mergeRankDefaultCerts(rank,units,seed){
+  const out=new Set(seed||[]);
+  (units||[]).forEach(function(unit){
+    const key=rankAccessKey(unit,rank);
+    const ra=(DB.rankAccess||{})[key];
+    (ra&&ra.defaultCerts||[]).forEach(function(c){if(c)out.add(c);});
+  });
+  return[...out];
+}
+function getCertCatalog(){
+  return(DB.siteConfig&&DB.siteConfig.certs&&DB.siteConfig.certs.length)?DB.siteConfig.certs.slice():['Light Weapon','Heavy Weapon','Interceptor Vehicle','Helicopter','Motorcycle'];
+}
 function getFullAccessBundle(){return{permissions:ALL_PERMISSIONS.map(p=>p.id),allowedPages:PAGE_DEFS.map(p=>p.id)};}
 function isFullAccessUser(user){
   if(!user)return false;
@@ -1112,8 +1142,11 @@ function ensureRankAccessDefaults(){
       if(DB.rankAccess[key])return;
       const pr=inferPresetForRank(rank,u.id);
       const base=getPresetAccess(pr);
-      DB.rankAccess[key]={permissions:base.permissions.slice(),pages:base.allowedPages.slice()};
+      DB.rankAccess[key]={permissions:base.permissions.slice(),pages:base.allowedPages.slice(),defaultCerts:[]};
     });
+  });
+  Object.keys(DB.rankAccess).forEach(function(k){
+    if(!Array.isArray(DB.rankAccess[k].defaultCerts))DB.rankAccess[k].defaultCerts=[];
   });
 }
 
@@ -1301,10 +1334,176 @@ function applyCommandRegTabs(){
 }
 applyCommandRegTabs();
 
+// ----- Discord: only server members can submit signup (OAuth2 PKCE, no client secret) -----
+function isDiscordSignupGateEnabled(){
+  const c=DB.siteConfig||{};
+  return!!(String(c.discordSignupClientId||'').trim()&&String(c.discordPoliceGuildId||'').trim());
+}
+function getDiscordOAuthRedirectUri(){
+  if(location.protocol==='file:')return'';
+  const path=location.pathname||'/';
+  return location.origin+path;
+}
+function discordRandomPkceVerifier(){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const arr=new Uint8Array(64);
+  crypto.getRandomValues(arr);
+  let out='';
+  for(let i=0;i<64;i++)out+=chars[arr[i]%chars.length];
+  return out;
+}
+function discordBase64UrlEncode(buf){
+  const bytes=new Uint8Array(buf);
+  let bin='';
+  for(let i=0;i<bytes.byteLength;i++)bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function discordPkceChallengeFromVerifier(verifier){
+  const enc=new TextEncoder().encode(verifier);
+  const digest=await crypto.subtle.digest('SHA-256',enc);
+  return discordBase64UrlEncode(digest);
+}
+async function discordOAuthTokenExchange(code,verifier,clientId){
+  const redirectUri=getDiscordOAuthRedirectUri();
+  const body=new URLSearchParams({client_id:clientId,grant_type:'authorization_code',code:code,redirect_uri:redirectUri,code_verifier:verifier});
+  const r=await fetch('https://discord.com/api/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+async function discordApiGetJson(url,accessToken){
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+async function discordFetchAllGuilds(accessToken){
+  const all=[];
+  let after='';
+  for(let p=0;p<10;p++){
+    const url='https://discord.com/api/v10/users/@me/guilds?limit=200'+(after?'&after='+encodeURIComponent(after):'');
+    const chunk=await discordApiGetJson(url,accessToken);
+    if(!chunk||!chunk.length)break;
+    all.push.apply(all,chunk);
+    if(chunk.length<200)break;
+    after=String(chunk[chunk.length-1].id);
+  }
+  return all;
+}
+function stripDiscordOAuthFromUrl(){
+  const u=new URL(location.href);
+  if(!u.searchParams.get('code')&&!u.searchParams.get('state'))return location.pathname+location.search+location.hash;
+  u.searchParams.delete('code');
+  u.searchParams.delete('state');
+  const q=u.searchParams.toString();
+  return u.pathname+(q?'?'+q:'')+u.hash;
+}
+async function handleDiscordOAuthCallback(){
+  const params=new URLSearchParams(location.search);
+  const code=params.get('code');
+  const state=params.get('state');
+  if(!code||!state)return;
+  const savedState=sessionStorage.getItem('lspd_dc_oauth_state');
+  const verifier=sessionStorage.getItem('lspd_dc_pkce_verifier');
+  const clientId=(sessionStorage.getItem('lspd_dc_oauth_client_id')||'').trim()||String((DB.siteConfig||{}).discordSignupClientId||'').trim();
+  const guildId=(sessionStorage.getItem('lspd_dc_oauth_guild_id')||'').trim()||String((DB.siteConfig||{}).discordPoliceGuildId||'').trim();
+  sessionStorage.removeItem('lspd_dc_oauth_state');
+  sessionStorage.removeItem('lspd_dc_pkce_verifier');
+  sessionStorage.removeItem('lspd_dc_oauth_client_id');
+  sessionStorage.removeItem('lspd_dc_oauth_guild_id');
+  history.replaceState({},document.title,stripDiscordOAuthFromUrl());
+  if(!savedState||state!==savedState||!verifier||!clientId||!guildId)return;
+  try{
+    const token=await discordOAuthTokenExchange(code,verifier,clientId);
+    const guilds=await discordFetchAllGuilds(token.access_token);
+    const gid=String(guildId);
+    if(!guilds.some(function(g){return String(g.id)===gid;})){
+      sessionStorage.setItem('lspd_dc_signup_fail','not_in_guild');
+      sessionStorage.setItem('lspd_dc_open_signup_after','1');
+      return;
+    }
+    const me=await discordApiGetJson('https://discord.com/api/v10/users/@me',token.access_token);
+    sessionStorage.setItem('lspd_dc_signup_verified',JSON.stringify({id:String(me.id),username:me.username||'',global_name:me.global_name||'',exp:Date.now()+30*60*1000}));
+    sessionStorage.setItem('lspd_dc_open_signup_after','1');
+  }catch(e){
+    console.warn('Discord OAuth',e);
+    sessionStorage.setItem('lspd_dc_signup_fail','error');
+    sessionStorage.setItem('lspd_dc_open_signup_after','1');
+  }
+}
+function startDiscordSignupOAuth(){
+  const cfg=DB.siteConfig||{};
+  const clientId=String(cfg.discordSignupClientId||'').trim();
+  const guildId=String(cfg.discordPoliceGuildId||'').trim();
+  if(!clientId||!guildId){alert('Discord verification is not set up yet (admin: Site Config).');return;}
+  const red=getDiscordOAuthRedirectUri();
+  if(!red||location.protocol==='file:'){
+    alert('Open this roster over http(s) (not as a file:// link). Add the same URL under OAuth2 → Redirects in the Discord Developer Portal.');
+    return;
+  }
+  const verifier=discordRandomPkceVerifier();
+  const state=discordRandomPkceVerifier();
+  sessionStorage.setItem('lspd_dc_pkce_verifier',verifier);
+  sessionStorage.setItem('lspd_dc_oauth_state',state);
+  sessionStorage.setItem('lspd_dc_oauth_client_id',clientId);
+  sessionStorage.setItem('lspd_dc_oauth_guild_id',guildId);
+  discordPkceChallengeFromVerifier(verifier).then(function(challenge){
+    const p=new URLSearchParams({client_id:clientId,response_type:'code',redirect_uri:red,scope:'identify guilds',state:state,code_challenge:challenge,code_challenge_method:'S256'});
+    location.href='https://discord.com/api/oauth2/authorize?'+p.toString();
+  }).catch(function(err){console.warn(err);alert('Could not start Discord sign-in.');});
+}
+function applyDiscordVerifiedUiToSignupForm(){
+  const wrap=document.getElementById('su-discord-verify-wrap');
+  const disc=document.getElementById('su-discord');
+  const statusEl=document.getElementById('su-discord-verify-status');
+  const btn=document.getElementById('su-discord-verify-btn');
+  const gate=isDiscordSignupGateEnabled();
+  if(wrap)wrap.style.display=gate?'block':'none';
+  if(!gate){
+    if(disc){disc.readOnly=false;disc.removeAttribute('readonly');}
+    if(statusEl)statusEl.textContent='';
+    return;
+  }
+  if(btn)btn.style.display='';
+  try{
+    const raw=sessionStorage.getItem('lspd_dc_signup_verified');
+    if(!raw){
+      if(disc){disc.readOnly=false;disc.removeAttribute('readonly');}
+      if(statusEl)statusEl.innerHTML='<span style="color:#ffb432">Use <strong>Verify with Discord</strong> — you must be in the department server.</span>';
+      return;
+    }
+    const o=JSON.parse(raw);
+    if(!o.id||!o.exp||o.exp<Date.now()){
+      sessionStorage.removeItem('lspd_dc_signup_verified');
+      if(disc){disc.readOnly=false;disc.value='';}
+      if(statusEl)statusEl.innerHTML='<span style="color:#ff6b6b">Verification expired. Verify again.</span>';
+      return;
+    }
+    if(disc){disc.value=String(o.id);disc.readOnly=true;disc.setAttribute('readonly','readonly');}
+    const label=(o.global_name||o.username||'Member');
+    if(statusEl)statusEl.innerHTML='<span style="color:#5dcaa5">Verified: <strong>'+String(label).replace(/</g,'&lt;')+'</strong></span>';
+  }catch(e){
+    sessionStorage.removeItem('lspd_dc_signup_verified');
+    if(disc){disc.readOnly=false;disc.value='';}
+    if(statusEl)statusEl.textContent='';
+  }
+}
+function processDiscordSignupPostReturnUi(){
+  const err=sessionStorage.getItem('lspd_dc_signup_fail');
+  if(err)sessionStorage.removeItem('lspd_dc_signup_fail');
+  const open=sessionStorage.getItem('lspd_dc_open_signup_after');
+  if(open)sessionStorage.removeItem('lspd_dc_open_signup_after');
+  if(open)openSignupForm();
+  if(err&&document.getElementById('su-err')){
+    const el=document.getElementById('su-err');
+    el.style.color='#ff6b6b';
+    el.textContent=err==='not_in_guild'?'You must join the department Discord server before you can submit a request.':'Could not verify Discord. Try again or contact Command.';
+  }
+}
+
 // ----- Officer self-signup & approvals -----
 function buildSuUnitGrid(selUnits,currentRank){
   const grid=document.getElementById('su-units-grid');if(!grid)return;
-  grid.innerHTML=(DB.unitDefs||DEFAULT_UNIT_DEFS).map(u=>{
+  const units=(DB.unitDefs||DEFAULT_UNIT_DEFS).filter(function(u){return String(u.id).toUpperCase()!=='ADMIN';});
+  grid.innerHTML=units.map(u=>{
     const s=selUnits.includes(u.id);
     return '<button type="button" class="uc-btn'+(s?' sel':'')+'" data-unit="'+u.id+'" onclick="toggleSuUnit(\''+u.id.replace(/'/g,"\\'")+'\')">'+u.icon+' '+u.name+'</button>';
   }).join('');
@@ -1364,8 +1563,11 @@ function formatInviteStatus(inv){
 function openSignupForm(){
   document.getElementById('su-err').textContent='';
   document.getElementById('su-err').style.color='#ff6b6b';
-  ['su-fn','su-ln','su-badge','su-discord','su-notes','su-invite'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['su-fn','su-ln','su-badge','su-notes','su-invite'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const disc=document.getElementById('su-discord');
+  if(disc){disc.readOnly=false;disc.removeAttribute('readonly');disc.value='';}
   buildSuUnitGrid(['PATROL']);
+  applyDiscordVerifiedUiToSignupForm();
   document.getElementById('signup-overlay').classList.add('on');
 }
 function closeSignupForm(){
@@ -1384,10 +1586,22 @@ function submitSignupRequest(){
   const errEl=document.getElementById('su-err');
   errEl.style.color='#ff6b6b';
   errEl.textContent='';
+  if(isDiscordSignupGateEnabled()){
+    let v=null;
+    try{v=JSON.parse(sessionStorage.getItem('lspd_dc_signup_verified')||'');}catch(e){v=null;}
+    if(!v||!v.id||!v.exp||v.exp<Date.now()){
+      errEl.textContent='Use “Verify with Discord” and stay in the department server — then submit again.';
+      return;
+    }
+    if(String(v.id)!==String(discord).trim()){
+      errEl.textContent='Discord User ID must match the account you verified with.';
+      return;
+    }
+  }
   if(!fn||!ln){errEl.textContent='Fill first and last name.';return;}
   if(!units.length){errEl.textContent='Select at least one unit.';return;}
   if(!/^\d{1,3}$/.test(badge)){errEl.textContent='Badge must be 1–3 digits.';return;}
-  if(!/^\d{17,19}$/.test(discord)){errEl.textContent='Discord user ID must be 17–19 digits (Copy User ID in Discord).';return;}
+  if(!/^\d{17,19}$/.test(discord)){errEl.textContent='Discord user ID must be 17–19 digits (use Verify with Discord when enabled).';return;}
   if(!inviteCode){errEl.textContent='Invite code is required.';return;}
   const inv=findInviteByCode(inviteCode);
   const invCheck=canUseInvite(inv,discord);
@@ -1404,7 +1618,9 @@ function submitSignupRequest(){
   if(!DB.registrationRequests)DB.registrationRequests=[];
   consumeInvite(inv);
   DB.registrationRequests.push(req);
+  notifyApproversOnNewRegistration(req);
   persist();
+  updateNotifBadge();
   errEl.style.color='#5dcaa5';
   errEl.textContent='Request sent. Command will review it soon.';
   logAction('Signup request (public)',fn+' '+ln+' #'+padBadge);
@@ -1435,22 +1651,29 @@ function closeRegApprove(){
   pendingApproveReqId=null;
   document.getElementById('reg-approve-ov').classList.remove('on');
 }
-function finalizeApproveRegistration(){
-  if(!pendingApproveReqId)return;
-  const req=(DB.registrationRequests||[]).find(function(r){return r.id===pendingApproveReqId&&r.status==='pending';});
-  if(!req){alert('Request not found or already handled.');closeRegApprove();return;}
-  const pw=(document.getElementById('appr-pin').value||'0000').trim();
-  if(!/^\d{4}$/.test(pw)){alert('Initial PIN must be exactly 4 digits.');return;}
+function nextUserOfficerId(){
   let maxId=0;
   DB.users.forEach(function(u){maxId=Math.max(maxId,+u.id||0);});
   DB.officers.forEach(function(o){maxId=Math.max(maxId,+o.id||0);});
-  const newId=maxId+1;
+  return maxId+1;
+}
+function tryApproveRegistrationRequest(req,pw){
+  if(!req||req.status!=='pending')return{ok:false,err:'Request is not pending.'};
+  if(!/^\d{4}$/.test((pw||'').trim()))return{ok:false,err:'Initial PIN must be exactly 4 digits.'};
+  const pin=(pw||'').trim();
+  const padBadge=String(req.badge||'').padStart(3,'0');
+  if(String(padBadge)==='000')return{ok:false,err:'Badge #000 is reserved.'};
+  if(DB.officers.some(function(o){return String(o.badge)===padBadge;})||DB.users.some(function(u){return String(u.badge)===padBadge;}))
+    return{ok:false,err:'Badge #'+padBadge+' is already assigned.'};
+  if(officerNameTaken(req.fname,req.lname))return{ok:false,err:'An officer named '+req.fname+' '+req.lname+' already exists.'};
+  const newId=nextUserOfficerId();
   const join=new Date().toISOString().split('T')[0];
-  const userObj={id:newId,fname:req.fname,lname:req.lname,password:pw,mustChangePassword:true,rank:req.rank,unit:req.unit,units:req.units,badge:req.badge,discord:req.discord,join:join,certs:[],specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
+  const starterCerts=mergeRankDefaultCerts(req.rank,req.units,[]);
+  const userObj={id:newId,fname:req.fname,lname:req.lname,password:pin,mustChangePassword:true,rank:req.rank,unit:req.unit,units:req.units,badge:padBadge,discord:req.discord,join:join,certs:starterCerts.slice(),specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
   const br=getBaseAccessFromRank(userObj);
   const roleId=br.allowedPages.includes('management')?'command':'officer';
   userObj.role=userObj.roleId=roleId;
-  const officerObj={id:newId,fname:req.fname,lname:req.lname,rank:req.rank,unit:req.unit,units:req.units,badge:req.badge,discord:req.discord,join:join,certs:[],specialRoles:[],rankHistory:[]};
+  const officerObj={id:newId,fname:req.fname,lname:req.lname,rank:req.rank,unit:req.unit,units:req.units,badge:padBadge,discord:req.discord,join:join,certs:starterCerts.slice(),specialRoles:[],rankHistory:[]};
   DB.users.push(userObj);
   DB.officers.push(officerObj);
   req.status='approved';
@@ -1462,16 +1685,51 @@ function finalizeApproveRegistration(){
     ts:Date.now(),
     decision:'approved',
     by:req.approvedBy||'System',
-    fname:req.fname,lname:req.lname,badge:req.badge,discord:req.discord,
+    fname:req.fname,lname:req.lname,badge:padBadge,discord:req.discord,
     roleId:roleId,inviteCode:req.inviteCode||''
   });
   if(DB.signupDecisionLog.length>1000)DB.signupDecisionLog=DB.signupDecisionLog.slice(0,1000);
-  logAction('Approve signup',req.fname+' '+req.lname+' #'+req.badge+' → '+roleId+' (rank access)');
+  logAction('Approve signup',req.fname+' '+req.lname+' #'+padBadge+' → '+roleId+' (rank access)');
+  return{ok:true};
+}
+function finalizeApproveRegistration(){
+  if(!pendingApproveReqId)return;
+  const req=(DB.registrationRequests||[]).find(function(r){return r.id===pendingApproveReqId&&r.status==='pending';});
+  if(!req){alert('Request not found or already handled.');closeRegApprove();return;}
+  const pw=(document.getElementById('appr-pin').value||'0000').trim();
+  const res=tryApproveRegistrationRequest(req,pw);
+  if(!res.ok){alert(res.err||'Could not approve.');return;}
   persist();
   closeRegApprove();
   renderPendingRegistrations();
   renderCommand();
   if(document.getElementById('roster-body'))renderRoster();
+}
+function approveAllPendingRegistrations(){
+  const list=(DB.registrationRequests||[]).filter(function(r){return r.status==='pending';});
+  if(!list.length){alert('No pending sign-ups.');return;}
+  const pw=(window.prompt('Initial PIN for every new account (4 digits):','0000')||'').trim();
+  if(!/^\d{4}$/.test(pw)){alert('PIN must be exactly 4 digits.');return;}
+  showConfirm(
+    'Approve all pending',
+    'Create roster + login for <strong>'+list.length+'</strong> request(s), each with PIN <strong>'+pw+'</strong>. Any row that cannot be created (badge/name conflict) will be skipped and listed after.',
+    function(){
+      const errs=[];
+      const pendingIds=list.map(function(r){return r.id;});
+      pendingIds.forEach(function(rid){
+        const req=(DB.registrationRequests||[]).find(function(r){return r.id===rid&&r.status==='pending';});
+        if(!req)return;
+        const res=tryApproveRegistrationRequest(req,pw);
+        if(!res.ok)errs.push(req.fname+' '+req.lname+': '+(res.err||'failed'));
+      });
+      persist();
+      renderPendingRegistrations();
+      renderCommand();
+      if(document.getElementById('roster-body'))renderRoster();
+      if(errs.length)alert('Skipped '+errs.length+' request(s):\n\n'+errs.slice(0,12).join('\n')+(errs.length>12?'\n…':''));
+      else alert('All '+list.length+' sign-up(s) approved.');
+    }
+  );
 }
 function rejectRegistration(id){
   const req=(DB.registrationRequests||[]).find(function(r){return r.id===id;});
@@ -1504,12 +1762,29 @@ function logAction(action,details){
 }
 
 // ====== NOTIFICATIONS ======
-function createNotif(userId,type,message,refId){
+function createNotif(userId,type,message,refId,skipPersist){
   if(!userId)return;
   if(!DB.notifications)DB.notifications=[];
   DB.notifications.unshift({id:'n_'+Date.now()+'_'+Math.random().toString(36).slice(2),userId:String(userId),type,message,refId:refId||null,ts:Date.now(),read:false});
   if(DB.notifications.length>300)DB.notifications=DB.notifications.slice(0,300);
-  persist();updateNotifBadge();
+  if(!skipPersist)persist();
+  if(!skipPersist)updateNotifBadge();
+}
+function userCanApproveSignups(u){
+  if(!u)return false;
+  if(String(u.badge)==='000')return true;
+  const e=getEffectiveAccess(u);
+  if((e.permissions||[]).includes('approve_registrations'))return true;
+  if((e.allowedPages||[]).includes('mgmt_registrations'))return true;
+  return false;
+}
+function notifyApproversOnNewRegistration(req){
+  if(!req||!DB.users)return;
+  const msg='New officer sign-up pending: '+req.fname+' '+req.lname+' · badge #'+req.badge+'. Open Management → Pending sign-ups.';
+  DB.users.forEach(function(u){
+    if(!userCanApproveSignups(u))return;
+    createNotif(u.id,'pending_signup',msg,req.id,true);
+  });
 }
 function getMyNotifs(){
   if(!currentUser)return[];
@@ -1538,7 +1813,7 @@ function renderNotifPanel(){
   const el=document.getElementById('notif-items');if(!el)return;
   const items=getMyNotifs();
   if(!items.length){el.innerHTML='<div style="padding:28px;text-align:center;color:rgba(255,255,255,0.28);font-size:13px">No notifications yet</div>';return;}
-  const ICONS={rank_change:'⬆️',complaint_filed:'📋',complaint_update:'🔔',info:'ℹ️'};
+  const ICONS={rank_change:'⬆️',complaint_filed:'📋',complaint_update:'🔔',info:'ℹ️',pending_signup:'📩'};
   el.innerHTML=items.slice(0,40).map(n=>'<div class="notif-item'+(n.read?'':' unread')+'" onclick="clickNotif(\''+n.id+'\')">'
     +'<div style="display:flex;align-items:flex-start;gap:9px">'
     +'<span style="font-size:15px;flex-shrink:0">'+(ICONS[n.type]||'ℹ️')+'</span>'
@@ -1550,6 +1825,11 @@ function renderNotifPanel(){
 function clickNotif(nid){
   const n=(DB.notifications||[]).find(x=>x.id===nid);
   if(n&&!n.read){n.read=true;persist();updateNotifBadge();renderNotifPanel();}
+  if(n&&n.type==='pending_signup'&&currentUser&&canAccess('management')&&userCanApproveSignups(currentUser)&&canOpenMgmtSubPage('mgmt_registrations')){
+    const panel=document.getElementById('notif-panel');if(panel)panel.classList.remove('open');
+    goMgmt();
+    switchTab('registrations');
+  }
 }
 function markAllNotifsRead(){
   getMyNotifs().forEach(n=>n.read=true);
@@ -1803,11 +2083,29 @@ function goRosterUnit(unit){
   renderRankChips();
   renderRoster();
 }
+function officerMatchesHomeSearch(o,lq){
+  if(!lq)return false;
+  const name=(o.fname+' '+o.lname).toLowerCase();
+  if(name.includes(lq))return true;
+  const raw=String(o.badge==null?'':o.badge).toLowerCase().replace(/\s/g,'');
+  const bDigits=raw.replace(/\D/g,'');
+  const qDigits=lq.replace(/\D/g,'');
+  if(/^\d+$/.test(lq)){
+    if(!qDigits||!bDigits)return false;
+    if(bDigits.startsWith(qDigits))return true;
+    if(/^0+/.test(bDigits)){
+      const stripped=(bDigits.replace(/^0+/,'')||'0');
+      return stripped.startsWith(qDigits);
+    }
+    return false;
+  }
+  return raw.includes(lq);
+}
 function homeSearch(q){
   const el=document.getElementById('home-search-results');
   if(!q.trim()){el.innerHTML='';return}
   const lq=q.trim().toLowerCase();
-  const results=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(lq)||(o.badge||'').toLowerCase()===lq).slice(0,6);
+  const results=DB.officers.filter(o=>officerMatchesHomeSearch(o,lq)).slice(0,6);
   if(!results.length){el.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;padding:8px">No officers found</div>';return}
   el.innerHTML=results.map(o=>{
     const hsrUnits=o.units||[o.unit];
@@ -2023,6 +2321,10 @@ function saveOfficer(){
   const rank=document.getElementById('of-rank').value;
   const selUnits=getSelectedOffUnits();
   if(!selUnits.length){alert('Please select at least one unit.');return;}
+  let finalCerts=certs;
+  if(editOffIdx<0){
+    finalCerts=[...new Set([...mergeRankDefaultCerts(rank,selUnits,[]),...certs])];
+  }
   const unit=selUnits[0];
   const badge=document.getElementById('of-badge').value;
   const oid=editOffIdx>=0?DB.officers[editOffIdx].id:Date.now();
@@ -2047,21 +2349,21 @@ function saveOfficer(){
       if(prevUnits!==newUnits)
         createNotif(oid,'info','Your unit assignment was updated: '+selUnits.join(', '));
       const prevCerts=(prev.certs||[]).slice().sort().join(',');
-      const newCerts=certs.slice().sort().join(',');
+      const newCerts=finalCerts.slice().sort().join(',');
       if(prevCerts!==newCerts)
-        createNotif(oid,'info','Your clearances were updated: '+(certs.length?certs.join(', '):'None'));
+        createNotif(oid,'info','Your clearances were updated: '+(finalCerts.length?finalCerts.join(', '):'None'));
     } else if(prevRank&&prevRank!==rank){
       existRankHistory.push({from:prevRank,to:rank,date:new Date().toISOString().split('T')[0],by:currentUser?currentUser.fname+' '+currentUser.lname:'System'});
     }
   }
-  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:existSpecialRoles,rankHistory:existRankHistory};
+  const obj={id:oid,fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,join,certs:finalCerts,specialRoles:existSpecialRoles,rankHistory:existRankHistory};
   if(editOffIdx>=0)DB.officers[editOffIdx]=obj;
   else DB.officers.push(obj);
   const ui=DB.users.findIndex(u=>String(u.id)===String(oid));
   if(ui>=0){
-    DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,certs};
+    DB.users[ui]={...DB.users[ui],fname:fn,lname:ln,rank,unit,units:selUnits,badge,discord,certs:finalCerts};
   } else {
-    const nu={id:oid,fname:fn,lname:ln,password:'0000',mustChangePassword:true,rank,unit,units:selUnits,badge,discord,join,certs,specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
+    const nu={id:oid,fname:fn,lname:ln,password:'0000',mustChangePassword:true,rank,unit,units:selUnits,badge,discord,join,certs:finalCerts,specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
     const br=getBaseAccessFromRank(nu);
     nu.role=nu.roleId=br.allowedPages.includes('management')?'command':'officer';
     DB.users.push(nu);
@@ -2175,6 +2477,9 @@ function saveUser(){
   const unit=selUsrUnits[0];
   const badge=document.getElementById('uf-badge').value;
   const isNew=editUsrIdx===-1;
+  if(isNew){
+    certs=[...new Set([...mergeRankDefaultCerts(rank,selUsrUnits,[]),...certs])];
+  }
   const join=document.getElementById('uf-join').value;
   const existSR=editUsrIdx>=0?(DB.users[editUsrIdx].specialRoles||[]):[];
   const prevCustom=editUsrIdx>=0?DB.users[editUsrIdx]:{};
@@ -2237,12 +2542,31 @@ function renderRankAccessEditorCheckboxes(perms,pages){
   if(pWrap)pWrap.innerHTML=ALL_PERMISSIONS.map(p=>'<label class="chk-item"><input type="checkbox" class="rax-perm" value="'+p.id+'"'+(perms.includes(p.id)?' checked':'')+'>'+p.label+'</label>').join('');
   if(pgWrap)pgWrap.innerHTML=PAGE_DEFS.map(p=>'<label class="chk-item"><input type="checkbox" class="rax-page" value="'+p.id+'"'+(pages.includes(p.id)?' checked':'')+'>'+p.icon+' '+p.label+'</label>').join('');
 }
+function raxCertEsc(v){return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function renderRankDefaultCertsEditor(unitId,rank){
+  const wrap=document.getElementById('rax-certs');
+  if(!wrap)return;
+  const key=rankAccessKey(unitId,rank);
+  const ra=(DB.rankAccess||{})[key];
+  const sel=new Set(ra&&ra.defaultCerts||[]);
+  const catalog=getCertCatalog();
+  wrap.innerHTML=catalog.map(function(c){
+    const ev=raxCertEsc(c);
+    return'<label class="chk-item"><input type="checkbox" class="rax-cert" value="'+ev+'"'+(sel.has(c)?' checked':'')+'>'+ev+'</label>';
+  }).join('');
+}
+function applyRankPresetAccess(preset){
+  if(!editRankUnit||!editRankName)return;
+  const base=getPresetAccess(preset);
+  renderRankAccessEditorCheckboxes(base.permissions,base.allowedPages);
+}
 function openRankAccessForm(unitId,rank){
   editRankUnit=unitId;editRankName=rank;
   document.getElementById('rank-access-title').textContent='Access — '+rank;
-  document.getElementById('rank-access-sub').textContent=unitId+' — Applies to this rank while assigned to this unit. Officers in multiple units get the union of all (same rank name per unit).';
+  document.getElementById('rank-access-sub').textContent=unitId+' — Permissions and pages control site access for this rank+unit. Officers in multiple units get the union. Default clearances merge automatically when adding an officer, importing CSV, or approving a sign-up.';
   const a=getStoredRankAccess(unitId,rank);
   renderRankAccessEditorCheckboxes(a.permissions,a.allowedPages);
+  renderRankDefaultCertsEditor(unitId,rank);
   document.getElementById('rank-access-ov').classList.add('on');
 }
 function closeRankAccessForm(){
@@ -2255,13 +2579,15 @@ function resetRankAccessToDefaults(){
   if(DB.rankAccess[key])delete DB.rankAccess[key];
   const a=getStoredRankAccess(editRankUnit,editRankName);
   renderRankAccessEditorCheckboxes(a.permissions,a.allowedPages);
+  renderRankDefaultCertsEditor(editRankUnit,editRankName);
 }
 function saveRankAccess(){
   if(!editRankUnit||!editRankName)return;
   const key=rankAccessKey(editRankUnit,editRankName);
   DB.rankAccess[key]={
     permissions:[...document.querySelectorAll('.rax-perm:checked')].map(x=>x.value),
-    pages:[...document.querySelectorAll('.rax-page:checked')].map(x=>x.value)
+    pages:[...document.querySelectorAll('.rax-page:checked')].map(x=>x.value),
+    defaultCerts:[...document.querySelectorAll('.rax-cert:checked')].map(x=>x.value)
   };
   logAction('Edit rank access',editRankUnit+' · '+editRankName);
   persist();closeRankAccessForm();renderRanksTab();
@@ -2543,7 +2869,7 @@ function addRankToUnit(unitId){
   if(!DB.rankAccess[rk]){
     const pr=inferPresetForRank(name,unitId);
     const base=getPresetAccess(pr);
-    DB.rankAccess[rk]={permissions:base.permissions.slice(),pages:base.allowedPages.slice()};
+    DB.rankAccess[rk]={permissions:base.permissions.slice(),pages:base.allowedPages.slice(),defaultCerts:[]};
   }
   logAction('Add Rank',name+' → '+unitId);
   persist();renderRanksTab();
@@ -2585,6 +2911,14 @@ function renderSiteConfig(){
     +'<input id="cfg-announce-text" value="'+(cfg.announcement||'').replace(/"/g,'&quot;')+'" placeholder="Announcement text..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit">'
     +'<button class="add-btn" onclick="saveSiteConfigField(\'announcement\',document.getElementById(\'cfg-announce-text\').value)">Save</button>'
     +'</div>'
+    +'</div>'
+    +'<div class="cfg-section">'
+    +'<div class="cfg-section-title">💬 Discord — signup gate (optional)</div>'
+    +'<p style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.5;margin:0 0 12px">When <strong>both</strong> fields below are filled, new officers must sign in with Discord and be a member of your server before they can submit a request. Create an app at <a href="https://discord.com/developers/applications" target="_blank" rel="noopener" style="color:#7ac3ff">discord.com/developers</a> → OAuth2 → add this exact redirect URL, enable <code style="background:rgba(0,0,0,.25);padding:2px 6px;border-radius:4px">identify</code> + <code style="background:rgba(0,0,0,.25);padding:2px 6px;border-radius:4px">guilds</code> scopes. Guild ID: Server Settings → Widget (or enable Developer Mode → right‑click server → Copy Server ID).</p>'
+    +'<div class="field" style="margin-bottom:10px"><label style="font-size:12px">Application (client) ID</label><input id="cfg-discord-client-id" value="'+String(cfg.discordSignupClientId||'').replace(/"/g,'&quot;')+'" placeholder="e.g. 123456789012345678" style="width:100%;max-width:420px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit"></div>'
+    +'<div class="field" style="margin-bottom:12px"><label style="font-size:12px">Police Discord server (guild) ID</label><input id="cfg-discord-guild-id" value="'+String(cfg.discordPoliceGuildId||'').replace(/"/g,'&quot;')+'" placeholder="e.g. 987654321098765432" style="width:100%;max-width:420px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit"></div>'
+    +'<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-bottom:10px;word-break:break-all">Redirect URL to register in Discord: <strong>'+(typeof getDiscordOAuthRedirectUri==='function'?getDiscordOAuthRedirectUri():'')+'</strong></div>'
+    +'<button type="button" class="add-btn" onclick="saveDiscordSignupConfig()">Save Discord signup settings</button>'
     +'</div>'
     // Report types section
     +'<div class="cfg-section">'
@@ -2628,6 +2962,15 @@ function removeSiteConfigItem(arrayField,idx){
   if(!DB.siteConfig||!DB.siteConfig[arrayField])return;
   DB.siteConfig[arrayField].splice(idx,1);
   persist();renderSiteConfig();
+}
+function saveDiscordSignupConfig(){
+  if(!DB.siteConfig)DB.siteConfig={};
+  const ci=document.getElementById('cfg-discord-client-id');
+  const gi=document.getElementById('cfg-discord-guild-id');
+  DB.siteConfig.discordSignupClientId=(ci&&ci.value||'').trim();
+  DB.siteConfig.discordPoliceGuildId=(gi&&gi.value||'').trim();
+  persist();
+  renderSiteConfig();
 }
 
 // ====== INVITE CODES ======
@@ -3446,10 +3789,11 @@ function doImportCsv(){
     const discord=r.discord||'';
     const join=r.join||today;
     const id=Date.now()+added;
-    const officer={id,fname,lname,rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[],rankHistory:[]};
+    const autoC=mergeRankDefaultCerts(rank,[unit],[]);
+    const officer={id,fname,lname,rank,unit,units:[unit],badge,discord,join,certs:autoC.slice(),specialRoles:[],rankHistory:[]};
     DB.officers.push(officer);
     if(!DB.users.find(u=>u.badge&&u.badge===badge&&badge)){
-      const nu={id,fname,lname,password:'0000',mustChangePassword:true,rank,unit,units:[unit],badge,discord,join,certs:[],specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
+      const nu={id,fname,lname,password:'0000',mustChangePassword:true,rank,unit,units:[unit],badge,discord,join,certs:autoC.slice(),specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
       const br=getBaseAccessFromRank(nu);
       nu.role=nu.roleId=br.allowedPages.includes('management')?'command':'officer';
       DB.users.push(nu);
@@ -3463,10 +3807,17 @@ function doImportCsv(){
 }
 
 window.onload=()=>{
+  handleDiscordOAuthCallback().then(function(){
+    processDiscordSignupPostReturnUi();
+  }).catch(function(e){console.warn(e);processDiscordSignupPostReturnUi();});
   buildOffUnitGrid(['PATROL']);
   buildUsrUnitGrid(['PATROL']);
   renderRankChips();
-  setTimeout(()=>document.getElementById('li-ident').focus(),300);
+  setTimeout(function(){
+    const su=document.getElementById('signup-overlay');
+    if(su&&su.classList.contains('on'))return;
+    const li=document.getElementById('li-ident');if(li)li.focus();
+  },300);
 };
 </script>
 
