@@ -429,6 +429,8 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-accounts" onclick="switchTab('accounts')">👥 Accounts</button>
     <button class="tab-btn" id="tab-registrations" onclick="switchTab('registrations')" style="display:none">📩 Pending sign-ups</button>
+    <button class="tab-btn" id="tab-invites" onclick="switchTab('invites')">🎫 Invite Codes</button>
+    <button class="tab-btn" id="tab-approvals-log" onclick="switchTab('approvals-log')">✅ Approvals Log</button>
     <button class="tab-btn" id="tab-roles" onclick="switchTab('roles')">🏷 Roles</button>
     <button class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
@@ -466,6 +468,14 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
         <tbody id="reg-req-body"></tbody>
       </table>
     </div>
+  </div>
+
+  <div id="tab-content-invites" style="display:none">
+    <div id="invite-codes-content"></div>
+  </div>
+
+  <div id="tab-content-approvals-log" style="display:none">
+    <div id="approvals-log-list"></div>
   </div>
 
   <!-- Roles Tab -->
@@ -768,7 +778,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="modal-icon">🔐</div>
     <h3>LSPD Access Portal</h3>
     <p class="desc">Enter your badge number and PIN</p>
-    <input id="li-ident" placeholder="Badge # (e.g. 0000)" autocomplete="off" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()" style="text-align:center;letter-spacing:4px;font-size:18px">
+    <input id="li-ident" placeholder="Badge # (e.g. 000)" autocomplete="off" maxlength="3" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()" style="text-align:center;letter-spacing:4px;font-size:18px">
     <input id="li-pass" type="password" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;letter-spacing:8px;font-size:20px">
     <div class="modal-err" id="li-err"></div>
     <button class="btn-primary" onclick="doLogin()">Login</button>
@@ -790,6 +800,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="field"><label><span class="req">*</span>Rank</label><select id="su-rank"></select></div>
       <div class="field"><label><span class="req">*</span>Badge #</label><input id="su-badge" placeholder="e.g. 285" maxlength="3" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
     </div>
+    <div class="field"><label><span class="req">*</span>Invite code</label><input id="su-invite" placeholder="ABCDE" maxlength="20" autocomplete="off" style="text-transform:uppercase"></div>
     <div class="field"><label><span class="req">*</span>Discord user ID</label><input id="su-discord" placeholder="17–19 digits" inputmode="numeric" maxlength="22" autocomplete="off"></div>
     <div class="field"><label>Notes <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="su-notes" placeholder="e.g. academy class, transfer…"></div>
     <div class="modal-err" id="su-err" style="min-height:20px"></div>
@@ -939,7 +950,9 @@ const ALL_PERMISSIONS=[
   {id:'broadcast_notif',label:'Broadcast Notification'},
   {id:'view_analytics',label:'View Analytics'},
   {id:'manage_config',label:'Manage Site Config'},
-  {id:'approve_registrations',label:'Approve Officer Sign-ups'}
+  {id:'approve_registrations',label:'Approve Officer Sign-ups'},
+  {id:'manage_invites',label:'Manage Invite Codes'},
+  {id:'view_signup_decisions',label:'View Signup Decisions Log'}
 ];
 const PERM_LABELS=Object.fromEntries(ALL_PERMISSIONS.map(p=>[p.id,p.label]));
 const PAGE_DEFS=[
@@ -956,16 +969,18 @@ const PAGE_DEFS=[
   {id:'mgmt_analytics',label:'↳ Analytics Tab',icon:'📊'},
   {id:'mgmt_config',label:'↳ Site Config Tab',icon:'⚙️'},
   {id:'mgmt_registrations',label:'↳ Pending sign-ups',icon:'📩'},
+  {id:'mgmt_invites',label:'↳ Invite Codes',icon:'🎫'},
+  {id:'mgmt_reglog',label:'↳ Approvals Log',icon:'✅'},
 ];
 const BUILTIN_ROLES=[
   {id:'officer',name:'Officer',system:true,description:'Basic access — view roster, reports and cadets room',
     permissions:[],allowedPages:['roster','reports','cadets']},
   {id:'command',name:'Command',system:true,description:'Full management access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations'],
-    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations']},
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
+    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']},
   {id:'red_command',name:'Red Command',system:true,description:'Top command — full access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations'],
-    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations']}
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_roles','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
+    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_roles','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']}
 ];
 
 function clickSound(){
@@ -1048,7 +1063,7 @@ if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_ranks_by_unit');
   localStorage.setItem('lspd_version',DATA_VERSION);
 }
-const DEFAULT_ADMIN_USER={"id":1,"fname":"Admin","lname":"LSPD","password":"2401","mustChangePassword":false,"roleId":"command","role":"command","rank":"Lieutenant","unit":"PATROL","units":["PATROL"],"badge":"0000","discord":"","certs":[],"specialRoles":[]};
+const DEFAULT_ADMIN_USER={"id":1,"fname":"Admin","lname":"LSPD","password":"2401","mustChangePassword":false,"roleId":"command","role":"command","rank":"Lieutenant","unit":"PATROL","units":["PATROL"],"badge":"000","discord":"","certs":[],"specialRoles":[]};
 window.LSPD_DEFAULT_ADMIN_USER=DEFAULT_ADMIN_USER;
 const DEFAULT_OFFICERS=[];
 const DEFAULT_USERS=[DEFAULT_ADMIN_USER];
@@ -1067,7 +1082,9 @@ let DB={
     certs:['Light Weapon','Heavy Weapon','Interceptor Vehicle','Helicopter','Motorcycle']
   },
   officerNotes:JSON.parse(localStorage.getItem('lspd_officer_notes')||'{}'),
-  registrationRequests:JSON.parse(localStorage.getItem('lspd_registration_requests')||'[]')
+  registrationRequests:JSON.parse(localStorage.getItem('lspd_registration_requests')||'[]'),
+  signupInvites:JSON.parse(localStorage.getItem('lspd_signup_invites')||'[]'),
+  signupDecisionLog:JSON.parse(localStorage.getItem('lspd_signup_decisions')||'[]')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1,pendingApproveReqId=null;
 
@@ -1097,10 +1114,10 @@ function migrateAll(){
     }
   });
   // Remove user accounts that have no matching officer (orphan cleanup)
-  // Exception: command / admin badge 0000 may exist without a roster row
+  // Exception: command / admin badge 000 may exist without a roster row
   DB.users=DB.users.filter(u=>{
     const hasOfficer=DB.officers.some(o=>String(o.id)===String(u.id));
-    const staffNoRoster=(u.role==='command'||u.role==='red_command')||String(u.badge)==='0000';
+    const staffNoRoster=(u.role==='command'||u.role==='red_command')||String(u.badge)==='000';
     return hasOfficer||staffNoRoster;
   });
 }
@@ -1126,7 +1143,7 @@ function ensureBuiltinRoles(){
 }
 ensureBuiltinRoles();
 function applyCommandRegTabs(){
-  const add=['approve_registrations'],pages=['mgmt_registrations'];
+  const add=['approve_registrations','manage_invites','view_signup_decisions'],pages=['mgmt_registrations','mgmt_invites','mgmt_reglog'];
   (DB.customRoles||[]).forEach(r=>{
     if(r.id!=='command'&&r.id!=='red_command')return;
     r.permissions=[...new Set([...(r.permissions||[]),...add])];
@@ -1166,10 +1183,44 @@ function officerNameTaken(fn,ln){
   return DB.officers.some(o=>o.fname.trim().toLowerCase()===a&&o.lname.trim().toLowerCase()===b)
     ||DB.users.some(u=>u.fname.trim().toLowerCase()===a&&u.lname.trim().toLowerCase()===b);
 }
+function makeInviteCode(len){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let out='';
+  for(let i=0;i<len;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+function findInviteByCode(code){
+  const c=(code||'').trim().toUpperCase();
+  return (DB.signupInvites||[]).find(i=>i.code===c);
+}
+function isInviteExpired(inv){
+  if(!inv||!inv.expiresAt)return false;
+  return Date.now()>inv.expiresAt;
+}
+function canUseInvite(inv,discord){
+  if(!inv)return{ok:false,msg:'Invite code not found.'};
+  if(inv.disabled)return{ok:false,msg:'This invite code is disabled.'};
+  if(isInviteExpired(inv))return{ok:false,msg:'This invite code has expired.'};
+  if((inv.maxUses||0)>0 && (inv.uses||0)>=inv.maxUses)return{ok:false,msg:'This invite code reached its usage limit.'};
+  const lock=(inv.discordLock||'').trim();
+  if(lock && lock!==String(discord||'').trim())return{ok:false,msg:'This invite is locked to another Discord ID.'};
+  return{ok:true,msg:''};
+}
+function consumeInvite(inv){
+  inv.uses=(inv.uses||0)+1;
+  inv.lastUsedAt=Date.now();
+}
+function formatInviteStatus(inv){
+  if(!inv)return'—';
+  if(inv.disabled)return'Disabled';
+  if(isInviteExpired(inv))return'Expired';
+  if((inv.maxUses||0)>0 && (inv.uses||0)>=inv.maxUses)return'Limit reached';
+  return'Active';
+}
 function openSignupForm(){
   document.getElementById('su-err').textContent='';
   document.getElementById('su-err').style.color='#ff6b6b';
-  ['su-fn','su-ln','su-badge','su-discord','su-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['su-fn','su-ln','su-badge','su-discord','su-notes','su-invite'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   buildSuUnitGrid(['PATROL']);
   document.getElementById('signup-overlay').classList.add('on');
 }
@@ -1182,6 +1233,7 @@ function submitSignupRequest(){
   const ln=document.getElementById('su-ln').value.trim();
   const badge=document.getElementById('su-badge').value.trim();
   const discord=document.getElementById('su-discord').value.trim();
+  const inviteCode=(document.getElementById('su-invite').value||'').trim().toUpperCase();
   const notes=document.getElementById('su-notes').value.trim();
   const rank=document.getElementById('su-rank').value;
   const units=getSelectedSuUnits();
@@ -1192,6 +1244,10 @@ function submitSignupRequest(){
   if(!units.length){errEl.textContent='Select at least one unit.';return;}
   if(!/^\d{1,3}$/.test(badge)){errEl.textContent='Badge must be 1–3 digits.';return;}
   if(!/^\d{17,19}$/.test(discord)){errEl.textContent='Discord user ID must be 17–19 digits (Copy User ID in Discord).';return;}
+  if(!inviteCode){errEl.textContent='Invite code is required.';return;}
+  const inv=findInviteByCode(inviteCode);
+  const invCheck=canUseInvite(inv,discord);
+  if(!invCheck.ok){errEl.textContent=invCheck.msg;return;}
   const padBadge=badge.padStart(3,'0');
   if(String(padBadge)==='000'){errEl.textContent='This badge is reserved.';return;}
   if(DB.officers.some(o=>String(o.badge)===padBadge)||DB.users.some(u=>String(u.badge)===padBadge)){
@@ -1200,8 +1256,9 @@ function submitSignupRequest(){
   const pend=DB.registrationRequests||[];
   if(pend.some(r=>r.status==='pending'&&(String(r.badge)===padBadge||((r.fname||'').trim().toLowerCase()===fn.toLowerCase()&&(r.lname||'').trim().toLowerCase()===ln.toLowerCase())))){
     errEl.textContent='A pending request already uses this badge or full name.';return;}
-  const req={id:'req_'+Date.now()+'_'+Math.random().toString(36).slice(2),ts:Date.now(),status:'pending',fname:fn,lname:ln,rank,units,unit:units[0],badge:padBadge,discord,notes};
+  const req={id:'req_'+Date.now()+'_'+Math.random().toString(36).slice(2),ts:Date.now(),status:'pending',fname:fn,lname:ln,rank,units,unit:units[0],badge:padBadge,discord,notes,inviteCode:inviteCode,inviteId:inv.id};
   if(!DB.registrationRequests)DB.registrationRequests=[];
+  consumeInvite(inv);
   DB.registrationRequests.push(req);
   persist();
   errEl.style.color='#5dcaa5';
@@ -1212,11 +1269,12 @@ function submitSignupRequest(){
 function renderPendingRegistrations(){
   const tb=document.getElementById('reg-req-body');if(!tb)return;
   const list=(DB.registrationRequests||[]).filter(function(r){return r.status==='pending';}).sort(function(a,b){return(b.ts||0)-(a.ts||0);});
-  if(!list.length){tb.innerHTML='<tr class="empty"><td colspan="8">No pending sign-ups.</td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr class="empty"><td colspan="7">No pending sign-ups.</td></tr>';return;}
   tb.innerHTML=list.map(function(req){
     const dt=new Date(req.ts).toLocaleString();
     const ub=(req.units||[]).map(function(u){return'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>';}).join(' ');
-    return '<tr><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="font-weight:600">'+req.fname+' '+req.lname+'</td><td>'+ub+'</td><td><span class="badge bk-rank">'+req.rank+'</span></td><td>#'+req.badge+'</td><td style="font-size:11px;color:#7ac3ff">'+(req.discord||'')+'</td><td style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="bulk-apply" style="padding:6px 12px" onclick="openRegApprove(\''+req.id+'\')">Approve</button><button class="bulk-cancel" style="padding:6px 12px" onclick="rejectRegistration(\''+req.id+'\')">Reject</button></td></tr>';
+    const ic=req.inviteCode?'<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">Invite: '+req.inviteCode+'</div>':'';
+    return '<tr><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="font-weight:600">'+req.fname+' '+req.lname+ic+'</td><td>'+ub+'</td><td><span class="badge bk-rank">'+req.rank+'</span></td><td>#'+req.badge+'</td><td style="font-size:11px;color:#7ac3ff">'+(req.discord||'')+'</td><td style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="bulk-apply" style="padding:6px 12px" onclick="openRegApprove(\''+req.id+'\')">Approve</button><button class="bulk-cancel" style="padding:6px 12px" onclick="rejectRegistration(\''+req.id+'\')">Reject</button></td></tr>';
   }).join('');
   const c=document.getElementById('cmd-count');
   if(c&&typeof currentTab!=='undefined'&&currentTab==='registrations')c.textContent='Pending: '+list.length+(list.length===1?' request':' requests');
@@ -1255,6 +1313,16 @@ function finalizeApproveRegistration(){
   req.status='approved';
   req.approvedAt=Date.now();
   req.approvedBy=currentUser?currentUser.fname+' '+currentUser.lname:'';
+  if(!DB.signupDecisionLog)DB.signupDecisionLog=[];
+  DB.signupDecisionLog.unshift({
+    id:'sd_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    ts:Date.now(),
+    decision:'approved',
+    by:req.approvedBy||'System',
+    fname:req.fname,lname:req.lname,badge:req.badge,discord:req.discord,
+    roleId:roleId,inviteCode:req.inviteCode||''
+  });
+  if(DB.signupDecisionLog.length>1000)DB.signupDecisionLog=DB.signupDecisionLog.slice(0,1000);
   logAction('Approve signup',req.fname+' '+req.lname+' #'+req.badge+' → role '+roleId);
   persist();
   closeRegApprove();
@@ -1268,6 +1336,17 @@ function rejectRegistration(id){
   showConfirm('Reject sign-up','Reject this request for <strong>'+req.fname+' '+req.lname+'</strong>?',function(){
     req.status='rejected';
     req.rejectedAt=Date.now();
+    req.rejectedBy=currentUser?currentUser.fname+' '+currentUser.lname:'';
+    if(!DB.signupDecisionLog)DB.signupDecisionLog=[];
+    DB.signupDecisionLog.unshift({
+      id:'sd_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+      ts:Date.now(),
+      decision:'rejected',
+      by:req.rejectedBy||'System',
+      fname:req.fname,lname:req.lname,badge:req.badge,discord:req.discord,
+      roleId:'',inviteCode:req.inviteCode||''
+    });
+    if(DB.signupDecisionLog.length>1000)DB.signupDecisionLog=DB.signupDecisionLog.slice(0,1000);
     logAction('Reject signup',req.fname+' '+req.lname+' #'+req.badge);
     persist();renderPendingRegistrations();
   });
@@ -1352,6 +1431,8 @@ function persist(){
   localStorage.setItem('lspd_site_config',JSON.stringify(DB.siteConfig||{}));
   localStorage.setItem('lspd_officer_notes',JSON.stringify(DB.officerNotes||{}));
   localStorage.setItem('lspd_registration_requests',JSON.stringify(DB.registrationRequests||[]));
+  localStorage.setItem('lspd_signup_invites',JSON.stringify(DB.signupInvites||[]));
+  localStorage.setItem('lspd_signup_decisions',JSON.stringify(DB.signupDecisionLog||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -1594,7 +1675,7 @@ function goMgmt(){
   if(!currentUser)return;
   if(!canAccess('management'))return;
   // Show/hide tabs based on role permissions
-  const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
+  const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
   Object.entries(tabPageMap).forEach(([t,page])=>{
     const btn=document.getElementById('tab-'+t);
     if(btn)btn.style.display=canAccess(page)?'':'none';
@@ -1971,8 +2052,8 @@ function saveUser(){
 
 function delUser(i){
   const u=DB.users[i];
-  if(String(u.badge)==='0000'){
-    alert('Cannot delete the primary admin account (badge 0000).');return;
+  if(String(u.badge)==='000'){
+    alert('Cannot delete the primary admin account (badge 000).');return;
   }
   showConfirm(
     'Remove User',
@@ -1994,13 +2075,13 @@ let editRoleId=null;
 let editUnitDefId=null;
 
 function switchTab(tab){
-  const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
+  const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',roles:'mgmt_roles',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
   if(pageMap[tab]&&!canAccess(pageMap[tab])){
-    const first=['accounts','registrations','roles','units','ranks','log','cadets','analytics','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
+    const first=['accounts','registrations','invites','approvals-log','roles','units','ranks','log','cadets','analytics','config'].find(t=>!pageMap[t]||canAccess(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
   }
   currentTab=tab;
-  ['accounts','registrations','roles','units','ranks','log','cadets','analytics','config'].forEach(t=>{
+  ['accounts','registrations','invites','approvals-log','roles','units','ranks','log','cadets','analytics','config'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -2010,6 +2091,8 @@ function switchTab(tab){
   if(addBtn){
     if(tab==='accounts'){addBtn.style.display='';addBtn.textContent='+ Add User';}
     else if(tab==='registrations'){addBtn.style.display='none';}
+    else if(tab==='invites'){addBtn.style.display='';addBtn.textContent='+ Create Invite';}
+    else if(tab==='approvals-log'){addBtn.style.display='none';}
     else if(tab==='roles'){addBtn.style.display='';addBtn.textContent='+ Add Role';}
     else if(tab==='units'){addBtn.style.display='';addBtn.textContent='+ Add Unit';}
     else{addBtn.style.display='none';}
@@ -2018,6 +2101,8 @@ function switchTab(tab){
   }
   if(tab==='accounts')renderCommand();
   else if(tab==='registrations')renderPendingRegistrations();
+  else if(tab==='invites')renderInviteCodes();
+  else if(tab==='approvals-log')renderApprovalsDecisionLog();
   else if(tab==='roles')renderRoles();
   else if(tab==='units')renderUnitsTab();
   else if(tab==='ranks')renderRanksTab();
@@ -2029,6 +2114,7 @@ function switchTab(tab){
 
 function mgmtAddAction(){
   if(currentTab==='accounts')openUserForm(-1);
+  else if(currentTab==='invites')createInvitePrompt();
   else if(currentTab==='roles')openRoleForm(null);
   else if(currentTab==='units')openUnitForm(null);
 }
@@ -2264,6 +2350,87 @@ function removeSiteConfigItem(arrayField,idx){
   if(!DB.siteConfig||!DB.siteConfig[arrayField])return;
   DB.siteConfig[arrayField].splice(idx,1);
   persist();renderSiteConfig();
+}
+
+// ====== INVITE CODES ======
+function createInvitePrompt(){
+  const custom=(prompt('Custom invite code (leave empty for random 5 letters):','')||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const code=custom||makeInviteCode(5);
+  if(findInviteByCode(code)){alert('Invite code already exists.');return;}
+  const usesRaw=(prompt('Max uses (0 = unlimited):','1')||'1').trim();
+  const maxUses=Math.max(0,parseInt(usesRaw,10)||0);
+  const expRaw=(prompt('Expiry in hours (0 = no expiry):','24')||'24').trim();
+  const expH=Math.max(0,parseInt(expRaw,10)||0);
+  const dLock=(prompt('Discord ID lock (optional, leave empty for any):','')||'').trim();
+  if(dLock && !/^\d{17,19}$/.test(dLock)){alert('Discord lock must be 17-19 digits.');return;}
+  const inv={
+    id:'inv_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    code,createdAt:Date.now(),createdBy:currentUser?currentUser.fname+' '+currentUser.lname:'System',
+    maxUses,uses:0,expiresAt:expH>0?Date.now()+expH*3600000:null,
+    discordLock:dLock,disabled:false
+  };
+  if(!DB.signupInvites)DB.signupInvites=[];
+  DB.signupInvites.unshift(inv);
+  logAction('Create invite code',code+' maxUses='+(maxUses||'unlimited')+(expH>0?(' expires '+expH+'h'):'')+(dLock?(' discord '+dLock):''));
+  persist();
+  renderInviteCodes();
+  alert('Invite created: '+code);
+}
+function createBroadcastInvite(){
+  const code=makeInviteCode(5);
+  const inv={id:'inv_'+Date.now()+'_'+Math.random().toString(36).slice(2),code,createdAt:Date.now(),createdBy:currentUser?currentUser.fname+' '+currentUser.lname:'System',maxUses:0,uses:0,expiresAt:Date.now()+24*3600000,discordLock:'',disabled:false};
+  if(!DB.signupInvites)DB.signupInvites=[];
+  DB.signupInvites.unshift(inv);
+  persist();renderInviteCodes();
+  const msg='LSPD Self-Registration is open. Use invite code: '+code+' (valid 24h).';
+  alert('Broadcast message to copy:\n\n'+msg);
+}
+function toggleInviteDisabled(id){
+  const inv=(DB.signupInvites||[]).find(x=>x.id===id);if(!inv)return;
+  inv.disabled=!inv.disabled;
+  logAction(inv.disabled?'Disable invite':'Enable invite',inv.code);
+  persist();renderInviteCodes();
+}
+function deleteInvite(id){
+  const inv=(DB.signupInvites||[]).find(x=>x.id===id);if(!inv)return;
+  showConfirm('Delete invite','Delete invite <strong>'+inv.code+'</strong>?',function(){
+    DB.signupInvites=(DB.signupInvites||[]).filter(x=>x.id!==id);
+    logAction('Delete invite',inv.code);
+    persist();renderInviteCodes();
+  });
+}
+function renderInviteCodes(){
+  const el=document.getElementById('invite-codes-content');if(!el)return;
+  const list=(DB.signupInvites||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const countEl=document.getElementById('cmd-count');
+  if(countEl&&currentTab==='invites')countEl.textContent='Total: '+list.length+' codes';
+  const rows=list.map(inv=>{
+    const created=new Date(inv.createdAt||Date.now()).toLocaleString();
+    const exp=inv.expiresAt?new Date(inv.expiresAt).toLocaleString():'No expiry';
+    const uses=(inv.maxUses||0)>0?((inv.uses||0)+' / '+inv.maxUses):((inv.uses||0)+' / ∞');
+    const st=formatInviteStatus(inv);
+    const stColor=st==='Active'?'#80e880':(st==='Disabled'?'#ffb432':'#ff7070');
+    const lock=inv.discordLock?('<div style="font-size:10px;color:#7ac3ff">Discord lock: '+inv.discordLock+'</div>'):'';
+    return '<tr><td style="font-weight:700;letter-spacing:1px">'+inv.code+lock+'</td><td style="font-size:11px;color:rgba(255,255,255,0.4)">'+created+'<div style="font-size:10px;color:rgba(255,255,255,0.3)">by '+(inv.createdBy||'System')+'</div></td><td>'+uses+'</td><td style="font-size:11px">'+exp+'</td><td><span class="badge" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:'+stColor+'">'+st+'</span></td><td style="display:flex;gap:6px"><button class="act-btn" onclick="toggleInviteDisabled(\''+inv.id+'\')">'+(inv.disabled?'Enable':'Disable')+'</button><button class="act-btn del-btn" onclick="deleteInvite(\''+inv.id+'\')">✕</button></td></tr>';
+  }).join('');
+  el.innerHTML='<div style="display:flex;gap:10px;margin-bottom:12px"><button class="add-btn" onclick="createInvitePrompt()">+ Create Invite</button><button class="back-btn" style="border-color:rgba(74,158,255,0.35);color:#7ac3ff" onclick="createBroadcastInvite()">📢 Quick Broadcast Code</button></div>'
+    +(list.length?('<div class="tbl-wrap"><table><thead><tr><th>Code</th><th>Created</th><th>Uses</th><th>Expiry</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'):'<div style="color:rgba(255,255,255,0.3);font-size:13px;padding:10px 0">No invite codes yet.</div>');
+}
+function renderApprovalsDecisionLog(){
+  const el=document.getElementById('approvals-log-list');if(!el)return;
+  const list=(DB.signupDecisionLog||[]).slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const countEl=document.getElementById('cmd-count');
+  if(countEl&&currentTab==='approvals-log')countEl.textContent='Total: '+list.length+' decisions';
+  if(!list.length){el.innerHTML='<div style="color:rgba(255,255,255,0.3);font-size:13px;padding:10px 0">No approval/rejection decisions yet.</div>';return;}
+  el.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Decision</th><th>Officer</th><th>Badge</th><th>Discord</th><th>Role</th><th>Invite</th><th>By</th></tr></thead><tbody>'
+    +list.map(d=>{
+      const ts=new Date(d.ts||Date.now()).toLocaleString();
+      const dec=d.decision==='approved'
+        ?'<span class="badge bk-lw" style="font-size:10px">Approved</span>'
+        :'<span class="badge bk-hw" style="font-size:10px">Rejected</span>';
+      return '<tr><td style="font-size:11px;color:rgba(255,255,255,0.4)">'+ts+'</td><td>'+dec+'</td><td style="font-weight:600">'+(d.fname||'')+' '+(d.lname||'')+'</td><td>#'+(d.badge||'—')+'</td><td style="font-size:11px;color:#7ac3ff">'+(d.discord||'—')+'</td><td>'+(d.roleId||'—')+'</td><td>'+(d.inviteCode||'—')+'</td><td style="font-size:11px">'+(d.by||'System')+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div>';
 }
 
 function renderLog(){
@@ -3069,6 +3236,8 @@ window.firebasePersist = async function() {
     await setDoc(doc(db, 'lspd', 'auditlog'), { data: JSON.stringify((DB.auditLog||[]).slice(0,500)) });
     await setDoc(doc(db, 'lspd', 'complaints'), { data: JSON.stringify(DB.complaints||[]) });
     await setDoc(doc(db, 'lspd', 'registrations'), { data: JSON.stringify(DB.registrationRequests||[]) });
+    await setDoc(doc(db, 'lspd', 'invites'), { data: JSON.stringify(DB.signupInvites||[]) });
+    await setDoc(doc(db, 'lspd', 'signup_decisions'), { data: JSON.stringify(DB.signupDecisionLog||[]) });
   } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
 };
 
@@ -3093,6 +3262,10 @@ window.firebaseLoad = async function() {
     if(compSnap.exists()) DB.complaints = JSON.parse(compSnap.data().data||'[]');
     const regSnap = await getDoc(doc(db, 'lspd', 'registrations'));
     if(regSnap.exists()) DB.registrationRequests = JSON.parse(regSnap.data().data||'[]');
+    const invSnap = await getDoc(doc(db, 'lspd', 'invites'));
+    if(invSnap.exists()) DB.signupInvites = JSON.parse(invSnap.data().data||'[]');
+    const decSnap = await getDoc(doc(db, 'lspd', 'signup_decisions'));
+    if(decSnap.exists()) DB.signupDecisionLog = JSON.parse(decSnap.data().data||'[]');
     applyCommandRegTabs();
     // Migrate data format
     migrateAll();
@@ -3100,6 +3273,8 @@ window.firebaseLoad = async function() {
     localStorage.setItem('lspd_users', JSON.stringify(DB.users));
     localStorage.setItem('lspd_officers', JSON.stringify(DB.officers));
     localStorage.setItem('lspd_registration_requests', JSON.stringify(DB.registrationRequests||[]));
+    localStorage.setItem('lspd_signup_invites', JSON.stringify(DB.signupInvites||[]));
+    localStorage.setItem('lspd_signup_decisions', JSON.stringify(DB.signupDecisionLog||[]));
     // Re-render active pages
     if(document.getElementById('pg-roster').classList.contains('on')) renderRoster();
     if(document.getElementById('pg-mgmt') && document.getElementById('pg-mgmt').classList.contains('on') && currentTab==='accounts') renderCommand();
@@ -3169,6 +3344,22 @@ onSnapshot(doc(db, 'lspd', 'registrations'), (snap) => {
     DB.registrationRequests=JSON.parse(snap.data().data||'[]');
     localStorage.setItem('lspd_registration_requests',JSON.stringify(DB.registrationRequests||[]));
     if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='registrations'&&typeof renderPendingRegistrations==='function')renderPendingRegistrations();
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'invites'), (snap) => {
+  if(snap.exists()){
+    DB.signupInvites=JSON.parse(snap.data().data||'[]');
+    localStorage.setItem('lspd_signup_invites',JSON.stringify(DB.signupInvites||[]));
+    if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='invites'&&typeof renderInviteCodes==='function')renderInviteCodes();
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'signup_decisions'), (snap) => {
+  if(snap.exists()){
+    DB.signupDecisionLog=JSON.parse(snap.data().data||'[]');
+    localStorage.setItem('lspd_signup_decisions',JSON.stringify(DB.signupDecisionLog||[]));
+    if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='approvals-log'&&typeof renderApprovalsDecisionLog==='function')renderApprovalsDecisionLog();
   }
 });
 
