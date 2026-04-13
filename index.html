@@ -461,7 +461,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th>Submitted</th><th>Name</th><th>IC</th><th>Units</th><th>Rank</th><th>Badge</th><th>Discord</th><th></th>
+          <th>Submitted</th><th>Name</th><th>Units</th><th>Rank</th><th>Badge</th><th>Discord</th><th></th>
         </tr></thead>
         <tbody id="reg-req-body"></tbody>
       </table>
@@ -768,7 +768,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="modal-icon">🔐</div>
     <h3>LSPD Access Portal</h3>
     <p class="desc">Enter your badge number and PIN</p>
-    <input id="li-ident" placeholder="Badge # (e.g. 210)" autocomplete="off" maxlength="3" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()" style="text-align:center;letter-spacing:4px;font-size:18px">
+    <input id="li-ident" placeholder="Badge # (e.g. 0000)" autocomplete="off" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()" style="text-align:center;letter-spacing:4px;font-size:18px">
     <input id="li-pass" type="password" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;letter-spacing:8px;font-size:20px">
     <div class="modal-err" id="li-err"></div>
     <button class="btn-primary" onclick="doLogin()">Login</button>
@@ -785,7 +785,6 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="field"><label><span class="req">*</span>First name</label><input id="su-fn" placeholder="John" autocomplete="given-name"></div>
       <div class="field"><label><span class="req">*</span>Last name</label><input id="su-ln" placeholder="Doe" autocomplete="family-name"></div>
     </div>
-    <div class="field"><label><span class="req">*</span>National ID (IC)</label><input id="su-ic" placeholder="9 digits" inputmode="numeric" maxlength="12" autocomplete="off"></div>
     <div class="field"><label><span class="req">*</span>Units (one or more)</label><div id="su-units-grid" class="units-chip-grid"></div></div>
     <div class="fg2">
       <div class="field"><label><span class="req">*</span>Rank</label><select id="su-rank"></select></div>
@@ -1048,9 +1047,8 @@ if(localStorage.getItem('lspd_version')!==DATA_VERSION){
   localStorage.removeItem('lspd_unit_defs');
   localStorage.removeItem('lspd_ranks_by_unit');
   localStorage.setItem('lspd_version',DATA_VERSION);
-  localStorage.setItem('lspd_apply_firebase_admin_reset','1');
 }
-const DEFAULT_ADMIN_USER={"id":1,"fname":"Admin","lname":"LSPD","password":"0000","mustChangePassword":false,"roleId":"command","role":"command","rank":"Lieutenant","unit":"PATROL","units":["PATROL"],"badge":"201","discord":"","certs":[],"specialRoles":[]};
+const DEFAULT_ADMIN_USER={"id":1,"fname":"Admin","lname":"LSPD","password":"2401","mustChangePassword":false,"roleId":"command","role":"command","rank":"Lieutenant","unit":"PATROL","units":["PATROL"],"badge":"0000","discord":"","certs":[],"specialRoles":[]};
 window.LSPD_DEFAULT_ADMIN_USER=DEFAULT_ADMIN_USER;
 const DEFAULT_OFFICERS=[];
 const DEFAULT_USERS=[DEFAULT_ADMIN_USER];
@@ -1099,10 +1097,10 @@ function migrateAll(){
     }
   });
   // Remove user accounts that have no matching officer (orphan cleanup)
-  // Exception: command / admin badge 201 may exist without a roster row
+  // Exception: command / admin badge 0000 may exist without a roster row
   DB.users=DB.users.filter(u=>{
     const hasOfficer=DB.officers.some(o=>String(o.id)===String(u.id));
-    const staffNoRoster=(u.role==='command'||u.role==='red_command')||String(u.badge)==='201';
+    const staffNoRoster=(u.role==='command'||u.role==='red_command')||String(u.badge)==='0000';
     return hasOfficer||staffNoRoster;
   });
 }
@@ -1163,8 +1161,6 @@ function refreshSuRanks(currentRank){
   const sel=document.getElementById('su-rank');const cur=currentRank||(sel&&sel.value);
   if(sel)sel.innerHTML=ranks.map(r=>'<option'+(r===cur?' selected':'')+'>'+r+'</option>').join('');
 }
-function normalizeIc(ic){return String(ic||'').replace(/\D/g,'');}
-function validIc(ic){const s=normalizeIc(ic);return s.length>=5&&s.length<=9;}
 function officerNameTaken(fn,ln){
   const a=fn.trim().toLowerCase(),b=ln.trim().toLowerCase();
   return DB.officers.some(o=>o.fname.trim().toLowerCase()===a&&o.lname.trim().toLowerCase()===b)
@@ -1173,7 +1169,7 @@ function officerNameTaken(fn,ln){
 function openSignupForm(){
   document.getElementById('su-err').textContent='';
   document.getElementById('su-err').style.color='#ff6b6b';
-  ['su-fn','su-ln','su-ic','su-badge','su-discord','su-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['su-fn','su-ln','su-badge','su-discord','su-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   buildSuUnitGrid(['PATROL']);
   document.getElementById('signup-overlay').classList.add('on');
 }
@@ -1184,7 +1180,6 @@ function submitSignupRequest(){
   if(typeof DB==='undefined')return;
   const fn=document.getElementById('su-fn').value.trim();
   const ln=document.getElementById('su-ln').value.trim();
-  const ic=normalizeIc(document.getElementById('su-ic').value);
   const badge=document.getElementById('su-badge').value.trim();
   const discord=document.getElementById('su-discord').value.trim();
   const notes=document.getElementById('su-notes').value.trim();
@@ -1193,19 +1188,19 @@ function submitSignupRequest(){
   const errEl=document.getElementById('su-err');
   errEl.style.color='#ff6b6b';
   errEl.textContent='';
-  if(!fn||!ln||!validIc(ic)){errEl.textContent='Fill first and last name and a valid IC (5–9 digits).';return;}
+  if(!fn||!ln){errEl.textContent='Fill first and last name.';return;}
   if(!units.length){errEl.textContent='Select at least one unit.';return;}
   if(!/^\d{1,3}$/.test(badge)){errEl.textContent='Badge must be 1–3 digits.';return;}
   if(!/^\d{17,19}$/.test(discord)){errEl.textContent='Discord user ID must be 17–19 digits (Copy User ID in Discord).';return;}
   const padBadge=badge.padStart(3,'0');
-  if(String(padBadge)==='201'){errEl.textContent='This badge is reserved.';return;}
+  if(String(padBadge)==='000'){errEl.textContent='This badge is reserved.';return;}
   if(DB.officers.some(o=>String(o.badge)===padBadge)||DB.users.some(u=>String(u.badge)===padBadge)){
     errEl.textContent='This badge is already assigned.';return;}
   if(officerNameTaken(fn,ln)){errEl.textContent='An officer with this full name already exists.';return;}
   const pend=DB.registrationRequests||[];
   if(pend.some(r=>r.status==='pending'&&(String(r.badge)===padBadge||((r.fname||'').trim().toLowerCase()===fn.toLowerCase()&&(r.lname||'').trim().toLowerCase()===ln.toLowerCase())))){
     errEl.textContent='A pending request already uses this badge or full name.';return;}
-  const req={id:'req_'+Date.now()+'_'+Math.random().toString(36).slice(2),ts:Date.now(),status:'pending',fname:fn,lname:ln,ic,rank,units,unit:units[0],badge:padBadge,discord,notes};
+  const req={id:'req_'+Date.now()+'_'+Math.random().toString(36).slice(2),ts:Date.now(),status:'pending',fname:fn,lname:ln,rank,units,unit:units[0],badge:padBadge,discord,notes};
   if(!DB.registrationRequests)DB.registrationRequests=[];
   DB.registrationRequests.push(req);
   persist();
@@ -1221,7 +1216,7 @@ function renderPendingRegistrations(){
   tb.innerHTML=list.map(function(req){
     const dt=new Date(req.ts).toLocaleString();
     const ub=(req.units||[]).map(function(u){return'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>';}).join(' ');
-    return '<tr><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="font-weight:600">'+req.fname+' '+req.lname+'</td><td>'+(req.ic||'—')+'</td><td>'+ub+'</td><td><span class="badge bk-rank">'+req.rank+'</span></td><td>#'+req.badge+'</td><td style="font-size:11px;color:#7ac3ff">'+(req.discord||'')+'</td><td style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="bulk-apply" style="padding:6px 12px" onclick="openRegApprove(\''+req.id+'\')">Approve</button><button class="bulk-cancel" style="padding:6px 12px" onclick="rejectRegistration(\''+req.id+'\')">Reject</button></td></tr>';
+    return '<tr><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="font-weight:600">'+req.fname+' '+req.lname+'</td><td>'+ub+'</td><td><span class="badge bk-rank">'+req.rank+'</span></td><td>#'+req.badge+'</td><td style="font-size:11px;color:#7ac3ff">'+(req.discord||'')+'</td><td style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="bulk-apply" style="padding:6px 12px" onclick="openRegApprove(\''+req.id+'\')">Approve</button><button class="bulk-cancel" style="padding:6px 12px" onclick="rejectRegistration(\''+req.id+'\')">Reject</button></td></tr>';
   }).join('');
   const c=document.getElementById('cmd-count');
   if(c&&typeof currentTab!=='undefined'&&currentTab==='registrations')c.textContent='Pending: '+list.length+(list.length===1?' request':' requests');
@@ -1976,8 +1971,8 @@ function saveUser(){
 
 function delUser(i){
   const u=DB.users[i];
-  if(String(u.badge)==='201'){
-    alert('Cannot delete the primary admin account (badge 201).');return;
+  if(String(u.badge)==='0000'){
+    alert('Cannot delete the primary admin account (badge 0000).');return;
   }
   showConfirm(
     'Remove User',
@@ -3098,16 +3093,6 @@ window.firebaseLoad = async function() {
     if(compSnap.exists()) DB.complaints = JSON.parse(compSnap.data().data||'[]');
     const regSnap = await getDoc(doc(db, 'lspd', 'registrations'));
     if(regSnap.exists()) DB.registrationRequests = JSON.parse(regSnap.data().data||'[]');
-    if(localStorage.getItem('lspd_apply_firebase_admin_reset')==='1'){
-      const adm=window.LSPD_DEFAULT_ADMIN_USER;
-      if(adm){
-        DB.users=[JSON.parse(JSON.stringify(adm))];
-        DB.officers=[];
-        migrateAll();
-        localStorage.removeItem('lspd_apply_firebase_admin_reset');
-        if(typeof persist==='function')persist();
-      }
-    }
     applyCommandRegTabs();
     // Migrate data format
     migrateAll();
