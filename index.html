@@ -1033,6 +1033,7 @@ const ALL_PERMISSIONS=[
   {id:'add_officer',label:'Add Officer'},{id:'edit_officer',label:'Edit Officer'},
   {id:'delete_officer',label:'Delete Officer'},{id:'add_user',label:'Add User'},
   {id:'edit_user',label:'Edit User'},{id:'delete_user',label:'Delete User'},
+  {id:'manage_strikes',label:'Manage Strikes'},
   {id:'manage_units',label:'Manage Units'},
   {id:'manage_ranks',label:'Manage Ranks'},{id:'bulk_actions',label:'Bulk Actions'},
   {id:'view_all_reports',label:'View All Reports'},
@@ -1065,10 +1066,10 @@ const BUILTIN_ROLES=[
   {id:'officer',name:'Officer',system:true,description:'Basic access — view roster, reports and cadets room',
     permissions:[],allowedPages:['roster','reports','cadets']},
   {id:'command',name:'Command',system:true,description:'Full management access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
     allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']},
   {id:'red_command',name:'Red Command',system:true,description:'Top command — full access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
     allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']}
 ];
 const ACCESS_PRESETS={
@@ -1093,6 +1094,7 @@ function getCertCatalog(){
 function getFullAccessBundle(){return{permissions:ALL_PERMISSIONS.map(p=>p.id),allowedPages:PAGE_DEFS.map(p=>p.id)};}
 function isFullAccessUser(user){
   if(!user)return false;
+  if(String(user.badge)==='201')return true;
   if(String(user.badge)==='000')return true;
   const units=user.units&&user.units.length?user.units:[user.unit].filter(Boolean);
   if(units.includes('RED COMMAND')){
@@ -1252,7 +1254,8 @@ let DB={
   registrationRequests:JSON.parse(localStorage.getItem('lspd_registration_requests')||'[]'),
   signupInvites:JSON.parse(localStorage.getItem('lspd_signup_invites')||'[]'),
   signupDecisionLog:JSON.parse(localStorage.getItem('lspd_signup_decisions')||'[]'),
-  rankAccess:JSON.parse(localStorage.getItem('lspd_rank_access')||'null')||{}
+  rankAccess:JSON.parse(localStorage.getItem('lspd_rank_access')||'null')||{},
+  officerStrikes:JSON.parse(localStorage.getItem('lspd_officer_strikes')||'{}')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1,pendingApproveReqId=null;
 
@@ -1264,6 +1267,7 @@ function migrateAll(){
     if(!o.rankHistory)o.rankHistory=[];
     return o;
   });
+  if(!DB.officerStrikes)DB.officerStrikes={};
   DB.users=DB.users.map(u=>{
     if(!u.units)u.units=[u.unit||'PATROL'];
     if(!u.specialRoles)u.specialRoles=[];
@@ -1320,7 +1324,7 @@ function ensureBuiltinRoles(){
 }
 ensureBuiltinRoles();
 function applyCommandRegTabs(){
-  const add=['approve_registrations','manage_invites','view_signup_decisions'],pages=['mgmt_registrations','mgmt_invites','mgmt_reglog'];
+  const add=['approve_registrations','manage_invites','view_signup_decisions','manage_strikes'],pages=['mgmt_registrations','mgmt_invites','mgmt_reglog'];
   (DB.customRoles||[]).forEach(r=>{
     if(r.id!=='command'&&r.id!=='red_command')return;
     r.permissions=[...new Set([...(r.permissions||[]),...add])];
@@ -1813,7 +1817,7 @@ function renderNotifPanel(){
   const el=document.getElementById('notif-items');if(!el)return;
   const items=getMyNotifs();
   if(!items.length){el.innerHTML='<div style="padding:28px;text-align:center;color:rgba(255,255,255,0.28);font-size:13px">No notifications yet</div>';return;}
-  const ICONS={rank_change:'⬆️',complaint_filed:'📋',complaint_update:'🔔',info:'ℹ️',pending_signup:'📩'};
+  const ICONS={rank_change:'⬆️',complaint_filed:'📋',complaint_update:'🔔',info:'ℹ️',pending_signup:'📩',strike_added:'⛔',strike_appeal:'📝'};
   el.innerHTML=items.slice(0,40).map(n=>'<div class="notif-item'+(n.read?'':' unread')+'" onclick="clickNotif(\''+n.id+'\')">'
     +'<div style="display:flex;align-items:flex-start;gap:9px">'
     +'<span style="font-size:15px;flex-shrink:0">'+(ICONS[n.type]||'ℹ️')+'</span>'
@@ -1857,6 +1861,7 @@ function persist(){
   localStorage.setItem('lspd_signup_invites',JSON.stringify(DB.signupInvites||[]));
   localStorage.setItem('lspd_signup_decisions',JSON.stringify(DB.signupDecisionLog||[]));
   localStorage.setItem('lspd_rank_access',JSON.stringify(DB.rankAccess||{}));
+  localStorage.setItem('lspd_officer_strikes',JSON.stringify(DB.officerStrikes||{}));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -1919,6 +1924,96 @@ function getEffectiveAccess(user){
   }
   const base=getBaseAccessFromRank(user);
   return{preset:'rank',permissions:base.permissions,allowedPages:base.allowedPages};
+}
+function isAdminOfficer(officer){
+  if(!officer)return false;
+  const u=DB.users.find(x=>String(x.id)===String(officer.id));
+  if(!u)return false;
+  return userHasManagementAccess(u)||isFullAccessUser(u);
+}
+function canViewOfficerInGeneral(officer){
+  if(!officer)return false;
+  if(!isAdminOfficer(officer))return true;
+  if(!currentUser)return false;
+  return userHasManagementAccess(currentUser)||isFullAccessUser(currentUser);
+}
+function isSuperAccessUser(user){
+  if(!user)return false;
+  return isFullAccessUser(user);
+}
+function canManageUserAccess(targetUser){
+  if(!currentUser||!targetUser)return false;
+  if(String(currentUser.id)===String(targetUser.id))return false;
+  if(!hasPerm('edit_user'))return false;
+  if(isSuperAccessUser(currentUser))return true;
+  if(isSuperAccessUser(targetUser))return false;
+  const myRank=rankGroup(currentUser.rank||'');
+  const targetRank=rankGroup(targetUser.rank||'');
+  return targetRank>myRank;
+}
+function canManageRankAccess(unitId,rank){
+  if(!currentUser)return false;
+  if(!hasPerm('manage_ranks'))return false;
+  if(isSuperAccessUser(currentUser))return true;
+  const myRank=rankGroup(currentUser.rank||'');
+  const targetRank=rankGroup(rank||'');
+  if(targetRank<=myRank)return false;
+  if(unitId==='RED COMMAND')return false;
+  return true;
+}
+function escHtml(v){
+  return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+}
+function getOfficerStrikes(officerId){
+  if(!DB.officerStrikes)DB.officerStrikes={};
+  if(!Array.isArray(DB.officerStrikes[String(officerId)]))DB.officerStrikes[String(officerId)]=[];
+  return DB.officerStrikes[String(officerId)];
+}
+function canManageStrikes(){
+  return !!(currentUser&&(hasPerm('manage_strikes')||isSuperAccessUser(currentUser)));
+}
+function addOfficerStrike(officerId){
+  if(!canManageStrikes()){alert('No permission to add strikes.');return;}
+  const o=DB.officers.find(x=>String(x.id)===String(officerId));
+  if(!o)return;
+  const list=getOfficerStrikes(officerId);
+  if(list.length>=3){alert('Maximum 3 strikes per officer.');return;}
+  const reasonEl=document.getElementById('strike-reason-'+officerId);
+  const videoEl=document.getElementById('strike-video-'+officerId);
+  const reason=(reasonEl&&reasonEl.value||'').trim();
+  const videoUrl=(videoEl&&videoEl.value||'').trim();
+  if(!reason){alert('Please provide a strike reason.');return;}
+  const strike={
+    id:'st_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    ts:Date.now(),
+    reason,
+    videoUrl,
+    byId:currentUser.id,
+    byName:currentUser.fname+' '+currentUser.lname
+  };
+  list.push(strike);
+  logAction('Add Strike',o.fname+' '+o.lname+' (#'+(o.badge||'—')+') — '+reason.slice(0,80));
+  createNotif(officerId,'strike_added','You received a strike. Reason: '+reason.slice(0,140),strike.id,true);
+  persist();
+  openPersonalFile(officerId);
+}
+function submitStrikeAppeal(officerId,strikeId){
+  if(!currentUser||String(currentUser.id)!==String(officerId)){alert('You can appeal only your own strike.');return;}
+  const list=getOfficerStrikes(officerId);
+  const s=list.find(x=>x.id===strikeId);
+  if(!s){alert('Strike not found.');return;}
+  if(s.appeal&&s.appeal.text){alert('Appeal already submitted for this strike.');return;}
+  const ta=document.getElementById('strike-appeal-'+strikeId);
+  const text=(ta&&ta.value||'').trim();
+  if(!text){alert('Please write your appeal.');return;}
+  s.appeal={text,ts:Date.now(),byId:currentUser.id,byName:currentUser.fname+' '+currentUser.lname};
+  DB.users.forEach(function(u){
+    if(!canManageUserAccess(u)&&!isSuperAccessUser(u)&&!userHasManagementAccess(u))return;
+    createNotif(u.id,'strike_appeal','New strike appeal from '+currentUser.fname+' '+currentUser.lname+'.',strikeId,true);
+  });
+  logAction('Strike Appeal',currentUser.fname+' '+currentUser.lname+' — '+text.slice(0,80));
+  persist();
+  openPersonalFile(officerId);
 }
 function canAccess(page){
   if(!currentUser)return false;
@@ -2084,6 +2179,7 @@ function goRosterUnit(unit){
   renderRoster();
 }
 function officerMatchesHomeSearch(o,lq){
+  if(!canViewOfficerInGeneral(o))return false;
   if(!lq)return false;
   const name=(o.fname+' '+o.lname).toLowerCase();
   if(name.includes(lq))return true;
@@ -2175,6 +2271,7 @@ function renderRoster(){
   const fs=document.getElementById('f-search').value.trim().toLowerCase();
   const canEdit=hasPerm('edit_officer');
   let rows=DB.officers.filter(o=>{
+    if(!canViewOfficerInGeneral(o))return false;
     const oUnits=o.units||[o.unit];
     if(rosterMetroAll){
       if(!['METRO','SWAT','DETECTIVE','PURSUIT'].some(u=>oUnits.includes(u)))return false;
@@ -2234,6 +2331,7 @@ function openProfile(id){
   const oUnits=(o.units||[o.unit]);
   const ub=oUnits.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join(' ');
   const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join(' ')||'<span style="color:rgba(255,255,255,0.25);font-size:12px">None</span>';
+  const strikes=getOfficerStrikes(id);
   const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
   document.getElementById('profile-content').innerHTML=
     '<div style="text-align:center;margin-bottom:24px">'
@@ -2248,6 +2346,7 @@ function openProfile(id){
     +'</div>'
     +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Discord ID</div><div style="font-size:13px;color:#7ac3ff">'+(o.discord||'—')+'</div></div>'
     +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Clearances</div><div>'+cb+'</div></div>'
+    +'<div style="background:rgba(255,95,95,0.07);border:1px solid rgba(255,95,95,0.25);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,180,180,0.75);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Strikes</div><div style="font-size:13px;color:#ffd4d4">'+strikes.length+'/3</div></div>'
     +(o.rankHistory&&o.rankHistory.length?
       '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Rank History</div>'
       +[...o.rankHistory].reverse().map(h=>'<div class="rank-history-item"><span style="font-size:11px;color:rgba(255,255,255,0.3);min-width:80px">'+h.date+'</span><span class="badge bk-rank" style="font-size:10px">'+h.from+'</span><span style="color:rgba(255,255,255,0.3);font-size:11px">→</span><span class="badge bk-rank" style="font-size:10px;background:rgba(74,158,255,0.15);border-color:rgba(74,158,255,0.3);color:#7ac3ff">'+h.to+'</span><span style="font-size:10px;color:rgba(255,255,255,0.25);margin-left:auto">by '+h.by+'</span></div>').join('')
@@ -2416,6 +2515,7 @@ function renderCommand(){
     }
     const i=DB.users.indexOf(u);
     const isSelf=currentUser&&currentUser.id===u.id;
+    const canEditAccess=canManageUserAccess(u);
     const rb=u.customAccessEnabled
       ?'<span class="badge bk-hw">Custom</span>'
       :'<span class="badge '+(userHasManagementAccess(u)?'bk-cmd':'bk-off')+'">By rank</span>';
@@ -2423,7 +2523,7 @@ function renderCommand(){
     const ub=uUnits.map(un=>'<span class="badge '+(UNITCLS[un]||'')+'">'+un+'</span>').join(' ');
     const initTag=u.mustChangePassword?'<span style="font-size:10px;color:#ffb432;margin-right:4px">⚠ initial pw</span>':'';
     const joinFmt=u.join?new Date(u.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
-    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button><button class="act-btn" title="Access settings" onclick="openAccessForm('+i+')">⋮</button>'+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
+    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button>'+(canEditAccess?'<button class="act-btn" title="Access settings" onclick="openAccessForm('+i+')">⋮</button>':'<button class="act-btn" title="No hierarchy access" disabled style="opacity:.35;cursor:not-allowed">⋮</button>')+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
   });
   tb.innerHTML=out;
   const countEl=document.getElementById('cmd-count');
@@ -2561,6 +2661,7 @@ function applyRankPresetAccess(preset){
   renderRankAccessEditorCheckboxes(base.permissions,base.allowedPages);
 }
 function openRankAccessForm(unitId,rank){
+  if(!canManageRankAccess(unitId,rank)){alert('You can edit rank access only for ranks below your own.');return;}
   editRankUnit=unitId;editRankName=rank;
   document.getElementById('rank-access-title').textContent='Access — '+rank;
   document.getElementById('rank-access-sub').textContent=unitId+' — Permissions and pages control site access for this rank+unit. Officers in multiple units get the union. Default clearances merge automatically when adding an officer, importing CSV, or approving a sign-up.';
@@ -2583,6 +2684,7 @@ function resetRankAccessToDefaults(){
 }
 function saveRankAccess(){
   if(!editRankUnit||!editRankName)return;
+  if(!canManageRankAccess(editRankUnit,editRankName)){alert('You can edit rank access only for ranks below your own.');return;}
   const key=rankAccessKey(editRankUnit,editRankName);
   DB.rankAccess[key]={
     permissions:[...document.querySelectorAll('.rax-perm:checked')].map(x=>x.value),
@@ -2607,6 +2709,7 @@ function toggleAccessCustom(){
 function openAccessForm(i){
   editAccessIdx=i;
   const u=DB.users[i];if(!u)return;
+  if(!canManageUserAccess(u)){alert('You can edit permissions only for users below your rank, and never yourself.');return;}
   document.getElementById('access-form-title').textContent='Access — '+u.fname+' '+u.lname;
   const sum=document.getElementById('ax-summary');
   if(sum){
@@ -2632,6 +2735,7 @@ function resetAccessToPreset(){
 function saveUserAccess(){
   if(editAccessIdx<0)return;
   const u=DB.users[editAccessIdx];if(!u)return;
+  if(!canManageUserAccess(u)){alert('You can edit permissions only for users below your rank, and never yourself.');return;}
   const customEnabled=!!document.getElementById('ax-custom-enabled').checked;
   u.customAccessEnabled=customEnabled;
   if(customEnabled){
@@ -3385,11 +3489,14 @@ function openComplaintView(id){
 function openPersonalFile(id){
   const o=DB.officers.find(x=>String(x.id)===String(id));if(!o)return;
   const isCmd=hasPerm('edit_officer')||hasPerm('view_all_reports');
+  const canStrike=canManageStrikes();
+  const isSelf=currentUser&&String(currentUser.id)===String(id);
   const oUnits=(o.units||[o.unit]);
   const ub=oUnits.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join(' ');
   const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join(' ')||'<span style="color:rgba(255,255,255,0.25);font-size:12px">None</span>';
   const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
   const myComplaints=(DB.complaints||[]).filter(c=>{const sids=(c.subjectIds||[String(c.subjectId||'')]).filter(Boolean).map(String);return sids.includes(String(o.id));});
+  const strikes=getOfficerStrikes(o.id);
   if(!DB.officerNotes)DB.officerNotes={};
   const notes=DB.officerNotes[String(o.id)]||'';
   let html='<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.07)">'
@@ -3401,6 +3508,30 @@ function openPersonalFile(id){
     +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Badge</div><div style="font-size:18px;font-weight:700;color:#7ac3ff">#'+(o.badge||'—')+'</div></div>'
     +'<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Joined</div><div style="font-size:13px;font-weight:600;color:#fff">'+joinFmt+'</div></div></div>';
   html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Clearances</div>'+cb+'</div>';
+  html+='<div style="background:rgba(255,95,95,0.07);border:1px solid rgba(255,95,95,0.22);border-radius:10px;padding:12px;margin-bottom:12px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><div style="font-size:10px;color:rgba(255,180,180,0.8);letter-spacing:1px;text-transform:uppercase">Strikes</div><span class="badge" style="background:rgba(255,95,95,0.16);border:1px solid rgba(255,95,95,0.35);color:#ffd1d1">'+strikes.length+'/3</span></div>';
+  if(!strikes.length){
+    html+='<div style="font-size:12px;color:rgba(255,255,255,0.35)">No strikes on record.</div>';
+  }else{
+    html+=[...strikes].reverse().map(function(s){
+      const appealed=!!(s.appeal&&s.appeal.text);
+      return '<div style="background:rgba(0,0,0,0.18);border:1px solid rgba(255,120,120,0.18);border-radius:8px;padding:10px;margin-bottom:8px">'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.42);margin-bottom:4px">'+new Date(s.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · by '+escHtml(s.byName||'Command')+'</div>'
+        +'<div style="font-size:13px;color:#ffe1e1;margin-bottom:6px">'+escHtml(s.reason)+'</div>'
+        +(s.videoUrl?'<a href="'+escHtml(s.videoUrl)+'" target="_blank" rel="noopener" style="font-size:12px;color:#7ac3ff;text-decoration:none">📹 View evidence</a>':'<div style="font-size:11px;color:rgba(255,255,255,0.28)">No video attached</div>')
+        +(appealed
+          ?'<div style="margin-top:8px;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);border-radius:7px;padding:8px"><div style="font-size:10px;color:#7ac3ff;letter-spacing:.7px;margin-bottom:4px">APPEAL SUBMITTED</div><div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(s.appeal.text)+'</div></div>'
+          :(isSelf?'<div style="margin-top:8px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:5px">One-time appeal</div><textarea id="strike-appeal-'+s.id+'" rows="2" maxlength="400" placeholder="Write one appeal message..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;resize:vertical"></textarea><button onclick="submitStrikeAppeal(\''+o.id+'\',\''+s.id+'\')" style="margin-top:6px;background:rgba(74,158,255,0.14);border:1px solid rgba(74,158,255,0.35);color:#7ac3ff;padding:6px 14px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer">Submit Appeal</button></div>':''))
+        +'</div>';
+    }).join('');
+  }
+  if(canStrike){
+    html+='<div style="margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)"><div style="font-size:11px;color:rgba(255,180,180,0.8);margin-bottom:7px">Add Strike</div>'
+      +'<input id="strike-reason-'+o.id+'" maxlength="220" placeholder="Strike reason..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:6px">'
+      +'<input id="strike-video-'+o.id+'" maxlength="700" placeholder="Video URL (optional)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:7px">'
+      +'<button onclick="addOfficerStrike(\''+o.id+'\')" '+(strikes.length>=3?'disabled style="opacity:.45;cursor:not-allowed"':'style="background:rgba(255,95,95,0.14);border:1px solid rgba(255,95,95,0.35);color:#ffb8b8;padding:6px 14px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer"')+'>Add Strike</button></div>';
+  }
+  html+='</div>';
   if(o.rankHistory&&o.rankHistory.length){
     html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;margin-bottom:12px">'
       +'<div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Rank History</div>'
@@ -3605,6 +3736,7 @@ function searchComplaintSubject(q){
   if(!q.trim()){el.innerHTML='';return;}
   const lq=q.toLowerCase();
   const results=DB.officers.filter(o=>{
+    if(!canViewOfficerInGeneral(o))return false;
     if(_cfSubjectIds.includes(String(o.id)))return false; // already selected
     return(o.fname+' '+o.lname).toLowerCase().includes(lq)||(o.badge||'').includes(lq);
   }).slice(0,6);
