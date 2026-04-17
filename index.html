@@ -446,6 +446,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button type="button" class="tab-btn" id="tab-registrations" onclick="switchTab('registrations')" style="display:none">📩 Pending sign-ups</button>
     <button type="button" class="tab-btn" id="tab-invites" onclick="switchTab('invites')">🎫 Invite Codes</button>
     <button type="button" class="tab-btn" id="tab-approvals-log" onclick="switchTab('approvals-log')">✅ Approvals Log</button>
+    <button type="button" class="tab-btn" id="tab-blacklist" onclick="switchTab('blacklist')">🚫 Blacklist</button>
     <button type="button" class="tab-btn" id="tab-roles" onclick="switchTab('roles')" style="display:none">🏷 Roles</button>
     <button type="button" class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button type="button" class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
@@ -495,6 +496,10 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 
   <div id="tab-content-approvals-log" style="display:none">
     <div id="approvals-log-list"></div>
+  </div>
+
+  <div id="tab-content-blacklist" style="display:none">
+    <div id="blacklist-content"></div>
   </div>
 
   <!-- Roles Tab -->
@@ -860,6 +865,25 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 </div>
 
+<!-- BLACKLIST ADD/EDIT -->
+<div id="blacklist-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:480px">
+    <h3 id="bl-form-title">Add to Blacklist</h3>
+    <div class="fg2">
+      <div class="field"><label>First name (character)</label><input id="bl-fname" placeholder="John" autocomplete="off"></div>
+      <div class="field"><label>Last name (character)</label><input id="bl-lname" placeholder="Doe" autocomplete="off"></div>
+    </div>
+    <div class="field"><label>Discord User ID <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="bl-discord" placeholder="17–19 digits" inputmode="numeric" maxlength="22" autocomplete="off"></div>
+    <div class="field"><label><span class="req">*</span>Reason</label><textarea id="bl-reason" placeholder="Reason for blacklist…" rows="3" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;color:inherit;font-size:13px;resize:vertical"></textarea></div>
+    <div class="field"><label>Record / evidence URL <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="bl-url" placeholder="https://…" type="url" autocomplete="off"></div>
+    <div class="modal-err" id="bl-err" style="min-height:18px"></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeBlacklistForm()">Cancel</button>
+      <button class="fsave" onclick="saveBlacklist()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="access-form-ov" class="form-overlay">
   <div class="form-box" style="max-width:760px">
     <h3 id="access-form-title">User Access</h3>
@@ -1048,7 +1072,8 @@ const ALL_PERMISSIONS=[
   {id:'manage_config',label:'Manage Site Config'},
   {id:'approve_registrations',label:'Approve Officer Sign-ups'},
   {id:'manage_invites',label:'Manage Invite Codes'},
-  {id:'view_signup_decisions',label:'View Signup Decisions Log'}
+  {id:'view_signup_decisions',label:'View Signup Decisions Log'},
+  {id:'manage_blacklist',label:'Manage Blacklist'}
 ];
 const PERM_LABELS=Object.fromEntries(ALL_PERMISSIONS.map(p=>[p.id,p.label]));
 const PAGE_DEFS=[
@@ -1066,16 +1091,17 @@ const PAGE_DEFS=[
   {id:'mgmt_registrations',label:'↳ Pending sign-ups',icon:'📩'},
   {id:'mgmt_invites',label:'↳ Invite Codes',icon:'🎫'},
   {id:'mgmt_reglog',label:'↳ Approvals Log',icon:'✅'},
+  {id:'mgmt_blacklist',label:'Blacklist (Mgmt)',icon:'🚫'},
 ];
 const BUILTIN_ROLES=[
   {id:'officer',name:'Officer',system:true,description:'Basic access — view roster, reports and cadets room',
     permissions:[],allowedPages:['roster','reports','cadets']},
   {id:'command',name:'Command',system:true,description:'Full management access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
-    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']},
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions','manage_blacklist'],
+    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist']},
   {id:'red_command',name:'Red Command',system:true,description:'Top command — full access',
-    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions'],
-    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog']}
+    permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions','manage_blacklist'],
+    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist']}
 ];
 const ACCESS_PRESETS={
   cadet:{name:'Cadet',permissions:[],allowedPages:['roster','reports','cadets']},
@@ -1259,6 +1285,7 @@ let DB={
   registrationRequests:JSON.parse(localStorage.getItem('lspd_registration_requests')||'[]'),
   signupInvites:JSON.parse(localStorage.getItem('lspd_signup_invites')||'[]'),
   signupDecisionLog:JSON.parse(localStorage.getItem('lspd_signup_decisions')||'[]'),
+  blacklist:JSON.parse(localStorage.getItem('lspd_blacklist')||'[]'),
   rankAccess:JSON.parse(localStorage.getItem('lspd_rank_access')||'null')||{},
   officerStrikes:JSON.parse(localStorage.getItem('lspd_officer_strikes')||'{}')
 };
@@ -1329,7 +1356,7 @@ function ensureBuiltinRoles(){
 }
 ensureBuiltinRoles();
 function applyCommandRegTabs(){
-  const add=['approve_registrations','manage_invites','view_signup_decisions','manage_strikes'],pages=['mgmt_registrations','mgmt_invites','mgmt_reglog'];
+  const add=['approve_registrations','manage_invites','view_signup_decisions','manage_strikes','manage_blacklist'],pages=['mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist'];
   (DB.customRoles||[]).forEach(r=>{
     if(r.id!=='command'&&r.id!=='red_command')return;
     r.permissions=[...new Set([...(r.permissions||[]),...add])];
@@ -1608,6 +1635,12 @@ function submitSignupRequest(){
     }
   }
   if(!fn||!ln){errEl.textContent='Fill first and last name.';return;}
+  const blEntry=(DB.blacklist||[]).find(function(b){
+    if(b.discordId&&discord&&b.discordId===discord)return true;
+    if(b.fname&&b.lname&&b.fname.trim().toLowerCase()===fn.toLowerCase()&&b.lname.trim().toLowerCase()===ln.toLowerCase())return true;
+    return false;
+  });
+  if(blEntry){errEl.textContent='Your registration request has been denied. You are blacklisted from the LSPD. Contact Internal Affairs if you believe this is an error.';return;}
   if(!units.length){errEl.textContent='Select at least one unit.';return;}
   if(!/^\d{1,3}$/.test(badge)){errEl.textContent='Badge must be 1–3 digits.';return;}
   if(!/^\d{17,19}$/.test(discord)){errEl.textContent='Discord user ID must be 17–19 digits (use Verify with Discord when enabled).';return;}
@@ -1879,6 +1912,7 @@ function persist(){
   localStorage.setItem('lspd_signup_decisions',JSON.stringify(DB.signupDecisionLog||[]));
   localStorage.setItem('lspd_rank_access',JSON.stringify(DB.rankAccess||{}));
   localStorage.setItem('lspd_officer_strikes',JSON.stringify(DB.officerStrikes||{}));
+  localStorage.setItem('lspd_blacklist',JSON.stringify(DB.blacklist||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -2248,7 +2282,7 @@ function goMgmt(){
   if(!currentUser)return;
   if(!canAccess('management'))return;
   // Show/hide tabs based on role permissions
-  const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
+  const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config',blacklist:'mgmt_blacklist'};
   Object.entries(tabPageMap).forEach(([t,page])=>{
     const btn=document.getElementById('tab-'+t);
     if(btn)btn.style.display=canOpenMgmtSubPage(page)?'':'none';
@@ -2790,6 +2824,7 @@ function switchTab(tab){
     else if(tab==='approvals-log'){addBtn.style.display='none';}
     else if(tab==='roles'){addBtn.style.display='none';}
     else if(tab==='units'){addBtn.style.display='';addBtn.textContent='+ Add Unit';}
+    else if(tab==='blacklist'){addBtn.style.display='';addBtn.textContent='+ Add to Blacklist';}
     else{addBtn.style.display='none';}
   const csvBtn=document.getElementById('mgmt-csv-btn');
   if(csvBtn)csvBtn.style.display=tab==='accounts'?'':'none';
@@ -2805,6 +2840,7 @@ function switchTab(tab){
   else if(tab==='cadets')renderCadetsMgmt();
   else if(tab==='analytics')renderHomeDashboard();
   else if(tab==='config')renderSiteConfig();
+  else if(tab==='blacklist')renderBlacklist();
 }
 
 function mgmtAddAction(){
@@ -2812,6 +2848,7 @@ function mgmtAddAction(){
   else if(currentTab==='invites')openInviteCreateForm();
   else if(currentTab==='roles')openRoleForm(null);
   else if(currentTab==='units')openUnitForm(null);
+  else if(currentTab==='blacklist')openBlacklistForm();
 }
 
 // --- Roles ---
@@ -4038,6 +4075,7 @@ window.firebasePersist = async function() {
     await setDoc(doc(db, 'lspd', 'registrations'), { data: JSON.stringify(DB.registrationRequests||[]) });
     await setDoc(doc(db, 'lspd', 'invites'), { data: JSON.stringify(DB.signupInvites||[]) });
     await setDoc(doc(db, 'lspd', 'signup_decisions'), { data: JSON.stringify(DB.signupDecisionLog||[]) });
+    await setDoc(doc(db, 'lspd', 'blacklist'), { data: JSON.stringify(DB.blacklist||[]) });
   } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
 };
 
@@ -4067,6 +4105,8 @@ window.firebaseLoad = async function() {
     if(invSnap.exists()) DB.signupInvites = JSON.parse(invSnap.data().data||'[]');
     const decSnap = await getDoc(doc(db, 'lspd', 'signup_decisions'));
     if(decSnap.exists()) DB.signupDecisionLog = JSON.parse(decSnap.data().data||'[]');
+    const blSnap = await getDoc(doc(db, 'lspd', 'blacklist'));
+    if(blSnap.exists()) DB.blacklist = JSON.parse(blSnap.data().data||'[]');
     applyCommandRegTabs();
     // Migrate data format
     migrateAll();
@@ -4171,6 +4211,14 @@ onSnapshot(doc(db, 'lspd', 'signup_decisions'), (snap) => {
     DB.signupDecisionLog=JSON.parse(snap.data().data||'[]');
     localStorage.setItem('lspd_signup_decisions',JSON.stringify(DB.signupDecisionLog||[]));
     if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='approvals-log'&&typeof renderApprovalsDecisionLog==='function')renderApprovalsDecisionLog();
+  }
+});
+
+onSnapshot(doc(db, 'lspd', 'blacklist'), (snap) => {
+  if(snap.exists()){
+    DB.blacklist=JSON.parse(snap.data().data||'[]');
+    localStorage.setItem('lspd_blacklist',JSON.stringify(DB.blacklist||[]));
+    if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='blacklist'&&typeof renderBlacklist==='function')renderBlacklist();
   }
 });
 
