@@ -811,6 +811,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="modal-err" id="li-err"></div>
     <button class="btn-primary" onclick="doLogin()">Login</button>
     <div class="login-cta">New officer? <button type="button" onclick="openSignupForm()">Sign up as officer</button></div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.18);text-align:center;margin-top:14px;letter-spacing:0.5px">System created by sh4l3v | Jeffrey Bundy · 201</div>
   </div>
 </div>
 
@@ -1785,6 +1786,67 @@ function approveAllPendingRegistrations(){
     }
   );
 }
+let editBlacklistId=null;
+function renderBlacklist(){
+  const el=document.getElementById('blacklist-content');if(!el)return;
+  const list=(DB.blacklist||[]).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const countEl=document.getElementById('cmd-count');
+  if(countEl&&typeof currentTab!=='undefined'&&currentTab==='blacklist')countEl.textContent='Total: '+list.length+' entr'+(list.length===1?'y':'ies');
+  if(!list.length){el.innerHTML='<p style="color:rgba(255,255,255,0.35);padding:24px;text-align:center">No blacklisted entries.</p>';return;}
+  el.innerHTML='<table class="cmd-table"><thead><tr><th>Character</th><th>Discord ID</th><th>Reason</th><th>Record</th><th>Added by</th><th>Date</th><th></th></tr></thead><tbody>'+
+    list.map(function(b){
+      const dt=b.addedAt?new Date(b.addedAt).toLocaleDateString():'—';
+      const rec=b.recordUrl?'<a href="'+esc(b.recordUrl)+'" target="_blank" rel="noopener" style="color:#7ac3ff;font-size:11px">🔗 View</a>':'—';
+      return '<tr><td style="font-weight:600">'+esc(b.fname||'')+' '+esc(b.lname||'')+'</td><td style="font-size:11px;color:#7ac3ff">'+(b.discordId?esc(b.discordId):'—')+'</td><td style="font-size:12px;max-width:220px">'+esc(b.reason||'')+'</td><td>'+rec+'</td><td style="font-size:11px;color:rgba(255,255,255,0.45)">'+esc(b.addedBy||'—')+'</td><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="display:flex;gap:6px;justify-content:flex-end"><button class="icon-btn" title="Edit" onclick="openEditBlacklist(\''+b.id+'\')">✏️</button><button class="icon-btn" style="color:#ff6b6b" title="Remove" onclick="deleteBlacklist(\''+b.id+'\')">🗑</button></td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function openBlacklistForm(id){
+  editBlacklistId=id||null;
+  document.getElementById('bl-form-title').textContent=id?'Edit Blacklist Entry':'Add to Blacklist';
+  document.getElementById('bl-err').textContent='';
+  const b=id?(DB.blacklist||[]).find(function(x){return x.id===id;}):null;
+  document.getElementById('bl-fname').value=b?b.fname:'';
+  document.getElementById('bl-lname').value=b?b.lname:'';
+  document.getElementById('bl-discord').value=b?b.discordId:'';
+  document.getElementById('bl-reason').value=b?b.reason:'';
+  document.getElementById('bl-url').value=b?b.recordUrl:'';
+  document.getElementById('blacklist-form-ov').classList.add('on');
+}
+function openEditBlacklist(id){openBlacklistForm(id);}
+function closeBlacklistForm(){editBlacklistId=null;document.getElementById('blacklist-form-ov').classList.remove('on');}
+function saveBlacklist(){
+  const fn=(document.getElementById('bl-fname').value||'').trim();
+  const ln=(document.getElementById('bl-lname').value||'').trim();
+  const discord=(document.getElementById('bl-discord').value||'').trim();
+  const reason=(document.getElementById('bl-reason').value||'').trim();
+  const url=(document.getElementById('bl-url').value||'').trim();
+  const errEl=document.getElementById('bl-err');
+  if(!fn&&!ln&&!discord){errEl.textContent='Enter at least a name or Discord ID.';return;}
+  if(!reason){errEl.textContent='Reason is required.';return;}
+  if(discord&&!/^\d{17,22}$/.test(discord)){errEl.textContent='Discord ID must be 17–22 digits.';return;}
+  if(!DB.blacklist)DB.blacklist=[];
+  if(editBlacklistId){
+    const b=DB.blacklist.find(function(x){return x.id===editBlacklistId;});
+    if(b){b.fname=fn;b.lname=ln;b.discordId=discord;b.reason=reason;b.recordUrl=url;b.editedBy=currentUser?currentUser.fname+' '+currentUser.lname:'';b.editedAt=Date.now();}
+  }else{
+    DB.blacklist.push({id:'bl_'+Date.now()+'_'+Math.random().toString(36).slice(2),fname:fn,lname:ln,discordId:discord,reason:reason,recordUrl:url,addedBy:currentUser?currentUser.fname+' '+currentUser.lname:'',addedAt:Date.now()});
+  }
+  logAction('Blacklist '+(editBlacklistId?'edit':'add'),fn+' '+ln+(discord?' ('+discord+')':''));
+  persist();
+  closeBlacklistForm();
+  renderBlacklist();
+}
+function deleteBlacklist(id){
+  const b=(DB.blacklist||[]).find(function(x){return x.id===id;});
+  if(!b)return;
+  showConfirm('Remove from blacklist','Remove <strong>'+esc(b.fname)+' '+esc(b.lname)+'</strong> from the blacklist?',function(){
+    DB.blacklist=DB.blacklist.filter(function(x){return x.id!==id;});
+    logAction('Blacklist remove',b.fname+' '+b.lname);
+    persist();
+    renderBlacklist();
+  });
+}
+
 function rejectRegistration(id){
   const req=(DB.registrationRequests||[]).find(function(r){return r.id===id;});
   if(!req)return;
