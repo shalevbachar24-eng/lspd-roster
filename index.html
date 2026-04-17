@@ -832,6 +832,10 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       </div>
     </div>
     <div class="field"><label><span class="req">*</span>Discord user ID</label><input id="su-discord" placeholder="17–19 digits (filled after verify)" inputmode="numeric" maxlength="22" autocomplete="off"></div>
+    <div class="fg2">
+      <div class="field"><label><span class="req">*</span>PIN (4 digits)</label><input id="su-pin" type="password" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="new-password" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+      <div class="field"><label><span class="req">*</span>Confirm PIN</label><input id="su-pin2" type="password" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="new-password" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+    </div>
     <div class="field"><label>Notes <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="su-notes" placeholder="e.g. academy class, transfer…"></div>
     <div class="modal-err" id="su-err" style="min-height:20px"></div>
     <div class="form-btns">
@@ -847,7 +851,8 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <h3>Approve sign-up</h3>
     <p id="reg-approve-summary" style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:14px;line-height:1.45"></p>
     <p style="font-size:11px;color:rgba(255,255,255,0.38);margin:-6px 0 12px;line-height:1.45">Access is assigned automatically from <strong>Management → Ranks</strong> (per unit + rank). You can still override per user later via ⋮.</p>
-    <div class="field"><label>Initial PIN</label><input id="appr-pin" value="0000" maxlength="4" inputmode="numeric" class="pin-input" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+    <p id="appr-pin-note" style="display:none;font-size:11px;background:rgba(93,202,165,0.1);border:1px solid rgba(93,202,165,0.25);border-radius:8px;padding:9px 12px;color:#5dcaa5;margin-bottom:12px">Officer chose their own PIN during sign-up — no initial PIN needed.</p>
+    <div class="field" id="appr-pin-wrap"><label>Initial PIN</label><input id="appr-pin" value="0000" maxlength="4" inputmode="numeric" class="pin-input" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
     <div class="form-btns">
       <button class="fcancel" onclick="closeRegApprove()">Cancel</button>
       <button class="fsave" onclick="finalizeApproveRegistration()">Create roster + account</button>
@@ -1567,7 +1572,7 @@ function formatInviteStatus(inv){
 function openSignupForm(){
   document.getElementById('su-err').textContent='';
   document.getElementById('su-err').style.color='#ff6b6b';
-  ['su-fn','su-ln','su-badge','su-notes','su-invite'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['su-fn','su-ln','su-badge','su-notes','su-invite','su-pin','su-pin2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});;
   const disc=document.getElementById('su-discord');
   if(disc){disc.readOnly=false;disc.removeAttribute('readonly');disc.value='';}
   buildSuUnitGrid(['PATROL']);
@@ -1606,6 +1611,10 @@ function submitSignupRequest(){
   if(!units.length){errEl.textContent='Select at least one unit.';return;}
   if(!/^\d{1,3}$/.test(badge)){errEl.textContent='Badge must be 1–3 digits.';return;}
   if(!/^\d{17,19}$/.test(discord)){errEl.textContent='Discord user ID must be 17–19 digits (use Verify with Discord when enabled).';return;}
+  const pin=document.getElementById('su-pin').value.trim();
+  const pin2=document.getElementById('su-pin2').value.trim();
+  if(!/^\d{4}$/.test(pin)){errEl.textContent='PIN must be exactly 4 digits.';return;}
+  if(pin!==pin2){errEl.textContent='PINs do not match.';return;}
   if(!inviteCode){errEl.textContent='Invite code is required.';return;}
   const inv=findInviteByCode(inviteCode);
   const invCheck=canUseInvite(inv,discord);
@@ -1618,7 +1627,7 @@ function submitSignupRequest(){
   const pend=DB.registrationRequests||[];
   if(pend.some(r=>r.status==='pending'&&(String(r.badge)===padBadge||((r.fname||'').trim().toLowerCase()===fn.toLowerCase()&&(r.lname||'').trim().toLowerCase()===ln.toLowerCase())))){
     errEl.textContent='A pending request already uses this badge or full name.';return;}
-  const req={id:'req_'+Date.now()+'_'+Math.random().toString(36).slice(2),ts:Date.now(),status:'pending',fname:fn,lname:ln,rank,units,unit:units[0],badge:padBadge,discord,notes,inviteCode:inviteCode,inviteId:inv.id};
+  const req={id:'req_'+Date.now()+'_'+Math.random().toString(36).slice(2),ts:Date.now(),status:'pending',fname:fn,lname:ln,rank,units,unit:units[0],badge:padBadge,discord,notes,inviteCode:inviteCode,inviteId:inv.id,chosenPin:pin};
   if(!DB.registrationRequests)DB.registrationRequests=[];
   consumeInvite(inv);
   DB.registrationRequests.push(req);
@@ -1648,6 +1657,9 @@ function openRegApprove(id){
   if(!req)return;
   pendingApproveReqId=id;
   document.getElementById('reg-approve-summary').innerHTML='Officer: <strong>'+req.fname+' '+req.lname+'</strong> · Badge <strong>#'+req.badge+'</strong><br>Units: '+req.units.join(', ')+' · Rank: '+req.rank+(req.notes?'<br>Notes: '+req.notes:'');
+  const hasPinChosen=!!(req.chosenPin);
+  document.getElementById('appr-pin-wrap').style.display=hasPinChosen?'none':'block';
+  document.getElementById('appr-pin-note').style.display=hasPinChosen?'block':'none';
   document.getElementById('appr-pin').value='0000';
   document.getElementById('reg-approve-ov').classList.add('on');
 }
@@ -1663,8 +1675,8 @@ function nextUserOfficerId(){
 }
 function tryApproveRegistrationRequest(req,pw){
   if(!req||req.status!=='pending')return{ok:false,err:'Request is not pending.'};
-  if(!/^\d{4}$/.test((pw||'').trim()))return{ok:false,err:'Initial PIN must be exactly 4 digits.'};
-  const pin=(pw||'').trim();
+  const pin=req.chosenPin||(pw||'').trim();
+  if(!req.chosenPin&&!/^\d{4}$/.test(pin))return{ok:false,err:'Initial PIN must be exactly 4 digits.'};
   const padBadge=String(req.badge||'').padStart(3,'0');
   if(String(padBadge)==='000')return{ok:false,err:'Badge #000 is reserved.'};
   if(DB.officers.some(function(o){return String(o.badge)===padBadge;})||DB.users.some(function(u){return String(u.badge)===padBadge;}))
@@ -1673,7 +1685,7 @@ function tryApproveRegistrationRequest(req,pw){
   const newId=nextUserOfficerId();
   const join=new Date().toISOString().split('T')[0];
   const starterCerts=mergeRankDefaultCerts(req.rank,req.units,[]);
-  const userObj={id:newId,fname:req.fname,lname:req.lname,password:pin,mustChangePassword:true,rank:req.rank,unit:req.unit,units:req.units,badge:padBadge,discord:req.discord,join:join,certs:starterCerts.slice(),specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
+  const userObj={id:newId,fname:req.fname,lname:req.lname,password:pin,mustChangePassword:!req.chosenPin,rank:req.rank,unit:req.unit,units:req.units,badge:padBadge,discord:req.discord,join:join,certs:starterCerts.slice(),specialRoles:[],customAccessEnabled:false,customPermissions:[],customPages:[]};
   const br=getBaseAccessFromRank(userObj);
   const roleId=br.allowedPages.includes('management')?'command':'officer';
   userObj.role=userObj.roleId=roleId;
@@ -1701,7 +1713,7 @@ function finalizeApproveRegistration(){
   const req=(DB.registrationRequests||[]).find(function(r){return r.id===pendingApproveReqId&&r.status==='pending';});
   if(!req){alert('Request not found or already handled.');closeRegApprove();return;}
   const pw=(document.getElementById('appr-pin').value||'0000').trim();
-  const res=tryApproveRegistrationRequest(req,pw);
+  const res=tryApproveRegistrationRequest(req,req.chosenPin||pw);
   if(!res.ok){alert(res.err||'Could not approve.');return;}
   persist();
   closeRegApprove();
@@ -1712,18 +1724,23 @@ function finalizeApproveRegistration(){
 function approveAllPendingRegistrations(){
   const list=(DB.registrationRequests||[]).filter(function(r){return r.status==='pending';});
   if(!list.length){alert('No pending sign-ups.');return;}
-  const pw=(window.prompt('Initial PIN for every new account (4 digits):','0000')||'').trim();
-  if(!/^\d{4}$/.test(pw)){alert('PIN must be exactly 4 digits.');return;}
+  const needFallback=list.some(function(r){return!r.chosenPin;});
+  let fallbackPw='0000';
+  if(needFallback){
+    fallbackPw=(window.prompt('Fallback PIN for requests without a chosen PIN (4 digits):','0000')||'').trim();
+    if(!/^\d{4}$/.test(fallbackPw)){alert('PIN must be exactly 4 digits.');return;}
+  }
+  const pw=fallbackPw;
   showConfirm(
     'Approve all pending',
-    'Create roster + login for <strong>'+list.length+'</strong> request(s), each with PIN <strong>'+pw+'</strong>. Any row that cannot be created (badge/name conflict) will be skipped and listed after.',
+    'Create roster + login for <strong>'+list.length+'</strong> request(s). Officers who chose their own PIN will use it; others get PIN <strong>'+pw+'</strong>. Any row that cannot be created (badge/name conflict) will be skipped and listed after.',
     function(){
       const errs=[];
       const pendingIds=list.map(function(r){return r.id;});
       pendingIds.forEach(function(rid){
         const req=(DB.registrationRequests||[]).find(function(r){return r.id===rid&&r.status==='pending';});
         if(!req)return;
-        const res=tryApproveRegistrationRequest(req,pw);
+        const res=tryApproveRegistrationRequest(req,req.chosenPin||pw);
         if(!res.ok)errs.push(req.fname+' '+req.lname+': '+(res.err||'failed'));
       });
       persist();
