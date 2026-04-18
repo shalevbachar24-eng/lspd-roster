@@ -1820,37 +1820,60 @@ function approveAllPendingRegistrations(){
 let editBlacklistId=null;
 function renderBlacklist(){
   const el=document.getElementById('blacklist-content');if(!el)return;
-  const list=(DB.blacklist||[]).slice().sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  const countEl=document.getElementById('cmd-count');
-  if(countEl&&typeof currentTab!=='undefined'&&currentTab==='blacklist')countEl.textContent='Total: '+list.length+' entr'+(list.length===1?'y':'ies');
-  if(!list.length){el.innerHTML='<p style="color:rgba(255,255,255,0.35);padding:24px;text-align:center">No blacklisted entries.</p>';return;}
-  const remReqs=(DB.blRemovalRequests||[]).filter(r=>r.status==='pending');
-  const isRedCmd=currentUser&&(currentUser.roleId==='red_command'||String(currentUser.badge)==='201');
-  let remReqsHtml='';
-  if(isRedCmd&&remReqs.length){
-    remReqsHtml='<div style="background:rgba(255,200,80,0.06);border:1px solid rgba(255,200,80,0.2);border-radius:10px;padding:14px;margin-bottom:16px">'
-      +'<div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:rgba(255,200,80,0.9);margin-bottom:10px;text-transform:uppercase">⏳ Pending Blacklist Removal Requests ('+remReqs.length+')</div>'
-      +remReqs.map(function(r){
-        const blEntry=(DB.blacklist||[]).find(b=>b.id===r.blId);
-        const name=blEntry?escHtml(blEntry.fname+' '+blEntry.lname):'(deleted)';
-        return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">'
-          +'<div style="flex:1;min-width:180px"><div style="font-weight:600;color:#fff;margin-bottom:3px">'+name+'</div>'
-          +'<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">Requested by '+escHtml(r.reqByName)+' · '+new Date(r.ts).toLocaleDateString()+'</div>'
-          +'<div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(r.reason)+'</div></div>'
-          +'<div style="display:flex;gap:6px;align-items:center">'
-          +'<button class="bulk-apply" style="padding:5px 12px;font-size:12px" onclick="decideBlRemoval(\''+r.id+'\',true)">✅ Approve</button>'
-          +'<button class="bulk-cancel" style="padding:5px 12px;font-size:12px" onclick="decideBlRemoval(\''+r.id+'\',false)">❌ Deny</button>'
-          +'</div></div>';
-      }).join('')+'</div>';
-  }
-  el.innerHTML=remReqsHtml+'<table class="cmd-table"><thead><tr><th>Character</th><th>Discord ID</th><th>Reason</th><th>Record</th><th>Added by</th><th>Date</th><th></th></tr></thead><tbody>'+
-    list.map(function(b){
+  try{
+    const list=(DB.blacklist||[]).slice().sort(function(a,b){return(b.addedAt||0)-(a.addedAt||0);});
+    const countEl=document.getElementById('cmd-count');
+    if(countEl&&typeof currentTab!=='undefined'&&currentTab==='blacklist')countEl.textContent='Total: '+list.length+' entr'+(list.length===1?'y':'ies');
+    if(!list.length){el.innerHTML='<p style="color:rgba(255,255,255,0.35);padding:24px;text-align:center">No blacklisted entries.</p>';return;}
+    const remReqs=(DB.blRemovalRequests||[]).filter(function(r){return r.status==='pending';});
+    const isRedCmd=currentUser&&(currentUser.roleId==='red_command'||String(currentUser.badge)==='201');
+    let remReqsHtml='';
+    if(isRedCmd&&remReqs.length){
+      remReqsHtml='<div style="background:rgba(255,200,80,0.06);border:1px solid rgba(255,200,80,0.2);border-radius:10px;padding:14px;margin-bottom:16px">'
+        +'<div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:rgba(255,200,80,0.9);margin-bottom:10px;text-transform:uppercase">⏳ Pending Removal Requests ('+remReqs.length+')</div>'
+        +remReqs.map(function(r){
+          const blEntry=(DB.blacklist||[]).find(function(b){return b.id===r.blId;});
+          const name=blEntry?escHtml((blEntry.fname||'')+' '+(blEntry.lname||'')):'(deleted)';
+          return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+            +'<div style="flex:1;min-width:180px"><div style="font-weight:600;color:#fff;margin-bottom:3px">'+name+'</div>'
+            +'<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">By: '+escHtml(r.reqByName||'')+'  ·  '+new Date(r.ts||0).toLocaleDateString()+'</div>'
+            +'<div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(r.reason||'')+'</div></div>'
+            +'<div style="display:flex;gap:6px;align-items:center">'
+            +'<button class="bulk-apply" style="padding:5px 12px;font-size:12px" onclick="decideBlRemoval(\''+r.id+'\',true)">✅ Approve</button>'
+            +'<button class="bulk-cancel" style="padding:5px 12px;font-size:12px" onclick="decideBlRemoval(\''+r.id+'\',false)">❌ Deny</button>'
+            +'</div></div>';
+        }).join('')+'</div>';
+    }
+    const rows=list.map(function(b){
       const dt=b.addedAt?new Date(b.addedAt).toLocaleDateString():'—';
-      const expStr=b.expiresAt?'<div style="font-size:10px;color:rgba(255,200,100,0.8);margin-top:3px">⏳ Expires '+new Date(b.expiresAt).toLocaleDateString()+'</div>':'<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:3px">Permanent</div>';
-      const hasPendingRemoval=(DB.blRemovalRequests||[]).some(r=>r.blId===b.id&&r.status==='pending');
-      const remBtn=hasPendingRemoval?'<span style="font-size:10px;color:#ffd080;padding:3px 7px;background:rgba(255,200,80,0.1);border-radius:5px;border:1px solid rgba(255,200,80,0.2)">⏳ Removal Pending</span>':'<button class="icon-btn" title="Request Removal" onclick="openBlRemovalOv(\''+b.id+'\')" style="font-size:11px;padding:3px 8px;color:#7ac3ff">↩ Lift</button>';
-      return '<tr><td style="font-weight:600">'+escHtml(b.fname||'')+' '+escHtml(b.lname||'')+expStr+'</td><td style="font-size:11px;color:#7ac3ff">'+(b.discordId?escHtml(b.discordId):'—')+'</td><td style="font-size:12px;max-width:220px">'+escHtml(b.reason||'')+'</td><td>'+(b.recordUrl?'<a href="'+escHtml(b.recordUrl)+'" target="_blank" rel="noopener" style="color:#7ac3ff;font-size:11px">🔗 View</a>':'—')+'</td><td style="font-size:11px;color:rgba(255,255,255,0.45)">'+escHtml(b.addedBy||'—')+'</td><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+remBtn+'<button class="icon-btn" title="Edit" onclick="openEditBlacklist(\''+b.id+'\')">✏️</button><button class="icon-btn" style="color:#ff6b6b" title="Remove" onclick="deleteBlacklist(\''+b.id+'\')">🗑</button></td></tr>';
-    }).join('')+'</tbody></table>';
+      const expStr=b.expiresAt
+        ?'<div style="font-size:10px;color:rgba(255,200,100,0.8);margin-top:2px">⏳ '+new Date(b.expiresAt).toLocaleDateString()+'</div>'
+        :'<div style="font-size:10px;color:rgba(255,255,255,0.22);margin-top:2px">Permanent</div>';
+      const hasPending=(DB.blRemovalRequests||[]).some(function(r){return r.blId===b.id&&r.status==='pending';});
+      const liftBtn=hasPending
+        ?'<span style="font-size:10px;color:#ffd080;padding:3px 7px;background:rgba(255,200,80,0.1);border-radius:5px;border:1px solid rgba(255,200,80,0.2)">⏳ Pending</span>'
+        :'<button class="act-btn" title="Request Removal" onclick="openBlRemovalOv(\''+b.id+'\')">↩</button>';
+      const recLink=b.recordUrl?'<a href="'+escHtml(b.recordUrl)+'" target="_blank" rel="noopener" style="color:#7ac3ff;font-size:11px">🔗 View</a>':'—';
+      return '<tr>'
+        +'<td style="font-weight:600">'+escHtml((b.fname||'')+' '+(b.lname||''))+expStr+'</td>'
+        +'<td style="font-size:11px;color:#7ac3ff">'+(b.discordId?escHtml(b.discordId):'—')+'</td>'
+        +'<td style="font-size:12px;max-width:220px">'+escHtml(b.reason||'')+'</td>'
+        +'<td>'+recLink+'</td>'
+        +'<td style="font-size:11px;color:rgba(255,255,255,0.45)">'+escHtml(b.addedBy||'—')+'</td>'
+        +'<td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td>'
+        +'<td style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">'+liftBtn
+        +'<button class="act-btn" title="Edit" onclick="openEditBlacklist(\''+b.id+'\')">✏</button>'
+        +'<button class="act-btn del-btn" title="Delete" onclick="deleteBlacklist(\''+b.id+'\')">✕</button>'
+        +'</td></tr>';
+    }).join('');
+    el.innerHTML=remReqsHtml
+      +'<div class="tbl-wrap"><table><thead><tr>'
+      +'<th>Character</th><th>Discord ID</th><th>Reason</th><th>Record</th><th>Added by</th><th>Date</th><th></th>'
+      +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }catch(e){
+    console.error('renderBlacklist error:',e);
+    el.innerHTML='<p style="color:#ff6b6b;padding:16px">Error rendering blacklist: '+escHtml(String(e))+'</p>';
+  }
 }
 function openBlacklistForm(id){
   editBlacklistId=id||null;
