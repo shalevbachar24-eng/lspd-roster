@@ -889,6 +889,25 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 </div>
 
+<!-- ADD STRIKE MODAL -->
+<div id="strike-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:480px">
+    <h3>Add Strike</h3>
+    <p id="strike-form-target" style="font-size:12px;color:rgba(255,255,255,0.45);margin:-4px 0 14px;line-height:1.45"></p>
+    <div class="field"><label><span class="req">*</span>Reason</label><textarea id="sf-reason" rows="3" maxlength="300" placeholder="Strike reason…" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;color:inherit;font-size:13px;resize:vertical"></textarea></div>
+    <div class="fg2">
+      <div class="field"><label>Duration <span style="color:rgba(255,255,255,0.28);font-size:10px">(0 = permanent)</span></label><input id="sf-duration" type="number" min="0" value="0" inputmode="numeric" style="text-align:center"></div>
+      <div class="field"><label>Unit</label><select id="sf-duration-unit" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 12px;color:inherit;font-size:13px;width:100%"><option value="days">Days</option><option value="months">Months</option></select></div>
+    </div>
+    <div class="field"><label>Body cam / evidence URL <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="sf-video" type="url" placeholder="https://…" maxlength="700" autocomplete="off"></div>
+    <div class="modal-err" id="sf-err" style="min-height:18px"></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeStrikeForm()">Cancel</button>
+      <button class="fsave" style="background:rgba(255,95,95,0.18);border-color:rgba(255,95,95,0.45);color:#ffb8b8" onclick="submitStrikeForm()">Add Strike</button>
+    </div>
+  </div>
+</div>
+
 <!-- BLACKLIST REMOVAL REQUEST -->
 <div id="bl-removal-ov" class="form-overlay">
   <div class="form-box" style="max-width:440px">
@@ -2215,6 +2234,48 @@ function getOfficerStrikes(officerId){
 function canManageStrikes(){
   return !!(currentUser&&(hasPerm('manage_strikes')||isSuperAccessUser(currentUser)));
 }
+let strikeFormOfficerId=null;
+function openStrikeForm(officerId){
+  if(!canManageStrikes()){alert('No permission to add strikes.');return;}
+  const o=DB.officers.find(function(x){return String(x.id)===String(officerId);});
+  if(!o)return;
+  if(getOfficerStrikes(officerId).length>=3){alert('This officer already has the maximum 3 strikes.');return;}
+  strikeFormOfficerId=String(officerId);
+  document.getElementById('strike-form-target').textContent='Officer: '+o.fname+' '+o.lname+' · Badge #'+(o.badge||'—');
+  document.getElementById('sf-reason').value='';
+  document.getElementById('sf-duration').value='0';
+  document.getElementById('sf-duration-unit').value='days';
+  document.getElementById('sf-video').value='';
+  document.getElementById('sf-err').textContent='';
+  document.getElementById('strike-form-ov').classList.add('on');
+}
+function closeStrikeForm(){strikeFormOfficerId=null;document.getElementById('strike-form-ov').classList.remove('on');}
+function submitStrikeForm(){
+  if(!strikeFormOfficerId||!currentUser)return;
+  const reason=(document.getElementById('sf-reason').value||'').trim();
+  const videoUrl=(document.getElementById('sf-video').value||'').trim();
+  const durVal=parseInt(document.getElementById('sf-duration').value)||0;
+  const durUnit=document.getElementById('sf-duration-unit').value||'days';
+  const errEl=document.getElementById('sf-err');
+  if(!reason){errEl.textContent='Strike reason is required.';return;}
+  const o=DB.officers.find(function(x){return String(x.id)===String(strikeFormOfficerId);});
+  if(!o)return;
+  const list=getOfficerStrikes(strikeFormOfficerId);
+  if(list.length>=3){errEl.textContent='Maximum 3 strikes per officer.';return;}
+  const expiresAt=durVal>0?(Date.now()+(durUnit==='months'?durVal*30*24*3600000:durVal*24*3600000)):null;
+  const strike={
+    id:'st_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    ts:Date.now(),reason,videoUrl,
+    byId:currentUser.id,byName:currentUser.fname+' '+currentUser.lname,
+    durationVal:durVal,durationUnit:durUnit,expiresAt
+  };
+  list.push(strike);
+  logAction('Add Strike',o.fname+' '+o.lname+' (#'+(o.badge||'—')+') — '+reason.slice(0,80));
+  createNotif(String(strikeFormOfficerId),'strike_added','You received a strike. Reason: '+reason.slice(0,140),strike.id,true);
+  persist();
+  closeStrikeForm();
+  openPersonalFile(strikeFormOfficerId);
+}
 function addOfficerStrike(officerId){
   if(!canManageStrikes()){alert('No permission to add strikes.');return;}
   const o=DB.officers.find(x=>String(x.id)===String(officerId));
@@ -2556,7 +2617,8 @@ function renderRoster(){
     const ub=oUnits2.map(u=>'<span class="badge '+(UNITCLS[u]||'')+'">'+u+'</span>').join('<span style="color:rgba(255,255,255,0.25);margin:0 2px;font-size:10px">|</span>');
     const cb=(o.certs||[]).map(c=>'<span class="badge '+(CERTCLS[c]||'')+'">'+c+'</span>').join('')||'—';
     const fileBtn='<button class="act-btn" onclick="openPersonalFile('+o.id+')" title="Personal File">📁</button>';
-    const acts=(canEdit?'<button class="act-btn" onclick="openOffFormById('+o.id+')">✏</button><button class="act-btn del-btn" onclick="delOfficerById('+o.id+')">✕</button>':'')+fileBtn;
+    const strikeBtn=canManageStrikes()?'<button class="act-btn" onclick="openStrikeForm('+o.id+')" title="Add Strike" style="color:#ffb8b8">⚡</button>':'';
+    const acts=(canEdit?'<button class="act-btn" onclick="openOffFormById('+o.id+')">✏</button><button class="act-btn del-btn" onclick="delOfficerById('+o.id+')">✕</button>':'')+strikeBtn+fileBtn;
     const joinFmt=o.join?new Date(o.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
     const checked=selectedIds.has(o.id)?'checked':'';
     const cbCell=selMode?'<td><input type="checkbox" class="row-cb" '+checked+' onchange="toggleRowSel('+o.id+',this.checked)"></td>':'';
@@ -2774,7 +2836,8 @@ function renderCommand(){
     const ub=uUnits.map(un=>'<span class="badge '+(UNITCLS[un]||'')+'">'+un+'</span>').join(' ');
     const initTag=u.mustChangePassword?'<span style="font-size:10px;color:#ffb432;margin-right:4px">⚠ initial pw</span>':'';
     const joinFmt=u.join?new Date(u.join).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
-    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button>'+(canEditAccess?'<button class="act-btn" title="Access settings" onclick="openAccessForm('+i+')">⋮</button>':'<button class="act-btn" title="No hierarchy access" disabled style="opacity:.35;cursor:not-allowed">⋮</button>')+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
+    const strikeBtnCmd=canManageStrikes()&&!isSelf?'<button class="act-btn" onclick="openStrikeForm('+u.id+')" title="Add Strike" style="color:#ffb8b8">⚡</button>':'';
+    out+='<tr><td style="font-weight:600">'+initTag+u.fname+' '+u.lname+(isSelf?' <span style="font-size:10px;color:rgba(255,255,255,0.28)">(you)</span>':'')+'</td><td>'+rb+'</td><td><span class="badge bk-rank">'+u.rank+'</span></td><td>'+ub+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">#'+(u.badge||'—')+'</td><td style="color:rgba(255,255,255,0.38);font-size:11px">'+joinFmt+'</td><td style="color:rgba(74,158,255,0.75);font-size:11px">'+(u.discord||'—')+'</td><td style="display:flex;gap:4px"><button class="act-btn" onclick="openUserForm('+i+')">✏</button>'+(canEditAccess?'<button class="act-btn" title="Access settings" onclick="openAccessForm('+i+')">⋮</button>':'<button class="act-btn" title="No hierarchy access" disabled style="opacity:.35;cursor:not-allowed">⋮</button>')+strikeBtnCmd+(!isSelf?'<button class="act-btn del-btn" onclick="delUser('+i+')">✕</button>':'')+'</td></tr>';
   });
   tb.innerHTML=out;
   const countEl=document.getElementById('cmd-count');
@@ -3002,15 +3065,15 @@ function saveUserAccess(){
 }
 
 function switchTab(tab){
-  const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config'};
+  const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config',blacklist:'mgmt_blacklist'};
   if(pageMap[tab]&&!canOpenMgmtSubPage(pageMap[tab])){
-    const first=['accounts','registrations','invites','approvals-log','units','ranks','log','cadets','analytics','config'].find(t=>!pageMap[t]||canOpenMgmtSubPage(pageMap[t]));
+    const first=['accounts','registrations','invites','approvals-log','units','ranks','log','cadets','analytics','config','blacklist'].find(t=>!pageMap[t]||canOpenMgmtSubPage(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
     alert('You do not have access to this section. Ask an admin to grant it under Management → Ranks (or your custom access).');
     return;
   }
   currentTab=tab;
-  ['accounts','registrations','invites','approvals-log','roles','units','ranks','log','cadets','analytics','config'].forEach(t=>{
+  ['accounts','registrations','invites','approvals-log','roles','units','ranks','log','cadets','analytics','config','blacklist'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
