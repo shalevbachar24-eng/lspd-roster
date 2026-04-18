@@ -889,6 +889,21 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 </div>
 
+<!-- BLACKLIST REMOVAL REQUEST -->
+<div id="bl-removal-ov" class="form-overlay">
+  <div class="form-box" style="max-width:440px">
+    <h3>Request Blacklist Removal</h3>
+    <p id="bl-removal-target" style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:14px;line-height:1.45"></p>
+    <p style="font-size:11px;color:rgba(255,255,255,0.35);margin:-6px 0 12px;line-height:1.45">This request will be sent to <strong>Red Command</strong> for review. Provide a clear reason.</p>
+    <div class="field"><label><span class="req">*</span>Reason for removal</label><textarea id="bl-removal-reason" rows="3" placeholder="Why should this person be removed from the blacklist?" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;color:inherit;font-size:13px;resize:vertical"></textarea></div>
+    <div class="modal-err" id="bl-removal-err" style="min-height:18px"></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="closeBlRemovalOv()">Cancel</button>
+      <button class="fsave" onclick="submitBlRemovalRequest()">Send Request</button>
+    </div>
+  </div>
+</div>
+
 <div id="access-form-ov" class="form-overlay">
   <div class="form-box" style="max-width:760px">
     <h3 id="access-form-title">User Access</h3>
@@ -1878,10 +1893,59 @@ function saveBlacklist(){
   closeBlacklistForm();
   renderBlacklist();
 }
+let pendingBlRemovalBlId=null;
+function openBlRemovalOv(blId){
+  pendingBlRemovalBlId=blId;
+  const b=(DB.blacklist||[]).find(x=>x.id===blId);
+  document.getElementById('bl-removal-target').innerHTML=b?'Requesting removal for: <strong>'+escHtml(b.fname)+' '+escHtml(b.lname)+'</strong>':'';
+  document.getElementById('bl-removal-reason').value='';
+  document.getElementById('bl-removal-err').textContent='';
+  document.getElementById('bl-removal-ov').classList.add('on');
+}
+function closeBlRemovalOv(){pendingBlRemovalBlId=null;document.getElementById('bl-removal-ov').classList.remove('on');}
+function submitBlRemovalRequest(){
+  if(!pendingBlRemovalBlId||!currentUser)return;
+  const reason=(document.getElementById('bl-removal-reason').value||'').trim();
+  const errEl=document.getElementById('bl-removal-err');
+  if(!reason){errEl.textContent='Reason is required.';return;}
+  if(!DB.blRemovalRequests)DB.blRemovalRequests=[];
+  const existing=DB.blRemovalRequests.find(r=>r.blId===pendingBlRemovalBlId&&r.status==='pending');
+  if(existing){errEl.textContent='A removal request for this entry is already pending.';return;}
+  const req={id:'blr_'+Date.now()+'_'+Math.random().toString(36).slice(2),blId:pendingBlRemovalBlId,reqByName:currentUser.fname+' '+currentUser.lname,reqById:currentUser.id,reason,ts:Date.now(),status:'pending'};
+  DB.blRemovalRequests.push(req);
+  // Notify Red Command
+  DB.users.forEach(function(u){
+    if(u.roleId==='red_command'||String(u.badge)==='201')
+      createNotif(u.id,'bl_removal_req','Blacklist removal request from '+currentUser.fname+' '+currentUser.lname+'. Reason: '+reason.slice(0,100),req.id,true);
+  });
+  logAction('BL Removal Request',currentUser.fname+' '+currentUser.lname+' — '+reason.slice(0,80));
+  persist();
+  closeBlRemovalOv();
+  renderBlacklist();
+}
+function decideBlRemoval(reqId,approved){
+  const isRedCmd=currentUser&&(currentUser.roleId==='red_command'||String(currentUser.badge)==='201');
+  if(!isRedCmd){alert('Only Red Command can approve/deny blacklist removal requests.');return;}
+  const req=(DB.blRemovalRequests||[]).find(r=>r.id===reqId);
+  if(!req){alert('Request not found.');return;}
+  if(approved){
+    DB.blacklist=(DB.blacklist||[]).filter(b=>b.id!==req.blId);
+    req.status='approved';req.decidedBy=currentUser.fname+' '+currentUser.lname;req.decidedAt=Date.now();
+    createNotif(req.reqById,'bl_removal_approved','Your blacklist removal request was approved by Red Command.',reqId,true);
+    logAction('BL Removal Approved',req.reqByName);
+  }else{
+    const why=window.prompt('Reason for denial (optional):','')||'';
+    req.status='denied';req.decidedBy=currentUser.fname+' '+currentUser.lname;req.decidedAt=Date.now();req.denyReason=why;
+    createNotif(req.reqById,'bl_removal_denied','Your blacklist removal request was denied.'+(why?' Reason: '+why:''),reqId,true);
+    logAction('BL Removal Denied',req.reqByName+(why?' — '+why:''));
+  }
+  persist();
+  renderBlacklist();
+}
 function deleteBlacklist(id){
   const b=(DB.blacklist||[]).find(function(x){return x.id===id;});
   if(!b)return;
-  showConfirm('Remove from blacklist','Remove <strong>'+esc(b.fname)+' '+esc(b.lname)+'</strong> from the blacklist?',function(){
+  showConfirm('Remove from blacklist','Remove <strong>'+escHtml(b.fname)+' '+escHtml(b.lname)+'</strong> from the blacklist?',function(){
     DB.blacklist=DB.blacklist.filter(function(x){return x.id!==id;});
     logAction('Blacklist remove',b.fname+' '+b.lname);
     persist();
@@ -2139,13 +2203,21 @@ function addOfficerStrike(officerId){
   const reason=(reasonEl&&reasonEl.value||'').trim();
   const videoUrl=(videoEl&&videoEl.value||'').trim();
   if(!reason){alert('Please provide a strike reason.');return;}
+  const durEl=document.getElementById('strike-duration-'+officerId);
+  const durUnitEl=document.getElementById('strike-duration-unit-'+officerId);
+  const stDurVal=parseInt((durEl&&durEl.value)||'0')||0;
+  const stDurUnit=(durUnitEl&&durUnitEl.value)||'days';
+  const stExpiry=stDurVal>0?(Date.now()+(stDurUnit==='months'?stDurVal*30*24*3600000:stDurVal*24*3600000)):null;
   const strike={
     id:'st_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
     ts:Date.now(),
     reason,
     videoUrl,
     byId:currentUser.id,
-    byName:currentUser.fname+' '+currentUser.lname
+    byName:currentUser.fname+' '+currentUser.lname,
+    durationVal:stDurVal,
+    durationUnit:stDurUnit,
+    expiresAt:stExpiry
   };
   list.push(strike);
   logAction('Add Strike',o.fname+' '+o.lname+' (#'+(o.badge||'—')+') — '+reason.slice(0,80));
@@ -3675,7 +3747,7 @@ function openPersonalFile(id){
     html+=[...strikes].reverse().map(function(s){
       const appealed=!!(s.appeal&&s.appeal.text);
       return '<div style="background:rgba(0,0,0,0.18);border:1px solid rgba(255,120,120,0.18);border-radius:8px;padding:10px;margin-bottom:8px">'
-        +'<div style="font-size:11px;color:rgba(255,255,255,0.42);margin-bottom:4px">'+new Date(s.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · by '+escHtml(s.byName||'Command')+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.42);margin-bottom:4px">'+new Date(s.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · by '+escHtml(s.byName||'Command')+(s.expiresAt?'<span style="margin-left:6px;color:rgba(255,200,100,0.8)">⏳ expires '+new Date(s.expiresAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'<span style="margin-left:6px;color:rgba(255,255,255,0.2);font-size:10px">permanent</span>')+'</div>'
         +'<div style="font-size:13px;color:#ffe1e1;margin-bottom:6px">'+escHtml(s.reason)+'</div>'
         +(s.videoUrl?'<a href="'+escHtml(s.videoUrl)+'" target="_blank" rel="noopener" style="font-size:12px;color:#7ac3ff;text-decoration:none">📹 View evidence</a>':'<div style="font-size:11px;color:rgba(255,255,255,0.28)">No video attached</div>')
         +(appealed
@@ -3687,7 +3759,8 @@ function openPersonalFile(id){
   if(canStrike){
     html+='<div style="margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)"><div style="font-size:11px;color:rgba(255,180,180,0.8);margin-bottom:7px">Add Strike</div>'
       +'<input id="strike-reason-'+o.id+'" maxlength="220" placeholder="Strike reason..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:6px">'
-      +'<input id="strike-video-'+o.id+'" maxlength="700" placeholder="Video URL (optional)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:7px">'
+      +'<input id="strike-video-'+o.id+'" maxlength="700" placeholder="Video / evidence URL (optional)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;margin-bottom:6px">'
+      +'<div style="display:flex;gap:8px;margin-bottom:7px;align-items:center"><input id="strike-duration-'+o.id+'" type="number" min="0" value="0" inputmode="numeric" placeholder="0" style="width:70px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;text-align:center"><select id="strike-duration-unit-'+o.id+'" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.11);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit"><option value="days">Days</option><option value="months">Months</option></select><span style="font-size:11px;color:rgba(255,255,255,0.35)">Duration (0 = permanent)</span></div>'
       +'<button onclick="addOfficerStrike(\''+o.id+'\')" '+(strikes.length>=3?'disabled style="opacity:.45;cursor:not-allowed"':'style="background:rgba(255,95,95,0.14);border:1px solid rgba(255,95,95,0.35);color:#ffb8b8;padding:6px 14px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer"')+'>Add Strike</button></div>';
   }
   html+='</div>';
