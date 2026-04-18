@@ -877,6 +877,10 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div class="field"><label>Discord User ID <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="bl-discord" placeholder="17–19 digits" inputmode="numeric" maxlength="22" autocomplete="off"></div>
     <div class="field"><label><span class="req">*</span>Reason</label><textarea id="bl-reason" placeholder="Reason for blacklist…" rows="3" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;color:inherit;font-size:13px;resize:vertical"></textarea></div>
     <div class="field"><label>Record / evidence URL <span style="color:rgba(255,255,255,0.28);font-size:10px">(optional)</span></label><input id="bl-url" placeholder="https://…" type="url" autocomplete="off"></div>
+    <div class="fg2">
+      <div class="field"><label>Duration <span style="color:rgba(255,255,255,0.28);font-size:10px">(0 = permanent)</span></label><input id="bl-duration" type="number" min="0" value="0" inputmode="numeric" style="text-align:center"></div>
+      <div class="field"><label>Unit</label><select id="bl-duration-unit" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 12px;color:inherit;font-size:13px;width:100%"><option value="days">Days</option><option value="months">Months</option></select></div>
+    </div>
     <div class="modal-err" id="bl-err" style="min-height:18px"></div>
     <div class="form-btns">
       <button class="fcancel" onclick="closeBlacklistForm()">Cancel</button>
@@ -1287,11 +1291,22 @@ let DB={
   signupInvites:JSON.parse(localStorage.getItem('lspd_signup_invites')||'[]'),
   signupDecisionLog:JSON.parse(localStorage.getItem('lspd_signup_decisions')||'[]'),
   blacklist:JSON.parse(localStorage.getItem('lspd_blacklist')||'[]'),
+  blRemovalRequests:JSON.parse(localStorage.getItem('lspd_bl_removal_reqs')||'[]'),
   rankAccess:JSON.parse(localStorage.getItem('lspd_rank_access')||'null')||{},
   officerStrikes:JSON.parse(localStorage.getItem('lspd_officer_strikes')||'{}')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1,pendingApproveReqId=null;
 
+function purgeExpiredEntries(){
+  const now=Date.now();
+  if(DB.blacklist)DB.blacklist=DB.blacklist.filter(function(b){return!b.expiresAt||b.expiresAt>now;});
+  if(DB.officerStrikes){
+    Object.keys(DB.officerStrikes).forEach(function(k){
+      if(Array.isArray(DB.officerStrikes[k]))
+        DB.officerStrikes[k]=DB.officerStrikes[k].filter(function(s){return!s.expiresAt||s.expiresAt>now;});
+    });
+  }
+}
 function migrateAll(){
   DB.unitDefs=(DB.unitDefs||[]).map(u=>({hiddenInRoster:false,rosterDesc:'',...u}));
   DB.officers=DB.officers.map(o=>{
@@ -1334,6 +1349,7 @@ function migrateAll(){
     const staffNoRoster=(u.role==='command'||u.role==='red_command')||String(u.badge)==='000';
     return hasOfficer||staffNoRoster;
   });
+  purgeExpiredEntries();
 }
 migrateAll();
 function ensureBuiltinRoles(){
@@ -1793,11 +1809,32 @@ function renderBlacklist(){
   const countEl=document.getElementById('cmd-count');
   if(countEl&&typeof currentTab!=='undefined'&&currentTab==='blacklist')countEl.textContent='Total: '+list.length+' entr'+(list.length===1?'y':'ies');
   if(!list.length){el.innerHTML='<p style="color:rgba(255,255,255,0.35);padding:24px;text-align:center">No blacklisted entries.</p>';return;}
-  el.innerHTML='<table class="cmd-table"><thead><tr><th>Character</th><th>Discord ID</th><th>Reason</th><th>Record</th><th>Added by</th><th>Date</th><th></th></tr></thead><tbody>'+
+  const remReqs=(DB.blRemovalRequests||[]).filter(r=>r.status==='pending');
+  const isRedCmd=currentUser&&(currentUser.roleId==='red_command'||String(currentUser.badge)==='201');
+  let remReqsHtml='';
+  if(isRedCmd&&remReqs.length){
+    remReqsHtml='<div style="background:rgba(255,200,80,0.06);border:1px solid rgba(255,200,80,0.2);border-radius:10px;padding:14px;margin-bottom:16px">'
+      +'<div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:rgba(255,200,80,0.9);margin-bottom:10px;text-transform:uppercase">⏳ Pending Blacklist Removal Requests ('+remReqs.length+')</div>'
+      +remReqs.map(function(r){
+        const blEntry=(DB.blacklist||[]).find(b=>b.id===r.blId);
+        const name=blEntry?escHtml(blEntry.fname+' '+blEntry.lname):'(deleted)';
+        return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+          +'<div style="flex:1;min-width:180px"><div style="font-weight:600;color:#fff;margin-bottom:3px">'+name+'</div>'
+          +'<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">Requested by '+escHtml(r.reqByName)+' · '+new Date(r.ts).toLocaleDateString()+'</div>'
+          +'<div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(r.reason)+'</div></div>'
+          +'<div style="display:flex;gap:6px;align-items:center">'
+          +'<button class="bulk-apply" style="padding:5px 12px;font-size:12px" onclick="decideBlRemoval(\''+r.id+'\',true)">✅ Approve</button>'
+          +'<button class="bulk-cancel" style="padding:5px 12px;font-size:12px" onclick="decideBlRemoval(\''+r.id+'\',false)">❌ Deny</button>'
+          +'</div></div>';
+      }).join('')+'</div>';
+  }
+  el.innerHTML=remReqsHtml+'<table class="cmd-table"><thead><tr><th>Character</th><th>Discord ID</th><th>Reason</th><th>Record</th><th>Added by</th><th>Date</th><th></th></tr></thead><tbody>'+
     list.map(function(b){
       const dt=b.addedAt?new Date(b.addedAt).toLocaleDateString():'—';
-      const rec=b.recordUrl?'<a href="'+esc(b.recordUrl)+'" target="_blank" rel="noopener" style="color:#7ac3ff;font-size:11px">🔗 View</a>':'—';
-      return '<tr><td style="font-weight:600">'+esc(b.fname||'')+' '+esc(b.lname||'')+'</td><td style="font-size:11px;color:#7ac3ff">'+(b.discordId?esc(b.discordId):'—')+'</td><td style="font-size:12px;max-width:220px">'+esc(b.reason||'')+'</td><td>'+rec+'</td><td style="font-size:11px;color:rgba(255,255,255,0.45)">'+esc(b.addedBy||'—')+'</td><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="display:flex;gap:6px;justify-content:flex-end"><button class="icon-btn" title="Edit" onclick="openEditBlacklist(\''+b.id+'\')">✏️</button><button class="icon-btn" style="color:#ff6b6b" title="Remove" onclick="deleteBlacklist(\''+b.id+'\')">🗑</button></td></tr>';
+      const expStr=b.expiresAt?'<div style="font-size:10px;color:rgba(255,200,100,0.8);margin-top:3px">⏳ Expires '+new Date(b.expiresAt).toLocaleDateString()+'</div>':'<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:3px">Permanent</div>';
+      const hasPendingRemoval=(DB.blRemovalRequests||[]).some(r=>r.blId===b.id&&r.status==='pending');
+      const remBtn=hasPendingRemoval?'<span style="font-size:10px;color:#ffd080;padding:3px 7px;background:rgba(255,200,80,0.1);border-radius:5px;border:1px solid rgba(255,200,80,0.2)">⏳ Removal Pending</span>':'<button class="icon-btn" title="Request Removal" onclick="openBlRemovalOv(\''+b.id+'\')" style="font-size:11px;padding:3px 8px;color:#7ac3ff">↩ Lift</button>';
+      return '<tr><td style="font-weight:600">'+escHtml(b.fname||'')+' '+escHtml(b.lname||'')+expStr+'</td><td style="font-size:11px;color:#7ac3ff">'+(b.discordId?escHtml(b.discordId):'—')+'</td><td style="font-size:12px;max-width:220px">'+escHtml(b.reason||'')+'</td><td>'+(b.recordUrl?'<a href="'+escHtml(b.recordUrl)+'" target="_blank" rel="noopener" style="color:#7ac3ff;font-size:11px">🔗 View</a>':'—')+'</td><td style="font-size:11px;color:rgba(255,255,255,0.45)">'+escHtml(b.addedBy||'—')+'</td><td style="font-size:11px;color:rgba(255,255,255,0.35)">'+dt+'</td><td style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+remBtn+'<button class="icon-btn" title="Edit" onclick="openEditBlacklist(\''+b.id+'\')">✏️</button><button class="icon-btn" style="color:#ff6b6b" title="Remove" onclick="deleteBlacklist(\''+b.id+'\')">🗑</button></td></tr>';
     }).join('')+'</tbody></table>';
 }
 function openBlacklistForm(id){
@@ -1810,6 +1847,8 @@ function openBlacklistForm(id){
   document.getElementById('bl-discord').value=b?b.discordId:'';
   document.getElementById('bl-reason').value=b?b.reason:'';
   document.getElementById('bl-url').value=b?b.recordUrl:'';
+  document.getElementById('bl-duration').value=b&&b.durationVal?b.durationVal:0;
+  document.getElementById('bl-duration-unit').value=b&&b.durationUnit?b.durationUnit:'days';
   document.getElementById('blacklist-form-ov').classList.add('on');
 }
 function openEditBlacklist(id){openBlacklistForm(id);}
@@ -1827,9 +1866,12 @@ function saveBlacklist(){
   if(!DB.blacklist)DB.blacklist=[];
   if(editBlacklistId){
     const b=DB.blacklist.find(function(x){return x.id===editBlacklistId;});
-    if(b){b.fname=fn;b.lname=ln;b.discordId=discord;b.reason=reason;b.recordUrl=url;b.editedBy=currentUser?currentUser.fname+' '+currentUser.lname:'';b.editedAt=Date.now();}
+    if(b){const dv2=parseInt(document.getElementById('bl-duration').value)||0;const du2=document.getElementById('bl-duration-unit').value;const exp2=dv2>0?(Date.now()+(du2==='months'?dv2*30*24*3600000:dv2*24*3600000)):null;b.fname=fn;b.lname=ln;b.discordId=discord;b.reason=reason;b.recordUrl=url;b.expiresAt=exp2;b.durationVal=dv2;b.durationUnit=du2;b.editedBy=currentUser?currentUser.fname+' '+currentUser.lname:'';b.editedAt=Date.now();}
   }else{
-    DB.blacklist.push({id:'bl_'+Date.now()+'_'+Math.random().toString(36).slice(2),fname:fn,lname:ln,discordId:discord,reason:reason,recordUrl:url,addedBy:currentUser?currentUser.fname+' '+currentUser.lname:'',addedAt:Date.now()});
+    const durationVal=parseInt(document.getElementById('bl-duration').value)||0;
+    const durationUnit=document.getElementById('bl-duration-unit').value;
+    const blExpiry=durationVal>0?(Date.now()+(durationUnit==='months'?durationVal*30*24*3600000:durationVal*24*3600000)):null;
+    DB.blacklist.push({id:'bl_'+Date.now()+'_'+Math.random().toString(36).slice(2),fname:fn,lname:ln,discordId:discord,reason:reason,recordUrl:url,addedBy:currentUser?currentUser.fname+' '+currentUser.lname:'',addedAt:Date.now(),expiresAt:blExpiry,durationVal,durationUnit});
   }
   logAction('Blacklist '+(editBlacklistId?'edit':'add'),fn+' '+ln+(discord?' ('+discord+')':''));
   persist();
@@ -1975,6 +2017,7 @@ function persist(){
   localStorage.setItem('lspd_rank_access',JSON.stringify(DB.rankAccess||{}));
   localStorage.setItem('lspd_officer_strikes',JSON.stringify(DB.officerStrikes||{}));
   localStorage.setItem('lspd_blacklist',JSON.stringify(DB.blacklist||[]));
+  localStorage.setItem('lspd_bl_removal_reqs',JSON.stringify(DB.blRemovalRequests||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -4138,6 +4181,7 @@ window.firebasePersist = async function() {
     await setDoc(doc(db, 'lspd', 'invites'), { data: JSON.stringify(DB.signupInvites||[]) });
     await setDoc(doc(db, 'lspd', 'signup_decisions'), { data: JSON.stringify(DB.signupDecisionLog||[]) });
     await setDoc(doc(db, 'lspd', 'blacklist'), { data: JSON.stringify(DB.blacklist||[]) });
+    await setDoc(doc(db, 'lspd', 'bl_removal_reqs'), { data: JSON.stringify(DB.blRemovalRequests||[]) });
   } catch(e) { console.warn('Firebase save failed, using localStorage', e); }
 };
 
@@ -4169,6 +4213,8 @@ window.firebaseLoad = async function() {
     if(decSnap.exists()) DB.signupDecisionLog = JSON.parse(decSnap.data().data||'[]');
     const blSnap = await getDoc(doc(db, 'lspd', 'blacklist'));
     if(blSnap.exists()) DB.blacklist = JSON.parse(blSnap.data().data||'[]');
+    const blRrSnap = await getDoc(doc(db, 'lspd', 'bl_removal_reqs'));
+    if(blRrSnap.exists()) DB.blRemovalRequests = JSON.parse(blRrSnap.data().data||'[]');
     applyCommandRegTabs();
     // Migrate data format
     migrateAll();
@@ -4280,6 +4326,13 @@ onSnapshot(doc(db, 'lspd', 'blacklist'), (snap) => {
   if(snap.exists()){
     DB.blacklist=JSON.parse(snap.data().data||'[]');
     localStorage.setItem('lspd_blacklist',JSON.stringify(DB.blacklist||[]));
+    if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='blacklist'&&typeof renderBlacklist==='function')renderBlacklist();
+  }
+});
+onSnapshot(doc(db, 'lspd', 'bl_removal_reqs'), (snap) => {
+  if(snap.exists()){
+    DB.blRemovalRequests=JSON.parse(snap.data().data||'[]');
+    localStorage.setItem('lspd_bl_removal_reqs',JSON.stringify(DB.blRemovalRequests||[]));
     if(document.getElementById('pg-mgmt')&&document.getElementById('pg-mgmt').classList.contains('on')&&typeof currentTab!=='undefined'&&currentTab==='blacklist'&&typeof renderBlacklist==='function')renderBlacklist();
   }
 });
