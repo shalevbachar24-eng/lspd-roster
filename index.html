@@ -29,12 +29,12 @@ button,select,input,label,[onclick]{cursor:url("data:image/svg+xml,%3Csvg xmlns=
 .logout-btn:hover{color:#fff;border-color:rgba(255,255,255,0.25)}
 .page{display:none;padding:40px;position:relative;z-index:2;min-height:calc(100vh - 67px)}
 .page.on{display:block}
-.home-center{text-align:center;margin-bottom:50px;padding-top:60px}
+.home-center{text-align:center;margin-bottom:50px;padding-top:60px;position:relative;z-index:1}
 .home-sub{font-size:11px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
 .home-title{font-size:36px;font-weight:900;font-style:italic;color:#fff}
 .home-title span{color:#f5c842}
 .home-line{width:40px;height:2px;background:rgba(255,255,255,0.12);margin:14px auto 0}
-.cards-row{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.cards-row{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;position:relative;z-index:1}
 .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:44px 52px;text-align:center;transition:all .22s;min-width:200px}
 .card:hover{background:rgba(74,158,255,0.09);border-color:rgba(74,158,255,0.35);transform:translateY(-5px)}
 .card:active{transform:scale(0.97)}
@@ -272,6 +272,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     </div>
   </div>
   <div class="hdr-right" id="hdr-right" style="display:none">
+    <button onclick="goHome()" title="Home" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:18px;padding:4px 6px;line-height:1;transition:color .15s" onmouseover="this.style.color='#7ac3ff'" onmouseout="this.style.color='rgba(255,255,255,0.45)'">⌂</button>
     <span class="hdr-name" id="hdr-name"></span>
     <span class="role-pill" id="hdr-role"></span>
     <button class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()" title="Notifications">
@@ -291,6 +292,32 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 <!-- HOME -->
 
 <div id="pg-home" class="page on">
+  <!-- LSPD background badge -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;z-index:0">
+    <svg viewBox="0 0 400 400" width="520" height="520" style="opacity:0.045;filter:drop-shadow(0 0 40px rgba(74,158,255,0.4))">
+      <!-- Outer ring -->
+      <circle cx="200" cy="200" r="188" fill="none" stroke="#4a9eff" stroke-width="5"/>
+      <circle cx="200" cy="200" r="178" fill="none" stroke="#4a9eff" stroke-width="1.5"/>
+      <!-- Star -->
+      <polygon points="200,30 232,130 338,130 252,192 282,295 200,235 118,295 148,192 62,130 168,130" fill="none" stroke="#4a9eff" stroke-width="5" stroke-linejoin="round"/>
+      <polygon points="200,60 226,138 310,138 244,186 268,268 200,220 132,268 156,186 90,138 174,138" fill="#4a9eff" fill-opacity="0.12"/>
+      <!-- Inner circle -->
+      <circle cx="200" cy="200" r="80" fill="none" stroke="#4a9eff" stroke-width="3"/>
+      <circle cx="200" cy="200" r="72" fill="rgba(74,158,255,0.06)"/>
+      <!-- LSPD text -->
+      <text x="200" y="192" text-anchor="middle" font-family="Heebo,sans-serif" font-weight="900" font-size="32" fill="#4a9eff" letter-spacing="3">LSPD</text>
+      <text x="200" y="216" text-anchor="middle" font-family="Heebo,sans-serif" font-weight="400" font-size="9" fill="#4a9eff" letter-spacing="2.5">LOS SANTOS</text>
+      <!-- Dots on ring -->
+      <circle cx="200" cy="14" r="4" fill="#4a9eff"/>
+      <circle cx="200" cy="386" r="4" fill="#4a9eff"/>
+      <circle cx="14" cy="200" r="4" fill="#4a9eff"/>
+      <circle cx="386" cy="200" r="4" fill="#4a9eff"/>
+      <circle cx="66" cy="66" r="3" fill="#4a9eff"/>
+      <circle cx="334" cy="66" r="3" fill="#4a9eff"/>
+      <circle cx="66" cy="334" r="3" fill="#4a9eff"/>
+      <circle cx="334" cy="334" r="3" fill="#4a9eff"/>
+    </svg>
+  </div>
   <div id="announce-bar" class="announce-bar">📢 <span id="announce-text"></span></div>
   <div class="home-center">
     <div class="home-sub">Welcome to the Training Center</div>
@@ -2177,6 +2204,11 @@ function isFtoManager(){
   if(canManageStrikes())return true;
   return getFtoManagers().includes(String(currentUser.id));
 }
+function canDeleteFtoReport(){
+  if(!currentUser)return false;
+  // Command/Red Command (manage_strikes covers this) or designated FTO managers
+  return canManageStrikes()||getFtoManagers().includes(String(currentUser.id));
+}
 function renderFtoTab(){
   const el=document.getElementById('fto-tab-content');
   if(!el)return;
@@ -2585,7 +2617,7 @@ function openFtoReportView(id){
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">'
     +'<span style="font-size:28px;font-weight:800;color:'+ratingColors[rating]+'">'+rating+'<span style="font-size:14px;opacity:.5">/5</span></span>'
     +'<span style="font-size:11px;color:'+ratingColors[rating]+';opacity:.8">'+ratingLabels[rating]+'</span>'
-    +(isFtoManager()?'<button onclick="deleteFtoReport(\''+r.id+'\')" style="background:none;border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.5);padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;margin-top:4px">Delete</button>':'')
+    +(canDeleteFtoReport()?'<button onclick="deleteFtoReport(\''+r.id+'\')" style="background:none;border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.5);padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;margin-top:4px">Delete</button>':'')
     +'</div></div>'
     +'<div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:18px"></div>'
     +ftoViewSection('📍 What happened in patrol',r.patrol,'rgba(255,200,80,0.12)','rgba(255,200,80,0.25)','#ffd060')
