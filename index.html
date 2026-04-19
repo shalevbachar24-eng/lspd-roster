@@ -4163,14 +4163,55 @@ function delUnitDef(id){
 function renderRanksTab(){
   const container=document.getElementById('ranks-mgmt-list');if(!container)return;
   const units=DB.unitDefs||DEFAULT_UNIT_DEFS;
-  const countEl=document.getElementById('cmd-count');
-  if(countEl)countEl.textContent='';
-  container.innerHTML=units.map(u=>{
-    const ranks=DB.ranksByUnit[u.id]||RANKS_BY_UNIT[u.id]||RANKS_BY_UNIT['PATROL']||[];
-    const items=ranks.map((r,i)=>'<div class="rank-list-item"><span style="flex:1;font-size:13px;color:#e8edf5">'+r+'</span><button type="button" class="act-btn" title="Access for this rank" onclick=\'openRankAccessForm('+JSON.stringify(u.id)+','+JSON.stringify(r)+')\'>⚙</button><button class="rank-move-btn" onclick="moveRank(\''+u.id+'\','+i+',-1)"'+(i===0?' disabled':'')+'>▲</button><button class="rank-move-btn" onclick="moveRank(\''+u.id+'\','+i+',1)"'+(i===ranks.length-1?' disabled':'')+'>▼</button><button class="act-btn del-btn" onclick="removeRankFromUnit(\''+u.id+'\',\''+r.replace(/'/g,"\\'")+'\')" >✕</button></div>').join('');
-    return '<div class="rank-section"><div class="rank-section-title">'+u.icon+' '+u.name+'</div>'+items+'<div class="add-rank-row"><input class="add-rank-input" id="add-rank-'+u.id+'" placeholder="New rank name..." onkeydown="if(event.key===\'Enter\')addRankToUnit(\''+u.id+'\')"><button class="add-btn" style="padding:8px 14px;font-size:12px" onclick="addRankToUnit(\''+u.id+'\')">+ Add</button></div></div>';
-  }).join('');
+  if(!currentRankUnit||!units.find(u=>u.id===currentRankUnit))currentRankUnit=units[0]&&units[0].id;
+  // Unit tabs
+  const tabBar='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px">'
+    +units.map(u=>{
+      const active=u.id===currentRankUnit;
+      return '<button type="button" onclick="selectRankUnit(\''+u.id+'\')" style="'
+        +'padding:7px 16px;border-radius:20px;font-size:12px;font-family:inherit;cursor:pointer;transition:.15s;font-weight:'+(active?'700':'500')+';'
+        +(active
+          ?'background:rgba(74,158,255,0.18);border:1px solid rgba(74,158,255,0.45);color:#7ac3ff;'
+          :'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);')
+        +'">'+u.icon+' '+u.name+'</button>';
+    }).join('')+'</div>';
+  // Ranks for current unit
+  const ranks=DB.ranksByUnit[currentRankUnit]||RANKS_BY_UNIT[currentRankUnit]||RANKS_BY_UNIT['PATROL']||[];
+  const rankCards=ranks.length
+    ?'<div style="display:flex;flex-direction:column;gap:8px">'
+      +ranks.map((r,i)=>{
+        const tier=getRankAccessTier(currentRankUnit,r);
+        const a=getStoredRankAccess(currentRankUnit,r);
+        const keyPages=(a.allowedPages||[]).filter(p=>['roster','reports','cadets','management'].includes(p));
+        const pageChips=keyPages.map(p=>{
+          const pd=PAGE_DEFS.find(x=>x.id===p);
+          return pd?'<span style="font-size:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.45);padding:2px 7px;border-radius:10px">'+pd.icon+' '+pd.label+'</span>':'';
+        }).join('');
+        return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+          +'<div style="flex:1;min-width:140px">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+          +'<span style="font-size:14px;font-weight:700;color:#e8edf5">'+escHtml(r)+'</span>'
+          +'<span class="rank-tier-badge '+tier.cls+'">'+tier.label+'</span>'
+          +'</div>'
+          +(pageChips?'<div style="display:flex;flex-wrap:wrap;gap:4px">'+pageChips+'</div>':'<span style="font-size:10px;color:rgba(255,255,255,0.25)">No pages assigned</span>')
+          +'</div>'
+          +'<div style="display:flex;align-items:center;gap:5px;flex-shrink:0">'
+          +'<button type="button" onclick=\'openRankAccessForm('+JSON.stringify(currentRankUnit)+','+JSON.stringify(r)+')\' style="background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.28);color:#7ac3ff;padding:5px 12px;border-radius:7px;font-size:11px;font-family:inherit;cursor:pointer">⚙ Access</button>'
+          +'<button class="rank-move-btn" onclick="moveRank(\''+currentRankUnit+'\','+i+',-1)"'+(i===0?' disabled':'')+'>▲</button>'
+          +'<button class="rank-move-btn" onclick="moveRank(\''+currentRankUnit+'\','+i+',1)"'+(i===ranks.length-1?' disabled':'')+'>▼</button>'
+          +'<button class="act-btn del-btn" onclick="removeRankFromUnit(\''+currentRankUnit+'\',\''+r.replace(/'/g,"\\'")+'\')" title="Remove rank">✕</button>'
+          +'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>'
+    :'<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.25);font-size:13px">No ranks defined for this unit yet.</div>';
+  const addRow='<div class="add-rank-row" style="margin-top:14px">'
+    +'<input class="add-rank-input" id="add-rank-'+currentRankUnit+'" placeholder="New rank name (e.g. Sr. Officer)…" onkeydown="if(event.key===\'Enter\')addRankToUnit(\''+currentRankUnit+'\')">'
+    +'<button class="add-btn" style="padding:8px 16px;font-size:12px" onclick="addRankToUnit(\''+currentRankUnit+'\')">+ Add Rank</button>'
+    +'</div>';
+  container.innerHTML=tabBar+rankCards+addRow;
 }
+function selectRankUnit(unitId){currentRankUnit=unitId;renderRanksTab();}
 
 function addRankToUnit(unitId){
   const inp=document.getElementById('add-rank-'+unitId);
