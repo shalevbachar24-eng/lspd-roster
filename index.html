@@ -451,6 +451,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button type="button" class="tab-btn" id="tab-units" onclick="switchTab('units')">🏢 Units</button>
     <button type="button" class="tab-btn" id="tab-ranks" onclick="switchTab('ranks')">⬆ Ranks</button>
     <button type="button" class="tab-btn" id="tab-log" onclick="switchTab('log')">📋 Activity Log</button>
+    <button type="button" class="tab-btn" id="tab-fto" onclick="switchTab('fto')">🎓 FTO Program</button>
     <button type="button" class="tab-btn" id="tab-cadets" onclick="switchTab('cadets')">🎓 Cadets</button>
     <button type="button" class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">📊 Analytics</button>
     <button type="button" class="tab-btn" id="tab-config" onclick="switchTab('config')" title="Announcement, report types, certifications">⚙️ Site Config</button>
@@ -520,6 +521,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   <!-- Log Tab -->
   <div id="tab-content-log" style="display:none">
     <div id="log-list"></div>
+  </div>
+
+  <!-- FTO Program Tab -->
+  <div id="tab-content-fto" style="display:none">
+    <div id="fto-tab-content"></div>
   </div>
 
   <!-- Cadets Tab -->
@@ -985,6 +991,88 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- FTO ADD/EDIT TRAINEE FORM -->
+<div id="fto-form-ov" class="form-overlay">
+  <div class="form-box" style="max-width:500px">
+    <h3 id="fto-form-title">Add Trainee</h3>
+    <input type="hidden" id="fto-edit-id">
+    <div class="fg2">
+      <div class="field" style="position:relative">
+        <label><span class="req">*</span>Trainee Name</label>
+        <input id="fto-trainee-name" placeholder="Search officer…" autocomplete="off">
+        <input type="hidden" id="fto-trainee-id">
+        <div id="fto-trainee-name-list" style="position:absolute;top:100%;left:0;right:0;background:rgba(16,24,44,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:8px;z-index:10;max-height:160px;overflow-y:auto"></div>
+      </div>
+      <div class="field">
+        <label>Badge #</label>
+        <input id="fto-trainee-badge" placeholder="Auto-filled or manual">
+      </div>
+    </div>
+    <div class="field" style="position:relative">
+      <label>Assigned FTO</label>
+      <input id="fto-fto-name" placeholder="Search officer…" autocomplete="off">
+      <input type="hidden" id="fto-fto-id">
+      <div id="fto-fto-name-list" style="position:absolute;top:100%;left:0;right:0;background:rgba(16,24,44,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:8px;z-index:10;max-height:160px;overflow-y:auto"></div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label>Start Date</label><input id="fto-start-date" type="date"></div>
+      <div class="field"><label>Current Phase</label><input id="fto-phase" type="number" min="1" max="10" value="1"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="fto-notes" rows="3" placeholder="Optional notes about the trainee…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('fto-form-ov').classList.remove('on')">Cancel</button>
+      <button class="fsave" onclick="saveFtoRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- FTO EVALUATION FORM -->
+<div id="fto-eval-ov" class="form-overlay">
+  <div class="form-box" style="max-width:420px">
+    <h3>Add Evaluation</h3>
+    <input type="hidden" id="fto-eval-record-id">
+    <p style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:14px">Trainee: <strong id="fto-eval-trainee-name" style="color:#ccd6f0"></strong></p>
+    <div class="field">
+      <label><span class="req">*</span>Score (1–5)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#ff7878"><input type="radio" name="fto-score" id="fto-eval-score" value="1"> 1 – Poor</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#ffb060"><input type="radio" name="fto-score" value="2"> 2 – Below avg</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#f0c040"><input type="radio" name="fto-score" value="3" checked> 3 – Average</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#7ac3ff"><input type="radio" name="fto-score" value="4"> 4 – Good</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#5dcaa5"><input type="radio" name="fto-score" value="5"> 5 – Excellent</label>
+      </div>
+    </div>
+    <div class="field"><label>Notes / Feedback</label><textarea id="fto-eval-notes" rows="4" placeholder="Performance notes, areas to improve…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('fto-eval-ov').classList.remove('on')">Cancel</button>
+      <button class="fsave" onclick="saveFtoEval()">Save Evaluation</button>
+    </div>
+  </div>
+</div>
+
+<!-- FTO MANAGER MANAGEMENT -->
+<div id="fto-manager-ov" class="form-overlay">
+  <div class="form-box" style="max-width:440px">
+    <h3>FTO Program Managers</h3>
+    <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;line-height:1.45">Managers can add trainees, log evaluations, and graduate or terminate trainees. Command officers always have access.</p>
+    <div id="fto-manager-list" style="margin-bottom:14px"></div>
+    <div class="field" style="position:relative">
+      <label>Add Manager</label>
+      <input id="fto-manager-add-input" placeholder="Search officer…" autocomplete="off" oninput="(function(){const q=document.getElementById('fto-manager-add-input').value.toLowerCase().trim();const list=document.getElementById('fto-manager-add-list');if(!q){list.innerHTML='';return;}const m=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(q)||(o.badge&&String(o.badge).includes(q))).slice(0,8);list.innerHTML=m.map(o=>'<div style=&quot;padding:6px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;color:#ccd6f0&quot; onmousedown=&quot;document.getElementById(\'fto-manager-add-input\').value=\''+o.fname+' '+o.lname+'\';document.getElementById(\'fto-manager-add-id\').value=\''+o.id+'\';document.getElementById(\'fto-manager-add-list\').innerHTML=\'\';&quot;>'+o.fname+' '+o.lname+(o.badge?' <span style=\\'color:rgba(255,255,255,0.35)\\'>#'+o.badge+'</span>':'')+'</div>').join('');})()">
+      <input type="hidden" id="fto-manager-add-id">
+      <div id="fto-manager-add-list" style="position:absolute;top:100%;left:0;right:0;background:rgba(16,24,44,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:8px;z-index:10;max-height:160px;overflow-y:auto"></div>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('fto-manager-ov').classList.remove('on')">Close</button>
+      <button class="fsave" onclick="addFtoManager()">Add Manager</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGE PASSWORD (first login) -->
 
 <div id="chpw-overlay" class="overlay">
@@ -1131,16 +1219,17 @@ const PAGE_DEFS=[
   {id:'mgmt_invites',label:'↳ Invite Codes',icon:'🎫'},
   {id:'mgmt_reglog',label:'↳ Approvals Log',icon:'✅'},
   {id:'mgmt_blacklist',label:'Blacklist (Mgmt)',icon:'🚫'},
+  {id:'mgmt_fto',label:'↳ FTO Program Tab',icon:'🎓'},
 ];
 const BUILTIN_ROLES=[
   {id:'officer',name:'Officer',system:true,description:'Basic access — view roster, reports and cadets room',
     permissions:[],allowedPages:['roster','reports','cadets']},
   {id:'command',name:'Command',system:true,description:'Full management access',
     permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions','manage_blacklist'],
-    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist']},
+    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist','mgmt_fto']},
   {id:'red_command',name:'Red Command',system:true,description:'Top command — full access',
     permissions:['add_officer','edit_officer','delete_officer','add_user','edit_user','delete_user','manage_strikes','manage_units','manage_ranks','bulk_actions','view_all_reports','manage_procedures','broadcast_notif','view_analytics','manage_config','approve_registrations','manage_invites','view_signup_decisions','manage_blacklist'],
-    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist']}
+    allowedPages:['roster','management','reports','cadets','mgmt_accounts','mgmt_units','mgmt_ranks','mgmt_log','mgmt_cadets','mgmt_analytics','mgmt_config','mgmt_registrations','mgmt_invites','mgmt_reglog','mgmt_blacklist','mgmt_fto']}
 ];
 const ACCESS_PRESETS={
   cadet:{name:'Cadet',permissions:[],allowedPages:['roster','reports','cadets']},
@@ -1327,7 +1416,9 @@ let DB={
   blacklist:JSON.parse(localStorage.getItem('lspd_blacklist')||'[]'),
   blRemovalRequests:JSON.parse(localStorage.getItem('lspd_bl_removal_reqs')||'[]'),
   rankAccess:JSON.parse(localStorage.getItem('lspd_rank_access')||'null')||{},
-  officerStrikes:JSON.parse(localStorage.getItem('lspd_officer_strikes')||'{}')
+  officerStrikes:JSON.parse(localStorage.getItem('lspd_officer_strikes')||'{}'),
+  ftoRecords:JSON.parse(localStorage.getItem('lspd_fto_records')||'[]'),
+  ftoManagers:JSON.parse(localStorage.getItem('lspd_fto_managers')||'[]')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1,pendingApproveReqId=null;
 
@@ -2017,6 +2108,278 @@ function rejectRegistration(id){
   });
 }
 
+// ─── FTO PROGRAM ───────────────────────────────────────────────────────────
+function getFtoRecords(){return DB.ftoRecords||[];}
+function getFtoManagers(){return DB.ftoManagers||[];}
+function isFtoManager(){
+  if(!currentUser)return false;
+  if(canManageStrikes())return true;
+  return getFtoManagers().includes(String(currentUser.id));
+}
+function renderFtoTab(){
+  const el=document.getElementById('fto-tab-content');
+  if(!el)return;
+  const records=getFtoRecords();
+  const managers=getFtoManagers();
+  const active=records.filter(r=>r.status==='active');
+  const graduated=records.filter(r=>r.status==='graduated');
+  const terminated=records.filter(r=>r.status==='terminated');
+  const canMgr=isFtoManager();
+
+  // Build manager name list
+  const mgrNames=managers.map(id=>{
+    const o=DB.officers.find(x=>String(x.id)===String(id));
+    if(o)return escHtml(o.fname+' '+o.lname+(o.badge?' #'+o.badge:''));
+    const u=DB.users.find(x=>String(x.id)===String(id));
+    if(u)return escHtml(u.fname+' '+u.lname);
+    return 'ID:'+id;
+  });
+
+  let html='<div style="max-width:900px">';
+
+  // --- Program Managers card ---
+  html+='<div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.18);border-radius:12px;padding:14px 18px;margin-bottom:18px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    +'<div style="font-size:11px;color:rgba(74,158,255,0.85);letter-spacing:1px;text-transform:uppercase;font-weight:600">⭐ Program Managers</div>'
+    +(canMgr?'<button onclick="openFtoManagerForm()" style="background:rgba(74,158,255,0.14);border:1px solid rgba(74,158,255,0.3);color:#7ac3ff;padding:4px 12px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">Manage</button>':'')
+    +'</div>';
+  if(!mgrNames.length)html+='<div style="font-size:12px;color:rgba(255,255,255,0.3)">No managers assigned. Red Command / Command officers have full access.</div>';
+  else html+='<div style="display:flex;flex-wrap:wrap;gap:6px">'+mgrNames.map(n=>'<span style="background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.2);color:#9ecfff;padding:3px 10px;border-radius:20px;font-size:12px">'+n+'</span>').join('')+'</div>';
+  html+='</div>';
+
+  // --- Stats row ---
+  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">'
+    +[['🟢','Active Trainees',active.length,'rgba(93,202,165,0.15)','rgba(93,202,165,0.25)','#5dcaa5'],
+      ['🎓','Graduated',graduated.length,'rgba(74,158,255,0.08)','rgba(74,158,255,0.22)','#7ac3ff'],
+      ['🔴','Terminated',terminated.length,'rgba(255,100,100,0.08)','rgba(255,100,100,0.18)','#ff8080']]
+    .map(([ic,lb,ct,bg,bd,cl])=>'<div style="background:'+bg+';border:1px solid '+bd+';border-radius:10px;padding:12px 14px;text-align:center">'
+      +'<div style="font-size:20px;margin-bottom:4px">'+ic+'</div>'
+      +'<div style="font-size:22px;font-weight:700;color:'+cl+'">'+ct+'</div>'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">'+lb+'</div></div>').join('')
+    +'</div>';
+
+  // --- Active trainees ---
+  html+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 18px;margin-bottom:16px">'
+    +'<div style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Active Trainees ('+active.length+')</div>';
+  if(!active.length)html+='<div style="font-size:12px;color:rgba(255,255,255,0.25);padding:8px 0">No active trainees. Use "+ Add Trainee" to start.</div>';
+  else html+=active.map(r=>renderFtoCard(r,canMgr)).join('');
+  html+='</div>';
+
+  // --- Graduated ---
+  if(graduated.length){
+    html+='<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 18px;margin-bottom:16px">'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Graduated ('+graduated.length+')</div>'
+      +graduated.map(r=>renderFtoCard(r,canMgr)).join('')
+      +'</div>';
+  }
+  // --- Terminated ---
+  if(terminated.length){
+    html+='<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,80,80,0.1);border-radius:12px;padding:14px 18px;margin-bottom:16px">'
+      +'<div style="font-size:11px;color:rgba(255,100,100,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Terminated ('+terminated.length+')</div>'
+      +terminated.map(r=>renderFtoCard(r,canMgr)).join('')
+      +'</div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+function renderFtoCard(r,canMgr){
+  const statusColors={active:'rgba(93,202,165,0.8)',graduated:'rgba(74,158,255,0.8)',terminated:'rgba(255,100,100,0.7)'};
+  const statusBg={active:'rgba(93,202,165,0.08)',graduated:'rgba(74,158,255,0.06)',terminated:'rgba(255,100,100,0.06)'};
+  const evals=(r.evaluations||[]);
+  const avgScore=evals.length?Math.round(evals.reduce((a,e)=>a+e.score,0)/evals.length*10)/10:null;
+  const phase=r.currentPhase||1;
+  return '<div style="background:'+statusBg[r.status]+';border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:10px">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    +'<div style="flex:1;min-width:180px">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+    +'<span style="font-size:14px;font-weight:600;color:#e8edf5">'+escHtml(r.traineeName)+'</span>'
+    +(r.traineeBadge?'<span style="font-size:10px;color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.05);padding:1px 6px;border-radius:10px">#'+escHtml(r.traineeBadge)+'</span>':'')
+    +'<span style="font-size:10px;color:'+statusColors[r.status]+';background:rgba(255,255,255,0.04);border:1px solid '+statusColors[r.status].replace('0.8','0.25')+';padding:1px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px">'+r.status+'</span>'
+    +'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,0.4)">FTO: <span style="color:rgba(255,255,255,0.65)">'+escHtml(r.ftoName||'Unassigned')+'</span>'
+    +' &nbsp;·&nbsp; Phase <span style="color:#7ac3ff">'+phase+'</span>'
+    +' &nbsp;·&nbsp; Started <span style="color:rgba(255,255,255,0.5)">'+escHtml(r.startDate||'—')+'</span>'
+    +(r.endDate?' &nbsp;·&nbsp; Ended <span style="color:rgba(255,255,255,0.4)">'+escHtml(r.endDate)+'</span>':'')
+    +'</div>'
+    +(avgScore!==null?'<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px">Avg score: <span style="color:'+(avgScore>=4?'#5dcaa5':avgScore>=3?'#f0c040':'#ff7878')+'">'+avgScore+'/5</span> ('+evals.length+' eval'+(evals.length!==1?'s':'')+')</div>':'')
+    +(r.notes?'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;font-style:italic">'+escHtml(r.notes.slice(0,120))+'</div>':'')
+    +'</div>'
+    +(canMgr?'<div style="display:flex;gap:6px;flex-shrink:0">'
+      +(r.status==='active'?'<button onclick="openFtoEvalForm(\''+r.id+'\')" style="background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.28);color:#7ac3ff;padding:4px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">+ Eval</button>':'')
+      +(r.status==='active'?'<button onclick="setFtoStatus(\''+r.id+'\',\'graduated\')" style="background:rgba(93,202,165,0.1);border:1px solid rgba(93,202,165,0.25);color:#5dcaa5;padding:4px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">Graduate</button>':'')
+      +(r.status==='active'?'<button onclick="setFtoStatus(\''+r.id+'\',\'terminated\')" style="background:rgba(255,100,100,0.08);border:1px solid rgba(255,100,100,0.22);color:#ff8080;padding:4px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">Terminate</button>':'')
+      +'<button onclick="openFtoEditForm(\''+r.id+'\')" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);padding:4px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">✏️</button>'
+      +'<button onclick="deleteFtoRecord(\''+r.id+'\')" style="background:none;border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.5);padding:4px 8px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>'
+      +'</div>':'')
+    +'</div>'
+    +(evals.length?'<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:8px">'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px">Evaluations</div>'
+      +[...evals].reverse().slice(0,5).map(ev=>'<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">'
+        +'<span style="font-size:10px;color:rgba(255,255,255,0.3);min-width:75px">'+new Date(ev.ts).toLocaleDateString('en-GB')+'</span>'
+        +'<span style="font-size:11px;color:'+(ev.score>=4?'#5dcaa5':ev.score>=3?'#f0c040':'#ff7878')+';font-weight:600">'+ev.score+'/5</span>'
+        +'<span style="font-size:11px;color:rgba(255,255,255,0.55);flex:1">'+escHtml(ev.notes||'')+'</span>'
+        +'<span style="font-size:10px;color:rgba(255,255,255,0.25)">by '+escHtml(ev.byName)+'</span></div>').join('')
+      +(evals.length>5?'<div style="font-size:10px;color:rgba(255,255,255,0.25);padding-top:4px">+ '+(evals.length-5)+' more…</div>':'')
+      +'</div>':'')
+    +'</div>';
+}
+function openFtoAddTraineeForm(){
+  document.getElementById('fto-form-ov').classList.add('on');
+  document.getElementById('fto-edit-id').value='';
+  document.getElementById('fto-trainee-id').value='';
+  document.getElementById('fto-trainee-name').value='';
+  document.getElementById('fto-trainee-badge').value='';
+  document.getElementById('fto-fto-id').value='';
+  document.getElementById('fto-fto-name').value='';
+  document.getElementById('fto-start-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fto-phase').value='1';
+  document.getElementById('fto-notes').value='';
+  document.getElementById('fto-form-title').textContent='Add Trainee';
+  renderFtoOfficerSuggestions('fto-trainee-name','fto-trainee-id','fto-trainee-badge');
+  renderFtoOfficerSuggestions('fto-fto-name','fto-fto-id',null);
+}
+function openFtoEditForm(id){
+  const r=getFtoRecords().find(x=>x.id===id);if(!r)return;
+  document.getElementById('fto-form-ov').classList.add('on');
+  document.getElementById('fto-edit-id').value=r.id;
+  document.getElementById('fto-trainee-id').value=r.traineeId||'';
+  document.getElementById('fto-trainee-name').value=r.traineeName||'';
+  document.getElementById('fto-trainee-badge').value=r.traineeBadge||'';
+  document.getElementById('fto-fto-id').value=r.ftoId||'';
+  document.getElementById('fto-fto-name').value=r.ftoName||'';
+  document.getElementById('fto-start-date').value=r.startDate||'';
+  document.getElementById('fto-phase').value=String(r.currentPhase||1);
+  document.getElementById('fto-notes').value=r.notes||'';
+  document.getElementById('fto-form-title').textContent='Edit Trainee';
+  renderFtoOfficerSuggestions('fto-trainee-name','fto-trainee-id','fto-trainee-badge');
+  renderFtoOfficerSuggestions('fto-fto-name','fto-fto-id',null);
+}
+function renderFtoOfficerSuggestions(inputId,hiddenId,badgeInputId){
+  const inp=document.getElementById(inputId);
+  if(!inp)return;
+  inp.oninput=function(){
+    const q=inp.value.toLowerCase().trim();
+    const list=document.getElementById(inputId+'-list');
+    if(!list)return;
+    if(!q){list.innerHTML='';return;}
+    const matches=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(q)||(o.badge&&String(o.badge).includes(q))).slice(0,8);
+    list.innerHTML=matches.map(o=>'<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;color:#ccd6f0" '
+      +'onmousedown="selectFtoOfficer(\''+inputId+'\',\''+hiddenId+'\','+(badgeInputId?'\''+badgeInputId+'\'':'null')+',\''+o.id+'\',\''+escHtml(o.fname+' '+o.lname)+'\',\''+escHtml(o.badge||'')+'\')">'
+      +escHtml(o.fname+' '+o.lname)+(o.badge?' <span style="color:rgba(255,255,255,0.35)">#'+o.badge+'</span>':'')+'</div>').join('');
+  };
+}
+function selectFtoOfficer(inputId,hiddenId,badgeInputId,oid,name,badge){
+  const inp=document.getElementById(inputId);if(inp)inp.value=name;
+  const hid=document.getElementById(hiddenId);if(hid)hid.value=oid;
+  if(badgeInputId){const bEl=document.getElementById(badgeInputId);if(bEl)bEl.value=badge;}
+  const list=document.getElementById(inputId+'-list');if(list)list.innerHTML='';
+}
+function saveFtoRecord(){
+  const editId=document.getElementById('fto-edit-id').value.trim();
+  const traineeName=document.getElementById('fto-trainee-name').value.trim();
+  const traineeId=document.getElementById('fto-trainee-id').value.trim();
+  const traineeBadge=document.getElementById('fto-trainee-badge').value.trim();
+  const ftoName=document.getElementById('fto-fto-name').value.trim();
+  const ftoId=document.getElementById('fto-fto-id').value.trim();
+  const startDate=document.getElementById('fto-start-date').value.trim();
+  const phase=parseInt(document.getElementById('fto-phase').value)||1;
+  const notes=document.getElementById('fto-notes').value.trim();
+  if(!traineeName){alert('Please enter trainee name.');return;}
+  if(!DB.ftoRecords)DB.ftoRecords=[];
+  if(editId){
+    const r=DB.ftoRecords.find(x=>x.id===editId);
+    if(r){r.traineeName=traineeName;r.traineeId=traineeId;r.traineeBadge=traineeBadge;r.ftoName=ftoName;r.ftoId=ftoId;r.startDate=startDate;r.currentPhase=phase;r.notes=notes;}
+  } else {
+    const rec={id:'fto_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),traineeName,traineeId,traineeBadge,ftoName,ftoId,startDate,currentPhase:phase,notes,status:'active',evaluations:[],createdBy:currentUser?currentUser.fname+' '+currentUser.lname:'',createdAt:Date.now()};
+    DB.ftoRecords.push(rec);
+    if(traineeId)createNotif(traineeId,'fto_assigned','You have been enrolled in the FTO program. FTO: '+(ftoName||'TBD'),rec.id,true);
+    if(ftoId&&ftoId!==traineeId)createNotif(ftoId,'fto_assigned','You have been assigned as FTO for '+traineeName+'.',rec.id,true);
+    logAction('FTO Add Trainee',traineeName+(traineeBadge?' #'+traineeBadge:'')+' FTO:'+(ftoName||'—'));
+  }
+  persist();
+  document.getElementById('fto-form-ov').classList.remove('on');
+  renderFtoTab();
+}
+function setFtoStatus(id,status){
+  const r=(DB.ftoRecords||[]).find(x=>x.id===id);if(!r)return;
+  const label=status==='graduated'?'graduate':'terminate';
+  showConfirm('Confirm',status==='graduated'?'Graduate trainee <strong>'+escHtml(r.traineeName)+'</strong>?':'Terminate trainee <strong>'+escHtml(r.traineeName)+'</strong> from FTO program?',function(){
+    r.status=status;
+    r.endDate=new Date().toISOString().slice(0,10);
+    if(r.traineeId){
+      createNotif(r.traineeId,'fto_eval',status==='graduated'?'Congratulations! You have graduated from the FTO program.':'Your FTO program participation has been terminated.',id,true);
+    }
+    logAction('FTO '+label.charAt(0).toUpperCase()+label.slice(1),r.traineeName);
+    persist();renderFtoTab();
+  });
+}
+function deleteFtoRecord(id){
+  const r=(DB.ftoRecords||[]).find(x=>x.id===id);if(!r)return;
+  showConfirm('Delete FTO Record','Delete FTO record for <strong>'+escHtml(r.traineeName)+'</strong>? This cannot be undone.',function(){
+    DB.ftoRecords=DB.ftoRecords.filter(x=>x.id!==id);
+    persist();renderFtoTab();
+  });
+}
+function openFtoEvalForm(recordId){
+  document.getElementById('fto-eval-ov').classList.add('on');
+  document.getElementById('fto-eval-record-id').value=recordId;
+  document.getElementById('fto-eval-score').value='3';
+  document.getElementById('fto-eval-notes').value='';
+  const r=(DB.ftoRecords||[]).find(x=>x.id===recordId);
+  const el=document.getElementById('fto-eval-trainee-name');
+  if(el&&r)el.textContent=r.traineeName+(r.traineeBadge?' #'+r.traineeBadge:'');
+}
+function saveFtoEval(){
+  const recordId=document.getElementById('fto-eval-record-id').value;
+  const scoreEl=document.querySelector('input[name="fto-score"]:checked');
+  const score=scoreEl?parseInt(scoreEl.value):3;
+  const notes=document.getElementById('fto-eval-notes').value.trim();
+  const r=(DB.ftoRecords||[]).find(x=>x.id===recordId);
+  if(!r){alert('Record not found.');return;}
+  if(!r.evaluations)r.evaluations=[];
+  r.evaluations.push({id:'ev_'+Date.now(),ts:Date.now(),byId:currentUser.id,byName:currentUser.fname+' '+currentUser.lname,score,notes});
+  if(r.traineeId)createNotif(r.traineeId,'fto_eval','New FTO evaluation recorded. Score: '+score+'/5'+(notes?' — '+notes.slice(0,80):''),recordId,true);
+  logAction('FTO Evaluation',r.traineeName+' — score '+score+'/5');
+  persist();
+  document.getElementById('fto-eval-ov').classList.remove('on');
+  renderFtoTab();
+}
+function openFtoManagerForm(){
+  const managers=getFtoManagers();
+  const el=document.getElementById('fto-manager-ov');
+  if(!el)return;
+  const listEl=document.getElementById('fto-manager-list');
+  if(listEl){
+    listEl.innerHTML=managers.length
+      ?managers.map(id=>{
+          const o=DB.officers.find(x=>String(x.id)===String(id));
+          const name=o?o.fname+' '+o.lname+(o.badge?' #'+o.badge:''):'ID:'+id;
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+            +'<span style="font-size:12px;color:#ccd6f0">'+escHtml(name)+'</span>'
+            +'<button onclick="removeFtoManager(\''+id+'\')" style="background:none;border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.6);padding:2px 8px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Remove</button>'
+            +'</div>';
+        }).join('')
+      :'<div style="font-size:12px;color:rgba(255,255,255,0.3);padding:8px 0">No managers added.</div>';
+  }
+  el.classList.add('on');
+}
+function removeFtoManager(id){
+  DB.ftoManagers=(DB.ftoManagers||[]).filter(x=>String(x)!==String(id));
+  persist();openFtoManagerForm();renderFtoTab();
+}
+function addFtoManager(){
+  const inp=document.getElementById('fto-manager-add-input');
+  const hiddenId=document.getElementById('fto-manager-add-id');
+  if(!inp||!hiddenId)return;
+  const oid=hiddenId.value.trim();
+  if(!oid){alert('Please select an officer from the list.');return;}
+  if(!DB.ftoManagers)DB.ftoManagers=[];
+  if(!DB.ftoManagers.includes(oid)){DB.ftoManagers.push(oid);logAction('FTO Manager Add','ID:'+oid);}
+  inp.value='';hiddenId.value='';
+  persist();openFtoManagerForm();renderFtoTab();
+}
+// ─── END FTO ────────────────────────────────────────────────────────────────
+
 function logAction(action,details){
   if(!DB.auditLog)DB.auditLog=[];
   const who=currentUser?currentUser.fname+' '+currentUser.lname:'System';
@@ -2089,10 +2452,31 @@ function renderNotifPanel(){
 function clickNotif(nid){
   const n=(DB.notifications||[]).find(x=>x.id===nid);
   if(n&&!n.read){n.read=true;persist();updateNotifBadge();renderNotifPanel();}
-  if(n&&n.type==='pending_signup'&&currentUser&&canAccess('management')&&userCanApproveSignups(currentUser)&&canOpenMgmtSubPage('mgmt_registrations')){
-    const panel=document.getElementById('notif-panel');if(panel)panel.classList.remove('open');
-    goMgmt();
-    switchTab('registrations');
+  if(!n)return;
+  const panel=document.getElementById('notif-panel');if(panel)panel.classList.remove('open');
+  if(n.type==='pending_signup'&&currentUser&&canAccess('management')&&userCanApproveSignups(currentUser)&&canOpenMgmtSubPage('mgmt_registrations')){
+    goMgmt();switchTab('registrations');
+  } else if((n.type==='strike_added'||n.type==='strike_removed'||n.type==='strike_appeal_result')&&currentUser){
+    // refId may be strikeId — open own file
+    openPersonalFile(currentUser.id);
+  } else if(n.type==='strike_appeal'&&currentUser&&canAccess('management')){
+    // refId = officerId|strikeId
+    const parts=(n.refId||'').split('|');
+    const targetOfficerId=parts[0];
+    if(targetOfficerId){
+      goMgmt();
+      setTimeout(function(){openPersonalFile(targetOfficerId);},120);
+    } else {
+      goMgmt();switchTab('accounts');
+    }
+  } else if(n.type==='bl_removal_request'&&currentUser&&canAccess('management')){
+    goMgmt();switchTab('blacklist');
+  } else if((n.type==='rank_change'||n.type==='info')&&currentUser){
+    openPersonalFile(currentUser.id);
+  } else if(n.type==='fto_assigned'&&currentUser){
+    if(canAccess('management')){goMgmt();switchTab('fto');}
+  } else if(n.type==='fto_eval'&&currentUser){
+    openPersonalFile(currentUser.id);
   }
 }
 function markAllNotifsRead(){
@@ -2124,6 +2508,8 @@ function persist(){
   localStorage.setItem('lspd_officer_strikes',JSON.stringify(DB.officerStrikes||{}));
   localStorage.setItem('lspd_blacklist',JSON.stringify(DB.blacklist||[]));
   localStorage.setItem('lspd_bl_removal_reqs',JSON.stringify(DB.blRemovalRequests||[]));
+  localStorage.setItem('lspd_fto_records',JSON.stringify(DB.ftoRecords||[]));
+  localStorage.setItem('lspd_fto_managers',JSON.stringify(DB.ftoManagers||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -2321,9 +2707,43 @@ function submitStrikeAppeal(officerId,strikeId){
   s.appeal={text,ts:Date.now(),byId:currentUser.id,byName:currentUser.fname+' '+currentUser.lname};
   DB.users.forEach(function(u){
     if(!canManageUserAccess(u)&&!isSuperAccessUser(u)&&!userHasManagementAccess(u))return;
-    createNotif(u.id,'strike_appeal','New strike appeal from '+currentUser.fname+' '+currentUser.lname+'.',strikeId,true);
+    createNotif(u.id,'strike_appeal','New strike appeal from '+currentUser.fname+' '+currentUser.lname+'.',officerId+'|'+strikeId,true);
   });
   logAction('Strike Appeal',currentUser.fname+' '+currentUser.lname+' — '+text.slice(0,80));
+  persist();
+  openPersonalFile(officerId);
+}
+function removeStrike(officerId,strikeId){
+  if(!canManageStrikes()){alert('No permission to remove strikes.');return;}
+  const list=getOfficerStrikes(officerId);
+  const idx=list.findIndex(x=>x.id===strikeId);
+  if(idx===-1){alert('Strike not found.');return;}
+  const o=DB.officers.find(x=>String(x.id)===String(officerId));
+  list.splice(idx,1);
+  if(o)logAction('Remove Strike',o.fname+' '+o.lname+' (#'+(o.badge||'—')+') — strike removed by '+currentUser.fname+' '+currentUser.lname);
+  createNotif(officerId,'strike_removed','A strike was removed from your record by '+currentUser.fname+' '+currentUser.lname+'.',strikeId,true);
+  persist();
+  openPersonalFile(officerId);
+}
+function decideStrikeAppeal(officerId,strikeId,approved){
+  if(!canManageStrikes()){alert('No permission to decide appeals.');return;}
+  const list=getOfficerStrikes(officerId);
+  const s=list.find(x=>x.id===strikeId);
+  if(!s||!s.appeal){alert('Appeal not found.');return;}
+  if(s.appeal.decision){alert('This appeal has already been decided.');return;}
+  const o=DB.officers.find(x=>String(x.id)===String(officerId));
+  s.appeal.decision=approved?'approved':'denied';
+  s.appeal.decidedBy=currentUser.fname+' '+currentUser.lname;
+  s.appeal.decidedAt=Date.now();
+  if(approved){
+    const idx=list.findIndex(x=>x.id===strikeId);
+    if(idx!==-1)list.splice(idx,1);
+    createNotif(officerId,'strike_appeal_result','Your strike appeal was approved and the strike has been removed.',strikeId,true);
+    if(o)logAction('Approve Strike Appeal',o.fname+' '+o.lname+' — appeal approved, strike removed');
+  } else {
+    createNotif(officerId,'strike_appeal_result','Your strike appeal was denied by '+currentUser.fname+' '+currentUser.lname+'.',strikeId,true);
+    if(o)logAction('Deny Strike Appeal',o.fname+' '+o.lname+' — appeal denied');
+  }
   persist();
   openPersonalFile(officerId);
 }
@@ -2543,7 +2963,7 @@ function goMgmt(){
   if(!currentUser)return;
   if(!canAccess('management'))return;
   // Show/hide tabs based on role permissions
-  const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config',blacklist:'mgmt_blacklist'};
+  const tabPageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',fto:'mgmt_fto',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config',blacklist:'mgmt_blacklist'};
   Object.entries(tabPageMap).forEach(([t,page])=>{
     const btn=document.getElementById('tab-'+t);
     if(btn)btn.style.display=canOpenMgmtSubPage(page)?'':'none';
@@ -3065,15 +3485,15 @@ function saveUserAccess(){
 }
 
 function switchTab(tab){
-  const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config',blacklist:'mgmt_blacklist'};
+  const pageMap={accounts:'mgmt_accounts',registrations:'mgmt_registrations',invites:'mgmt_invites','approvals-log':'mgmt_reglog',units:'mgmt_units',ranks:'mgmt_ranks',log:'mgmt_log',fto:'mgmt_fto',cadets:'mgmt_cadets',analytics:'mgmt_analytics',config:'mgmt_config',blacklist:'mgmt_blacklist'};
   if(pageMap[tab]&&!canOpenMgmtSubPage(pageMap[tab])){
-    const first=['accounts','registrations','invites','approvals-log','units','ranks','log','cadets','analytics','config','blacklist'].find(t=>!pageMap[t]||canOpenMgmtSubPage(pageMap[t]));
+    const first=['accounts','registrations','invites','approvals-log','units','ranks','log','fto','cadets','analytics','config','blacklist'].find(t=>!pageMap[t]||canOpenMgmtSubPage(pageMap[t]));
     if(first&&first!==tab){switchTab(first);return;}
     alert('You do not have access to this section. Ask an admin to grant it under Management → Ranks (or your custom access).');
     return;
   }
   currentTab=tab;
-  ['accounts','registrations','invites','approvals-log','roles','units','ranks','log','cadets','analytics','config','blacklist'].forEach(t=>{
+  ['accounts','registrations','invites','approvals-log','roles','units','ranks','log','fto','cadets','analytics','config','blacklist'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     const content=document.getElementById('tab-content-'+t);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -3088,6 +3508,7 @@ function switchTab(tab){
     else if(tab==='roles'){addBtn.style.display='none';}
     else if(tab==='units'){addBtn.style.display='';addBtn.textContent='+ Add Unit';}
     else if(tab==='blacklist'){addBtn.style.display='';addBtn.textContent='+ Add to Blacklist';}
+    else if(tab==='fto'){addBtn.style.display='';addBtn.textContent='+ Add Trainee';}
     else{addBtn.style.display='none';}
   const csvBtn=document.getElementById('mgmt-csv-btn');
   if(csvBtn)csvBtn.style.display=tab==='accounts'?'':'none';
@@ -3100,6 +3521,7 @@ function switchTab(tab){
   else if(tab==='units')renderUnitsTab();
   else if(tab==='ranks')renderRanksTab();
   else if(tab==='log')renderLog();
+  else if(tab==='fto')renderFtoTab();
   else if(tab==='cadets')renderCadetsMgmt();
   else if(tab==='analytics')renderHomeDashboard();
   else if(tab==='config')renderSiteConfig();
@@ -3112,6 +3534,7 @@ function mgmtAddAction(){
   else if(currentTab==='roles')openRoleForm(null);
   else if(currentTab==='units')openUnitForm(null);
   else if(currentTab==='blacklist')openBlacklistForm();
+  else if(currentTab==='fto')openFtoAddTraineeForm();
 }
 
 // --- Roles ---
@@ -3832,12 +4255,22 @@ function openPersonalFile(id){
   }else{
     html+=[...strikes].reverse().map(function(s){
       const appealed=!!(s.appeal&&s.appeal.text);
+      const appealDecided=!!(s.appeal&&s.appeal.decision);
+      const canApproveAppeal=canStrike&&appealed&&!appealDecided;
       return '<div style="background:rgba(0,0,0,0.18);border:1px solid rgba(255,120,120,0.18);border-radius:8px;padding:10px;margin-bottom:8px">'
-        +'<div style="font-size:11px;color:rgba(255,255,255,0.42);margin-bottom:4px">'+new Date(s.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · by '+escHtml(s.byName||'Command')+(s.expiresAt?'<span style="margin-left:6px;color:rgba(255,200,100,0.8)">⏳ expires '+new Date(s.expiresAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'<span style="margin-left:6px;color:rgba(255,255,255,0.2);font-size:10px">permanent</span>')+'</div>'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.42)">'+new Date(s.ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · by '+escHtml(s.byName||'Command')+(s.expiresAt?'<span style="margin-left:6px;color:rgba(255,200,100,0.8)">⏳ expires '+new Date(s.expiresAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'<span style="margin-left:6px;color:rgba(255,255,255,0.2);font-size:10px">permanent</span>')+'</div>'
+        +(canStrike?'<button onclick="removeStrike(\''+o.id+'\',\''+s.id+'\')" style="background:none;border:none;color:rgba(255,100,100,0.5);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0" title="Remove strike">✕</button>':'')
+        +'</div>'
         +'<div style="font-size:13px;color:#ffe1e1;margin-bottom:6px">'+escHtml(s.reason)+'</div>'
         +(s.videoUrl?'<a href="'+escHtml(s.videoUrl)+'" target="_blank" rel="noopener" style="font-size:12px;color:#7ac3ff;text-decoration:none">📹 View evidence</a>':'<div style="font-size:11px;color:rgba(255,255,255,0.28)">No video attached</div>')
         +(appealed
-          ?'<div style="margin-top:8px;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);border-radius:7px;padding:8px"><div style="font-size:10px;color:#7ac3ff;letter-spacing:.7px;margin-bottom:4px">APPEAL SUBMITTED</div><div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(s.appeal.text)+'</div></div>'
+          ?'<div style="margin-top:8px;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);border-radius:7px;padding:8px">'
+            +(appealDecided
+              ?'<div style="font-size:10px;font-weight:700;letter-spacing:.7px;margin-bottom:4px;color:'+(s.appeal.decision==='approved'?'#5dcaa5':'#ff7070')+'">'+(s.appeal.decision==='approved'?'✅ APPEAL APPROVED':'❌ APPEAL DENIED')+(s.appeal.decidedBy?' · by '+escHtml(s.appeal.decidedBy):'')+'</div><div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(s.appeal.text)+'</div>'+(s.appeal.denyReason?'<div style="font-size:11px;color:rgba(255,150,150,0.7);margin-top:4px">Reason: '+escHtml(s.appeal.denyReason)+'</div>':'')
+              :'<div style="font-size:10px;color:#7ac3ff;letter-spacing:.7px;margin-bottom:4px">📝 APPEAL SUBMITTED</div><div style="font-size:12px;color:rgba(255,255,255,0.75)">'+escHtml(s.appeal.text)+'</div>'
+              +(canApproveAppeal?'<div style="display:flex;gap:8px;margin-top:8px"><button onclick="decideStrikeAppeal(\''+o.id+'\',\''+s.id+'\',true)" style="background:rgba(93,202,165,0.15);border:1px solid rgba(93,202,165,0.3);color:#5dcaa5;padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">✅ Approve (remove strike)</button><button onclick="decideStrikeAppeal(\''+o.id+'\',\''+s.id+'\',false)" style="background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.25);color:#ff7070;padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">❌ Deny</button></div>':''))
+            +'</div>'
           :(isSelf?'<div style="margin-top:8px"><div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:5px">One-time appeal</div><textarea id="strike-appeal-'+s.id+'" rows="2" maxlength="400" placeholder="Write one appeal message..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:8px 10px;border-radius:7px;font-size:12px;font-family:inherit;resize:vertical"></textarea><button onclick="submitStrikeAppeal(\''+o.id+'\',\''+s.id+'\')" style="margin-top:6px;background:rgba(74,158,255,0.14);border:1px solid rgba(74,158,255,0.35);color:#7ac3ff;padding:6px 14px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer">Submit Appeal</button></div>':''))
         +'</div>';
     }).join('');
