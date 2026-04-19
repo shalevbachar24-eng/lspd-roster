@@ -318,6 +318,11 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
       <div class="card-lbl">CADETS</div>
       <div class="card-sub">Procedures &amp; Guidelines</div>
     </div>
+    <div class="card" id="card-fto" style="display:none" onclick="goFtoPage()">
+      <span class="card-icon">📋</span>
+      <div class="card-lbl">FTO PROGRAM</div>
+      <div class="card-sub">Patrol Reports &amp; Trainees</div>
+    </div>
     <div id="home-custom-cards"></div>
   </div>
   <div style="max-width:400px;margin:28px auto 0">
@@ -585,6 +590,23 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <button class="add-btn" id="btn-add-procedure" style="display:none" onclick="openProcedureForm(null)">+ Add Procedure</button>
   </div>
   <div id="cadets-list"></div>
+</div>
+
+<!-- FTO PAGE -->
+<div id="pg-fto" class="page">
+  <div class="sec-top">
+    <div class="sec-left">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <span class="ptitle">📋 FTO Program</span>
+    </div>
+    <button class="add-btn" id="btn-fto-report" onclick="openFtoReportForm(null)">+ Patrol Report</button>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="ftotab-reports" onclick="switchFtoTab('reports')">📝 Patrol Reports</button>
+    <button class="tab-btn" id="ftotab-trainees" onclick="switchFtoTab('trainees')">👤 My Trainees</button>
+    <button class="tab-btn" id="ftotab-all" style="display:none" onclick="switchFtoTab('all')">🗂 All Records</button>
+  </div>
+  <div id="fto-page-content"></div>
 </div>
 
 <!-- PROCEDURE FORM -->
@@ -1073,6 +1095,49 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
 </div>
 
+<!-- FTO PATROL REPORT FORM -->
+<div id="fto-report-ov" class="form-overlay">
+  <div class="form-box" style="max-width:540px">
+    <h3 id="fto-report-form-title">Patrol Report – FTO Summary</h3>
+    <input type="hidden" id="fto-report-edit-id">
+    <div class="fg2">
+      <div class="field"><label>FTO Name</label><input id="ftor-fto-name" placeholder="Auto-filled" readonly style="opacity:.7"></div>
+      <div class="field"><label><span class="req">*</span>Trainee Name</label>
+        <div style="position:relative">
+          <input id="ftor-trainee-name" placeholder="Search trainee…" autocomplete="off" oninput="ftoReportTraineeSearch()">
+          <input type="hidden" id="ftor-trainee-id">
+          <div id="ftor-trainee-name-list" style="position:absolute;top:100%;left:0;right:0;background:rgba(16,24,44,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:8px;z-index:10;max-height:160px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fg2">
+      <div class="field"><label>Trainee Rank</label><input id="ftor-rank" placeholder="e.g. Officer"></div>
+      <div class="field"><label>Date <span style="opacity:.5">(empty = today)</span></label><input id="ftor-date" type="date"></div>
+    </div>
+    <div class="field"><label>📍 What happened in patrol</label><textarea id="ftor-patrol" rows="3" placeholder="Describe the patrol scenario, calls, situations handled…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+    <div class="fg2">
+      <div class="field"><label>✅ Performance</label><textarea id="ftor-performance" rows="3" placeholder="What the trainee did well…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+      <div class="field"><label>🔧 Areas to improve</label><textarea id="ftor-improve" rows="3" placeholder="What needs work…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+    </div>
+    <div class="field"><label>🏅 Achievements / highlights</label><textarea id="ftor-achievements" rows="2" placeholder="Standout moments, skills demonstrated…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+    <div class="field"><label>📝 Summary / recommendation</label><textarea id="ftor-summary" rows="3" placeholder="Overall assessment, ready to progress / needs more time…" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8edf5;padding:9px 12px;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea></div>
+    <div class="field">
+      <label>Overall Rating</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#ff7878"><input type="radio" name="ftor-rating" value="1"> 1 – Poor</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#ffb060"><input type="radio" name="ftor-rating" value="2"> 2 – Below avg</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#f0c040"><input type="radio" name="ftor-rating" value="3" checked> 3 – Average</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#7ac3ff"><input type="radio" name="ftor-rating" value="4"> 4 – Good</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#5dcaa5"><input type="radio" name="ftor-rating" value="5"> 5 – Excellent</label>
+      </div>
+    </div>
+    <div class="form-btns">
+      <button class="fcancel" onclick="document.getElementById('fto-report-ov').classList.remove('on')">Cancel</button>
+      <button class="fsave" onclick="saveFtoReport()">Submit Report</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGE PASSWORD (first login) -->
 
 <div id="chpw-overlay" class="overlay">
@@ -1418,7 +1483,8 @@ let DB={
   rankAccess:JSON.parse(localStorage.getItem('lspd_rank_access')||'null')||{},
   officerStrikes:JSON.parse(localStorage.getItem('lspd_officer_strikes')||'{}'),
   ftoRecords:JSON.parse(localStorage.getItem('lspd_fto_records')||'[]'),
-  ftoManagers:JSON.parse(localStorage.getItem('lspd_fto_managers')||'[]')
+  ftoManagers:JSON.parse(localStorage.getItem('lspd_fto_managers')||'[]'),
+  ftoPatrolReports:JSON.parse(localStorage.getItem('lspd_fto_patrol_reports')||'[]')
 };
 let currentUser=null,editOffIdx=-1,editUsrIdx=-1,pendingApproveReqId=null;
 
@@ -2395,6 +2461,179 @@ function addFtoManager(){
   inp.value='';hiddenId.value='';
   persist();openFtoManagerForm();renderFtoTab();
 }
+// ─── FTO PAGE (home card) ───────────────────────────────────────────────────
+function canSeeFtoPage(){
+  if(!currentUser)return false;
+  if(isFtoManager())return true;
+  const uid=String(currentUser.id);
+  return (DB.ftoRecords||[]).some(r=>String(r.ftoId)===uid&&r.status==='active');
+}
+let currentFtoTab='reports';
+function goFtoPage(){
+  clickSound();
+  showPage('pg-fto');
+  const allBtn=document.getElementById('ftotab-all');
+  if(allBtn)allBtn.style.display=isFtoManager()?'':'none';
+  switchFtoTab('reports');
+}
+function switchFtoTab(tab){
+  currentFtoTab=tab;
+  ['reports','trainees','all'].forEach(t=>{
+    const btn=document.getElementById('ftotab-'+t);
+    if(btn)btn.classList.toggle('active',t===tab);
+  });
+  renderFtoPageContent();
+}
+function renderFtoPageContent(){
+  const el=document.getElementById('fto-page-content');
+  if(!el)return;
+  const uid=String(currentUser.id);
+  const isManager=isFtoManager();
+
+  if(currentFtoTab==='reports'){
+    const reports=(DB.ftoPatrolReports||[]).filter(r=>isManager||String(r.ftoId)===uid);
+    if(!reports.length){el.innerHTML='<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px">No patrol reports yet.<br><span style="font-size:11px">Submit a report after each patrol session.</span></div>';return;}
+    el.innerHTML=[...reports].sort((a,b)=>b.ts-a.ts).map(r=>renderFtoReportCard(r,isManager)).join('');
+  } else if(currentFtoTab==='trainees'){
+    const myRecords=(DB.ftoRecords||[]).filter(r=>isManager||String(r.ftoId)===uid);
+    if(!myRecords.length){el.innerHTML='<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px">No trainees assigned to you.</div>';return;}
+    el.innerHTML=myRecords.map(r=>{
+      const statusColors={active:'#5dcaa5',graduated:'#7ac3ff',terminated:'#ff8080'};
+      const myReports=(DB.ftoPatrolReports||[]).filter(x=>String(x.traineeId)===String(r.traineeId||r.id)&&String(x.ftoId)===String(r.ftoId));
+      return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
+        +'<div>'
+        +'<div style="font-size:14px;font-weight:600;color:#e8edf5;margin-bottom:3px">'+escHtml(r.traineeName)+(r.traineeBadge?'<span style="font-size:11px;color:rgba(255,255,255,0.35);margin-left:6px">#'+escHtml(r.traineeBadge)+'</span>':'')+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.4)">Phase '+r.currentPhase+' · Started '+escHtml(r.startDate||'—')+' · <span style="color:'+statusColors[r.status]+'">'+r.status+'</span></div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px">'+myReports.length+' patrol report'+(myReports.length!==1?'s':'')+' submitted</div>'
+        +'</div>'
+        +'<button onclick="openFtoReportForm(\''+r.id+'\')" style="background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.28);color:#7ac3ff;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit">+ Report</button>'
+        +'</div>';
+    }).join('');
+  } else if(currentFtoTab==='all'){
+    const all=(DB.ftoPatrolReports||[]);
+    if(!all.length){el.innerHTML='<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px">No reports submitted yet.</div>';return;}
+    el.innerHTML=[...all].sort((a,b)=>b.ts-a.ts).map(r=>renderFtoReportCard(r,true)).join('');
+  }
+}
+function renderFtoReportCard(r,showDelete){
+  const ratingColors={1:'#ff7878',2:'#ffb060',3:'#f0c040',4:'#7ac3ff',5:'#5dcaa5'};
+  const ratingLabels={1:'Poor',2:'Below avg',3:'Average',4:'Good',5:'Excellent'};
+  const rating=r.rating||3;
+  return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 16px;margin-bottom:10px">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">'
+    +'<div>'
+    +'<div style="font-size:13px;font-weight:600;color:#e8edf5;margin-bottom:2px">'+escHtml(r.traineeName)+(r.traineeRank?' <span style="font-size:11px;color:rgba(255,255,255,0.4)">· '+escHtml(r.traineeRank)+'</span>':'')+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,0.35)">FTO: '+escHtml(r.ftoName)+' · '+escHtml(r.date||new Date(r.ts).toLocaleDateString('en-GB'))+'</div>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px">'
+    +'<span style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:'+ratingColors[rating]+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">'+rating+'/5 – '+ratingLabels[rating]+'</span>'
+    +(showDelete&&isFtoManager()?'<button onclick="deleteFtoReport(\''+r.id+'\')" style="background:none;border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.5);padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>':'')
+    +'</div></div>'
+    +ftoReportSection('📍 Patrol',r.patrol)
+    +ftoReportSection('✅ Performance',r.performance)
+    +ftoReportSection('🔧 To improve',r.improve)
+    +ftoReportSection('🏅 Achievements',r.achievements)
+    +ftoReportSection('📝 Summary',r.summary)
+    +'</div>';
+}
+function ftoReportSection(label,text){
+  if(!text||!text.trim())return '';
+  return '<div style="margin-bottom:8px"><div style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:3px">'+label+'</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.55;white-space:pre-wrap">'+escHtml(text)+'</div></div>';
+}
+function openFtoReportForm(recordId){
+  const ov=document.getElementById('fto-report-ov');
+  if(!ov)return;
+  document.getElementById('fto-report-edit-id').value='';
+  document.getElementById('ftor-fto-name').value=currentUser?currentUser.fname+' '+currentUser.lname:'';
+  document.getElementById('ftor-trainee-name').value='';
+  document.getElementById('ftor-trainee-id').value='';
+  document.getElementById('ftor-rank').value='';
+  document.getElementById('ftor-date').value='';
+  document.getElementById('ftor-patrol').value='';
+  document.getElementById('ftor-performance').value='';
+  document.getElementById('ftor-improve').value='';
+  document.getElementById('ftor-achievements').value='';
+  document.getElementById('ftor-summary').value='';
+  const def=document.querySelector('input[name="ftor-rating"][value="3"]');
+  if(def)def.checked=true;
+  // Pre-fill trainee if recordId given
+  if(recordId){
+    const rec=(DB.ftoRecords||[]).find(x=>x.id===recordId);
+    if(rec){
+      document.getElementById('ftor-trainee-name').value=rec.traineeName||'';
+      document.getElementById('ftor-trainee-id').value=rec.traineeId||'';
+      document.getElementById('ftor-rank').value=rec.traineeRank||'';
+    }
+  }
+  ov.classList.add('on');
+}
+function ftoReportTraineeSearch(){
+  const q=(document.getElementById('ftor-trainee-name').value||'').toLowerCase().trim();
+  const list=document.getElementById('ftor-trainee-name-list');
+  if(!list)return;
+  if(!q){list.innerHTML='';return;}
+  const uid=String(currentUser.id);
+  const isManager=isFtoManager();
+  // Show trainees from FTO records where this user is the FTO (or all if manager)
+  const records=(DB.ftoRecords||[]).filter(r=>isManager||String(r.ftoId)===uid);
+  const matches=records.filter(r=>r.traineeName.toLowerCase().includes(q)).slice(0,8);
+  // Also match from officers
+  const offMatches=DB.officers.filter(o=>!matches.find(r=>String(r.traineeId)===String(o.id))&&(o.fname+' '+o.lname).toLowerCase().includes(q)).slice(0,4);
+  const allMatches=[
+    ...matches.map(r=>({id:r.traineeId||r.id,name:r.traineeName,badge:r.traineeBadge,rank:'',fromRecord:true})),
+    ...offMatches.map(o=>({id:o.id,name:o.fname+' '+o.lname,badge:o.badge,rank:o.rank,fromRecord:false}))
+  ].slice(0,8);
+  if(!allMatches.length){list.innerHTML='<div style="padding:8px 10px;font-size:12px;color:rgba(255,255,255,0.3)">No results</div>';return;}
+  list.innerHTML=allMatches.map(function(item){
+    const oid=String(item.id||'');
+    const name=escHtml(item.name);
+    const badge=item.badge?escHtml(item.badge):'';
+    return '<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;color:#ccd6f0" '
+      +'onmousedown="(function(){document.getElementById(\'ftor-trainee-name\').value=\''+name+'\';document.getElementById(\'ftor-trainee-id\').value=\''+oid+'\';document.getElementById(\'ftor-trainee-name-list\').innerHTML=\'\';})();">'
+      +name+(badge?'<span style="color:rgba(255,255,255,0.35);margin-left:5px">#'+badge+'</span>':'')
+      +(item.fromRecord?'<span style="color:rgba(93,202,165,0.6);font-size:10px;margin-left:6px">trainee</span>':'')
+      +'</div>';
+  }).join('');
+}
+function saveFtoReport(){
+  const traineeName=(document.getElementById('ftor-trainee-name').value||'').trim();
+  if(!traineeName){alert('Please enter the trainee name.');return;}
+  const ratingEl=document.querySelector('input[name="ftor-rating"]:checked');
+  const today=new Date().toISOString().slice(0,10);
+  const report={
+    id:'ftor_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    ts:Date.now(),
+    ftoId:String(currentUser.id),
+    ftoName:currentUser.fname+' '+currentUser.lname,
+    traineeId:document.getElementById('ftor-trainee-id').value||'',
+    traineeName,
+    traineeRank:(document.getElementById('ftor-rank').value||'').trim(),
+    date:(document.getElementById('ftor-date').value||today),
+    patrol:(document.getElementById('ftor-patrol').value||'').trim(),
+    performance:(document.getElementById('ftor-performance').value||'').trim(),
+    improve:(document.getElementById('ftor-improve').value||'').trim(),
+    achievements:(document.getElementById('ftor-achievements').value||'').trim(),
+    summary:(document.getElementById('ftor-summary').value||'').trim(),
+    rating:ratingEl?parseInt(ratingEl.value):3
+  };
+  if(!DB.ftoPatrolReports)DB.ftoPatrolReports=[];
+  DB.ftoPatrolReports.unshift(report);
+  // Notify trainee
+  if(report.traineeId){
+    createNotif(report.traineeId,'fto_eval','FTO patrol report submitted for you by '+report.ftoName+' ('+report.date+'). Rating: '+report.rating+'/5',report.id,true);
+  }
+  logAction('FTO Patrol Report',report.ftoName+' → '+report.traineeName+' ('+report.date+') rating '+report.rating+'/5');
+  persist();
+  document.getElementById('fto-report-ov').classList.remove('on');
+  renderFtoPageContent();
+}
+function deleteFtoReport(id){
+  showConfirm('Delete Report','Delete this patrol report? This cannot be undone.',function(){
+    DB.ftoPatrolReports=(DB.ftoPatrolReports||[]).filter(x=>x.id!==id);
+    persist();renderFtoPageContent();
+  });
+}
 // ─── END FTO ────────────────────────────────────────────────────────────────
 
 function logAction(action,details){
@@ -2527,6 +2766,7 @@ function persist(){
   localStorage.setItem('lspd_bl_removal_reqs',JSON.stringify(DB.blRemovalRequests||[]));
   localStorage.setItem('lspd_fto_records',JSON.stringify(DB.ftoRecords||[]));
   localStorage.setItem('lspd_fto_managers',JSON.stringify(DB.ftoManagers||[]));
+  localStorage.setItem('lspd_fto_patrol_reports',JSON.stringify(DB.ftoPatrolReports||[]));
   if(window.firebasePersist) window.firebasePersist();
 }
 
@@ -2799,6 +3039,7 @@ function finishLogin(u){
   document.getElementById('btn-add-off').style.display=(hasPerm('add_officer')||isCmd)?'':'none';
   document.getElementById('card-reports').style.display='block';
   document.getElementById('card-cadets').style.display=canSeeCadets()?'block':'none';
+  document.getElementById('card-fto').style.display=canSeeFtoPage()?'block':'none';
   const bcastBtn=document.getElementById('mgmt-broadcast-btn');
   if(bcastBtn)bcastBtn.style.display=hasPerm('broadcast_notif')?'':'none';
   // Restore notifications read-state from localStorage on every login
@@ -2903,6 +3144,7 @@ function logout(){
   currentUser=null;
   document.getElementById('hdr-right').style.display='none';
   document.getElementById('card-command').style.display='none';
+  document.getElementById('card-fto').style.display='none';
   goHome();
   ['li-ident','li-pass'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('li-err').textContent='';
