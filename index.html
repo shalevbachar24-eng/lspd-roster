@@ -1062,7 +1062,7 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
     <div id="fto-manager-list" style="margin-bottom:14px"></div>
     <div class="field" style="position:relative">
       <label>Add Manager</label>
-      <input id="fto-manager-add-input" placeholder="Search officer…" autocomplete="off" oninput="(function(){const q=document.getElementById('fto-manager-add-input').value.toLowerCase().trim();const list=document.getElementById('fto-manager-add-list');if(!q){list.innerHTML='';return;}const m=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(q)||(o.badge&&String(o.badge).includes(q))).slice(0,8);list.innerHTML=m.map(o=>'<div style=&quot;padding:6px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;color:#ccd6f0&quot; onmousedown=&quot;document.getElementById(\'fto-manager-add-input\').value=\''+o.fname+' '+o.lname+'\';document.getElementById(\'fto-manager-add-id\').value=\''+o.id+'\';document.getElementById(\'fto-manager-add-list\').innerHTML=\'\';&quot;>'+o.fname+' '+o.lname+(o.badge?' <span style=\\'color:rgba(255,255,255,0.35)\\'>#'+o.badge+'</span>':'')+'</div>').join('');})()">
+      <input id="fto-manager-add-input" placeholder="Search officer…" autocomplete="off" oninput="ftoManagerSearch()">
       <input type="hidden" id="fto-manager-add-id">
       <div id="fto-manager-add-list" style="position:absolute;top:100%;left:0;right:0;background:rgba(16,24,44,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:8px;z-index:10;max-height:160px;overflow-y:auto"></div>
     </div>
@@ -2366,6 +2366,23 @@ function openFtoManagerForm(){
 function removeFtoManager(id){
   DB.ftoManagers=(DB.ftoManagers||[]).filter(x=>String(x)!==String(id));
   persist();openFtoManagerForm();renderFtoTab();
+}
+function ftoManagerSearch(){
+  const q=(document.getElementById('fto-manager-add-input').value||'').toLowerCase().trim();
+  const list=document.getElementById('fto-manager-add-list');
+  if(!list)return;
+  if(!q){list.innerHTML='';return;}
+  const matches=DB.officers.filter(o=>(o.fname+' '+o.lname).toLowerCase().includes(q)||(o.badge&&String(o.badge).includes(q))).slice(0,8);
+  if(!matches.length){list.innerHTML='<div style="padding:8px 10px;font-size:12px;color:rgba(255,255,255,0.3)">No results</div>';return;}
+  list.innerHTML=matches.map(o=>{
+    const safeId=String(o.id).replace(/'/g,'');
+    const safeName=(o.fname+' '+o.lname).replace(/'/g,''');
+    const safeBadge=String(o.badge||'').replace(/'/g,'');
+    return '<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;color:#ccd6f0" '
+      +'onmousedown="document.getElementById(\'fto-manager-add-input\').value=\''+safeName+'\';document.getElementById(\'fto-manager-add-id\').value=\''+safeId+'\';document.getElementById(\'fto-manager-add-list\').innerHTML=\'\'">'
+      +escHtml(o.fname+' '+o.lname)+(o.badge?'<span style="color:rgba(255,255,255,0.35);margin-left:5px">#'+escHtml(o.badge)+'</span>':'')
+      +'</div>';
+  }).join('');
 }
 function addFtoManager(){
   const inp=document.getElementById('fto-manager-add-input');
