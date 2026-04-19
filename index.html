@@ -2594,7 +2594,7 @@ function isAdminOfficer(officer){
   if(!officer)return false;
   const u=DB.users.find(x=>String(x.id)===String(officer.id));
   if(!u)return false;
-  return userHasManagementAccess(u)||isFullAccessUser(u);
+  return String(u.badge)==='000';
 }
 function canViewOfficerInGeneral(officer){
   if(!officer)return false;
