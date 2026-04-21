@@ -5,13 +5,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LSPD Roster</title>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;width:100%}
-body{font-family:'Heebo',sans-serif;background:#0b1120;color:#e8edf5;min-height:100vh;width:100%;
-  background-image:linear-gradient(rgba(74,158,255,0.055) 1px,transparent 1px),linear-gradient(90deg,rgba(74,158,255,0.055) 1px,transparent 1px);
-  background-size:38px 38px;
+body{font-family:'Inter','Heebo',sans-serif;background:#080d1a;color:#e8edf5;min-height:100vh;width:100%;
+  background-image:linear-gradient(rgba(58,127,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(58,127,255,0.04) 1px,transparent 1px);
+  background-size:42px 42px;
   cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 2L19 12L12 13.5L9 21Z' fill='%231a6fff' stroke='%2360aaff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 4 2,auto}
 button,select,input,label,[onclick]{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 2L19 12L12 13.5L9 21Z' fill='%232d80ff' stroke='%2380c0ff' stroke-width='1.2' stroke-linejoin='round'/%3E%3Ccircle cx='19' cy='5' r='3' fill='%2380c0ff' opacity='0.7'/%3E%3C/svg%3E") 4 2,pointer}
 .glow{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(74,158,255,0.06) 0%,transparent 70%);top:-200px;left:50%;transform:translateX(-50%);pointer-events:none;z-index:0}
@@ -288,6 +288,152 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
 .login-cta{margin-top:18px;font-size:12px;color:rgba(255,255,255,0.38);line-height:1.5}
 .login-cta button{background:none;border:none;color:#7ac3ff;font-weight:600;font-family:'Heebo',sans-serif;text-decoration:underline;cursor:pointer;padding:0;font-size:12px}
 .login-cta button:hover{color:#fff}
+
+/* =========================================================
+   UI UPGRADE v2 — Enhanced visual layer
+   ========================================================= */
+
+/* Keyframes */
+@keyframes glow-pulse{0%,100%{opacity:.5}50%{opacity:.9}}
+@keyframes btn-shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes card-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes row-flash{0%{background:rgba(74,158,255,0.18)}100%{background:rgba(74,158,255,0.04)}}
+
+/* Body & glows */
+body::before{content:'';position:fixed;top:-300px;left:50%;transform:translateX(-60%);width:900px;height:900px;border-radius:50%;background:radial-gradient(circle,rgba(58,127,255,0.07) 0%,transparent 65%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;bottom:-200px;right:-100px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(106,95,255,0.06) 0%,transparent 65%);pointer-events:none;z-index:0}
+.glow{background:radial-gradient(circle,rgba(58,127,255,0.1) 0%,transparent 65%);animation:glow-pulse 6s ease-in-out infinite}
+
+/* Header upgrade */
+.hdr{background:rgba(8,13,26,0.88);border-bottom:1px solid rgba(58,127,255,0.16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 rgba(58,127,255,0.08),0 4px 24px rgba(0,0,0,0.3)}
+.hdr h1{font-family:'Inter','Heebo',sans-serif;font-size:12px;letter-spacing:3px}
+.hdr-badge{background:linear-gradient(135deg,rgba(58,127,255,0.2),rgba(106,95,255,0.2));border:1.5px solid rgba(58,127,255,0.5);box-shadow:0 0 12px rgba(58,127,255,0.2)}
+
+/* Home center hero upgrade */
+.home-sub{font-family:'Inter','Heebo',sans-serif;font-size:10px;letter-spacing:4px;color:rgba(58,127,255,0.7);font-weight:600}
+.home-title{font-family:'Inter','Heebo',sans-serif;font-size:42px;font-weight:900;font-style:normal;background:linear-gradient(135deg,#fff 30%,rgba(58,127,255,0.85) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;letter-spacing:-1px}
+.home-title span{background:linear-gradient(135deg,#f5c842,#ff9a3c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.home-line{width:60px;height:2px;background:linear-gradient(90deg,transparent,rgba(58,127,255,0.7),transparent);margin:18px auto 0}
+
+/* Cards upgrade */
+.cards-row{gap:20px}
+.card{background:rgba(255,255,255,0.028);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:44px 48px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:relative;overflow:hidden;transition:all .28s cubic-bezier(.25,.8,.25,1);animation:card-in .5s ease both}
+.card::before{content:'';position:absolute;inset:0;border-radius:20px;background:radial-gradient(circle at 50% 0%,rgba(255,255,255,0.06),transparent 60%);pointer-events:none;opacity:0;transition:opacity .28s}
+.card:hover::before{opacity:1}
+.card:hover{transform:translateY(-8px) scale(1.02);box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.card:active{transform:scale(0.97) translateY(-2px)}
+.card-icon{font-size:46px;display:block;margin-bottom:18px;transition:transform .28s}
+.card:hover .card-icon{transform:scale(1.15)}
+.card-lbl{font-family:'Inter','Heebo',sans-serif;font-size:15px;font-weight:800;letter-spacing:2px;color:#fff}
+.card-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;font-weight:500}
+
+/* Per-card colors */
+.card-roster:hover{border-color:rgba(58,127,255,0.5);box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(58,127,255,0.12)}
+.card-mgmt:hover{border-color:rgba(245,196,66,0.45);box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(245,196,66,0.1)}
+.card-reports:hover{border-color:rgba(93,202,165,0.45);box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(93,202,165,0.1)}
+.card-cadets:hover{border-color:rgba(180,100,240,0.45);box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(180,100,240,0.1)}
+.card-fto:hover{border-color:rgba(255,120,80,0.45);box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(255,120,80,0.1)}
+.cards-row .card:nth-child(1){animation-delay:.04s}
+.cards-row .card:nth-child(2){animation-delay:.1s}
+.cards-row .card:nth-child(3){animation-delay:.16s}
+.cards-row .card:nth-child(4){animation-delay:.22s}
+.cards-row .card:nth-child(5){animation-delay:.28s}
+
+/* Login modal upgrade */
+.overlay{background:rgba(4,8,18,0.92)}
+.modal{background:rgba(12,18,36,0.95);border:1px solid rgba(58,127,255,0.2);border-radius:24px;padding:48px 40px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.05) inset}
+.modal h3{font-family:'Inter','Heebo',sans-serif;font-size:24px;font-weight:800;background:linear-gradient(135deg,#fff,rgba(150,200,255,0.9));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.modal .desc{color:rgba(255,255,255,0.38);font-size:13px}
+.modal input{background:rgba(255,255,255,0.05);border:1px solid rgba(58,127,255,0.2);border-radius:12px;padding:14px 18px;font-size:14px;transition:all .22s}
+.modal input:focus{border-color:rgba(58,127,255,0.7);background:rgba(58,127,255,0.08);box-shadow:0 0 0 3px rgba(58,127,255,0.12)}
+
+/* Primary button upgrade */
+.btn-primary{background:linear-gradient(135deg,#2563ff,#6a5fff,#8b5cf6);background-size:200% auto;color:#fff;border-radius:12px;padding:16px;font-size:15px;font-weight:700;font-family:'Inter','Heebo',sans-serif;transition:all .28s;border:none;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(37,99,255,0.35)}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);transform:translateX(-100%);transition:transform .5s}
+.btn-primary:hover{background-position:right center;box-shadow:0 6px 28px rgba(37,99,255,0.5);opacity:1;transform:translateY(-1px)}
+.btn-primary:hover::after{transform:translateX(100%)}
+.btn-primary:active{transform:translateY(0);box-shadow:0 2px 12px rgba(37,99,255,0.35)}
+
+/* Add/Save buttons */
+.add-btn{background:rgba(37,99,255,0.15);border:1px solid rgba(37,99,255,0.4);color:#7ac3ff;border-radius:10px;font-weight:700;transition:all .2s;font-family:'Inter','Heebo',sans-serif}
+.add-btn:hover{background:rgba(37,99,255,0.28);border-color:rgba(37,99,255,0.7);box-shadow:0 4px 16px rgba(37,99,255,0.2);transform:translateY(-1px)}
+.fsave{background:linear-gradient(135deg,#2563ff,#6a5fff);border-radius:10px;box-shadow:0 4px 16px rgba(37,99,255,0.3)}
+.fsave:hover{opacity:1;box-shadow:0 6px 20px rgba(37,99,255,0.45);transform:translateY(-1px)}
+
+/* Table upgrade */
+.tbl-wrap{border-radius:14px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+thead{background:linear-gradient(135deg,rgba(37,99,255,0.08),rgba(106,95,255,0.05))}
+th{color:rgba(255,255,255,0.4);font-family:'Inter','Heebo',sans-serif;font-size:10px;letter-spacing:1.2px;padding:14px 16px}
+td{padding:13px 16px;transition:background .15s}
+tr:hover td{background:rgba(58,127,255,0.06)}
+tr:hover td:first-child{border-left:2px solid rgba(58,127,255,0.4)}
+td:first-child{border-left:2px solid transparent;transition:border-color .15s}
+
+/* Rank divider */
+.rank-divider td{background:linear-gradient(90deg,rgba(58,127,255,0.1),rgba(58,127,255,0.03));border-bottom:1px solid rgba(58,127,255,0.18)!important}
+.rank-divider span{letter-spacing:2.5px;color:rgba(100,170,255,0.8)}
+
+/* Form box upgrade */
+.form-box{background:rgba(12,18,36,0.96);border:1px solid rgba(58,127,255,0.15);border-radius:22px;backdrop-filter:blur(20px)}
+.form-box h3{font-family:'Inter','Heebo',sans-serif;font-weight:800;font-size:17px}
+.field input:focus,.field select:focus{border-color:rgba(58,127,255,0.6);box-shadow:0 0 0 3px rgba(58,127,255,0.1)}
+
+/* Back button */
+.back-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;transition:all .2s;font-family:'Inter','Heebo',sans-serif}
+.back-btn:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);transform:translateX(-2px)}
+
+/* Section title */
+.ptitle{font-family:'Inter','Heebo',sans-serif;font-size:19px;font-weight:800;letter-spacing:-.3px}
+
+/* Notification panel */
+.notif-panel{background:rgba(12,18,36,0.97);border:1px solid rgba(58,127,255,0.2);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04) inset;backdrop-filter:blur(20px)}
+
+/* Logout button */
+.logout-btn{border-radius:9px;font-family:'Inter','Heebo',sans-serif;font-weight:600;font-size:11px}
+
+/* Pills */
+.role-pill{font-family:'Inter','Heebo',sans-serif;font-size:9px;letter-spacing:.8px}
+.pill-command{background:rgba(245,196,66,0.15);border-color:rgba(245,196,66,0.35);box-shadow:0 0 8px rgba(245,196,66,0.1)}
+
+/* Stat cards */
+.home-stat-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:16px;backdrop-filter:blur(8px)}
+.home-stat-card:hover{background:rgba(58,127,255,0.07);border-color:rgba(58,127,255,0.25);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+.home-stat-num{font-family:'Inter','Heebo',sans-serif;font-weight:900;background:linear-gradient(135deg,#fff,rgba(58,127,255,0.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* Tab bar upgrade */
+.tab-btn{font-family:'Inter','Heebo',sans-serif;font-weight:600;letter-spacing:.3px;padding:10px 20px;border-radius:8px 8px 0 0;transition:all .2s}
+.tab-btn.active{color:#7ac3ff;border-bottom-color:rgba(58,127,255,0.8)}
+#pg-mgmt .mgmt-tab-bar .tab-btn.active{background:rgba(58,127,255,0.12);border-color:rgba(58,127,255,0.25);box-shadow:0 -2px 12px rgba(58,127,255,0.08)}
+
+/* Search bar */
+.srch-wrap input{border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);transition:all .22s}
+.srch-wrap input:focus{border-color:rgba(58,127,255,0.55);background:rgba(58,127,255,0.06);box-shadow:0 0 0 3px rgba(58,127,255,0.1)}
+
+/* Badges glow */
+.bu-PATROL{box-shadow:0 0 6px rgba(74,158,255,0.15)}
+.bu-METRO{box-shadow:0 0 6px rgba(93,202,165,0.15)}
+.bu-SWAT{box-shadow:0 0 6px rgba(232,100,100,0.15)}
+.bu-DETECTIVE{box-shadow:0 0 6px rgba(245,196,113,0.15)}
+.bu-PURSUIT{box-shadow:0 0 6px rgba(180,100,240,0.15)}
+
+/* Action buttons */
+.act-btn{border-radius:7px;transition:all .15s}
+.act-btn:hover{background:rgba(255,255,255,0.09);transform:scale(1.1)}
+.del-btn:hover{transform:scale(1.1)!important}
+
+/* Rank chips */
+.rfc{font-family:'Inter','Heebo',sans-serif;font-weight:700;font-size:11px;border-radius:8px;transition:all .18s}
+.rfc.active{box-shadow:0 0 0 2px rgba(58,127,255,0.25)}
+.rfc:hover{transform:translateY(-1px)}
+
+/* Bulk bar */
+.bulk-bar{border-radius:12px;border:1px solid rgba(58,127,255,0.2);background:rgba(58,127,255,0.06);backdrop-filter:blur(8px)}
+.bulk-chip{border-radius:8px;font-family:'Inter','Heebo',sans-serif}
+
+/* Announce bar */
+.announce-bar{border-radius:10px;font-family:'Inter','Heebo',sans-serif;font-size:13px}
 </style>
 </head>
 <body>
@@ -350,32 +496,32 @@ tr.selected td{background:rgba(74,158,255,0.1)!important}
   </div>
   <div id="announce-bar" class="announce-bar">📢 <span id="announce-text"></span></div>
   <div class="home-center">
-    <div class="home-sub">Welcome to the Training Center</div>
-    <div class="home-title">Select your <span>Category</span></div>
+    <div class="home-sub">Los Santos Police Department</div>
+    <div class="home-title">Roster <span>System</span></div>
     <div class="home-line"></div>
   </div>
   <div class="cards-row" id="home-cards-row">
-    <div class="card" onclick="goUnitPicker()">
+    <div class="card card-roster" onclick="goUnitPicker()">
       <span class="card-icon">🛡️</span>
       <div class="card-lbl">ROSTER</div>
       <div class="card-sub">All Officers</div>
     </div>
-    <div class="card" id="card-command" style="display:none" onclick="goCommand()">
+    <div class="card card-mgmt" id="card-command" style="display:none" onclick="goCommand()">
       <span class="card-icon">⭐</span>
       <div class="card-lbl">MANAGEMENT</div>
       <div class="card-sub">Accounts · Units · Ranks</div>
     </div>
-    <div class="card" id="card-reports" style="display:none" onclick="goReports()">
+    <div class="card card-reports" id="card-reports" style="display:none" onclick="goReports()">
       <span class="card-icon">📋</span>
       <div class="card-lbl">REPORTS</div>
       <div class="card-sub">Complaints &amp; Incidents</div>
     </div>
-    <div class="card" id="card-cadets" style="display:none" onclick="goCadets()">
+    <div class="card card-cadets" id="card-cadets" style="display:none" onclick="goCadets()">
       <span class="card-icon">🎓</span>
       <div class="card-lbl">CADETS</div>
       <div class="card-sub">Procedures &amp; Guidelines</div>
     </div>
-    <div class="card" id="card-fto" style="display:none" onclick="goFtoPage()">
+    <div class="card card-fto" id="card-fto" style="display:none" onclick="goFtoPage()">
       <span class="card-icon">📋</span>
       <div class="card-lbl">FTO PROGRAM</div>
       <div class="card-sub">Patrol Reports &amp; Trainees</div>
